@@ -20,7 +20,7 @@ This document defines the functional, architectural, and development requirement
 ### Basic Concept
 
 * Top-down 2D browser-based RPG game.
-* Inspired heavily by *World of Warcraft* and *Realm of the Mad God*.
+* Inspired heavily by *World of Warcraft*, *Realm of the Mad God*, and *Necesse*.
 * Player character is always facing "up" on the screen, and the world rotates relative to character's orientation.
 
 ---
@@ -35,6 +35,8 @@ This document defines the functional, architectural, and development requirement
 * `Shift+A` / `Shift+D` = strafe left/right.
 * `Q` / `E` = strafe forward-left and forward-right (diagonals).
 * Movement speed should be adjustable via a variable and later influenced by in-game factors.
+* **Frame-rate independent motion**: All movement and animation must be time-delta based to ensure consistent speed regardless of frame rate.
+* **Combination movement**: When moving in multiple directions (e.g., forward and strafing right), the resulting movement vector must be normalized so that the player's top speed is not exceeded (i.e., diagonal movement is not faster than straight movement).
 
 ### Perspective
 
@@ -101,6 +103,16 @@ This document defines the functional, architectural, and development requirement
 ---
 
 ## 🏗️ World, Building & NPCs
+
+### World Loading & Procedural Generation
+
+* The world must be divided into **chunks**; only chunks near the player are loaded into memory at any time.
+* The entire game world must support **true procedural generation**:
+  * World generation is deterministic, based on a seed and consistent hashing—no random number generation at runtime.
+  * Chunks are pregenerated and cached before the player enters their view (preloading to avoid pop-in).
+  * Cached chunks must be invalidated and removed from memory/cache when far from the player.
+  * Since the world is editable (e.g., buildings), the chunk cache must support overlaying player modifications on top of procedural data.
+  * Chunk caching should utilize the browser's local cache/storage for persistence.
 
 ### Building System
 
