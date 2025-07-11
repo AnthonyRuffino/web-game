@@ -214,3 +214,10 @@ Once this is complete, proceed to:
 * Tiered crafting & equipment
 * Combat & spells
 
+### World Coordinate System & Procedural Generation
+
+* The game world uses a coordinate grid system; each tile is the smallest unit of world coordinates.
+* Sub-tile rendering is supported: multiple small objects (e.g., apples) can be rendered within a single tile using a sub-coordinate system (e.g., quarters of a tile).
+* Procedural generation logic must, for each world seed, place a red 'X' at the player's starting coordinates.
+* The rendering system must support geometric shapes, sprites, and text at any position in the world.
+

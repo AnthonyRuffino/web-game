@@ -65,6 +65,9 @@ web-game/
 - Use clear comments and TODOs for unimplemented sections.
 - Ensure all files are referenced correctly in `index.html`.
 - **The codebase should support both fixed-north and player-perspective camera modes, switchable via a variable for easy testing and debugging.**
+- **The world uses a coordinate grid system with tiles as the smallest world unit, but sub-tile rendering is supported (e.g., multiple small objects per tile).**
+- **Procedural generation logic should, for each world seed, place a red 'X' at the player's starting coordinates.**
+- **The rendering system should support geometric shapes, sprites, and text at any position.**
 
 ---
 
