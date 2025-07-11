@@ -68,6 +68,9 @@ web-game/
 - **The world uses a coordinate grid system with tiles as the smallest world unit, but sub-tile rendering is supported (e.g., multiple small objects per tile).**
 - **Procedural generation logic should, for each world seed, place a red 'X' at the player's starting coordinates.**
 - **The rendering system should support geometric shapes, sprites, and text at any position.**
+- **The game must support zooming in and out with the mouse scroll wheel, with upper and lower zoom limits.**
+- **The default browser right-click context menu must be disabled on the game canvas.**
+- **Input should be robust to browser focus changes (e.g., releasing keys when focus is lost to prevent stuck movement/rotation).**
 
 ---
 

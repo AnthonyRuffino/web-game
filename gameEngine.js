@@ -40,15 +40,7 @@ const World = {
   getStart() {
     return getPlayerStart(this.seed);
   },
-  render(ctx, camera) {
-    // camera: {x, y, angle} in world coordinates
-    ctx.save();
-    if (PERSPECTIVE_MODE === 'player-perspective') {
-      // Center camera on player, rotate world
-      ctx.translate(camera.cx, camera.cy);
-      ctx.rotate(-camera.angle);
-      ctx.translate(-camera.x, -camera.y);
-    }
+  render(ctx) {
     // Draw grid
     ctx.save();
     ctx.strokeStyle = '#444';
@@ -76,7 +68,6 @@ const World = {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('X', cx, cy);
-    ctx.restore();
     ctx.restore();
   }
 };
@@ -126,40 +117,22 @@ const Player = {
     }
   },
 
-  render(ctx, camera) {
-    if (PERSPECTIVE_MODE === 'player-perspective') {
-      // Always draw player at center of canvas, facing up
-      ctx.save();
-      ctx.translate(camera.cx, camera.cy);
-      ctx.rotate(0); // always up
-      ctx.beginPath();
-      ctx.moveTo(0, -Player.size); // tip
-      ctx.lineTo(Player.size * 0.6, Player.size * 0.8); // right base
-      ctx.lineTo(-Player.size * 0.6, Player.size * 0.8); // left base
-      ctx.closePath();
-      ctx.fillStyle = '#ffeb3b';
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 3;
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    } else {
-      // Draw player at world position, facing direction
-      ctx.save();
-      ctx.translate(Player.x, Player.y);
-      ctx.rotate(Player.angle);
-      ctx.beginPath();
-      ctx.moveTo(0, -Player.size); // tip
-      ctx.lineTo(Player.size * 0.6, Player.size * 0.8); // right base
-      ctx.lineTo(-Player.size * 0.6, Player.size * 0.8); // left base
-      ctx.closePath();
-      ctx.fillStyle = '#ffeb3b';
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 3;
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
+  render(ctx) {
+    // Draw player at world position, facing direction
+    ctx.save();
+    ctx.translate(Player.x, Player.y);
+    ctx.rotate(Player.angle);
+    ctx.beginPath();
+    ctx.moveTo(0, -Player.size); // tip
+    ctx.lineTo(Player.size * 0.6, Player.size * 0.8); // right base
+    ctx.lineTo(-Player.size * 0.6, Player.size * 0.8); // left base
+    ctx.closePath();
+    ctx.fillStyle = '#ffeb3b';
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 3;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 };
 
@@ -179,21 +152,29 @@ const GameEngine = {
   },
   render(ctx) {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    // Camera object for world and player rendering
-    const camera = {
-      x: Player.x,
-      y: Player.y,
-      angle: Player.angle,
-      cx: ctx.canvas.width / 2,
-      cy: ctx.canvas.height / 2
-    };
-    World.render(ctx, camera);
-    Player.render(ctx, camera);
+    
+    // Apply camera transforms
+    ctx.save();
+    ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+    
+    if (PERSPECTIVE_MODE === 'player-perspective') {
+      // Rotate the entire world around the player
+      ctx.rotate(-Player.angle);
+      ctx.translate(-Player.x, -Player.y);
+    } else {
+      // Fixed north - just translate to follow player
+      ctx.translate(-Player.x, -Player.y);
+    }
+    
+    // Render world and player in world coordinates
+    World.render(ctx);
+    Player.render(ctx);
+    
+    ctx.restore();
   },
-  // For input.js to update input state
   setInputState(newState) {
     inputState = newState;
   }
 };
 
-// TODO: Export GameEngine if using modules 
+// TODO: Export GameEngine if using modules

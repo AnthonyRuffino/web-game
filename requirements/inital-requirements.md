@@ -221,3 +221,9 @@ Once this is complete, proceed to:
 * Procedural generation logic must, for each world seed, place a red 'X' at the player's starting coordinates.
 * The rendering system must support geometric shapes, sprites, and text at any position in the world.
 
+### Camera & Input Enhancements
+
+* The game must support zooming in and out with the mouse scroll wheel, with upper and lower zoom limits.
+* The default browser right-click context menu must be disabled on the game canvas.
+* Input should be robust to browser focus changes (e.g., releasing keys when focus is lost to prevent stuck movement/rotation).
+
