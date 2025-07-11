@@ -19,6 +19,32 @@ window.togglePerspectiveMode = function() {
   console.log('[Game] Perspective mode toggled to', PERSPECTIVE_MODE);
 };
 
+// --- Zoom support ---
+let ZOOM = 1.0;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3.0;
+window.setZoom = function(z) {
+  ZOOM = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+  console.log('[Game] Zoom set to', ZOOM);
+};
+window.zoomIn = function() { setZoom(ZOOM * 1.1); };
+window.zoomOut = function() { setZoom(ZOOM / 1.1); };
+
+// Attach wheel event to canvas (after DOM loaded)
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('gameCanvas');
+  if (canvas) {
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        setZoom(ZOOM * 1.1);
+      } else if (e.deltaY > 0) {
+        setZoom(ZOOM / 1.1);
+      }
+    }, { passive: false });
+  }
+});
+
 // World config
 const WORLD_SEED = 42; // For now, static; later, make configurable
 const TILE_SIZE = 40; // pixels
@@ -57,12 +83,10 @@ const World = {
       ctx.lineTo(this.width * this.tileSize, y * this.tileSize);
       ctx.stroke();
     }
-    ctx.restore();
     // Draw red 'X' at player start
     const start = this.getStart();
     const cx = start.x * this.tileSize + this.tileSize / 2;
     const cy = start.y * this.tileSize + this.tileSize / 2;
-    ctx.save();
     ctx.fillStyle = 'red';
     ctx.font = 'bold 36px sans-serif';
     ctx.textAlign = 'center';
@@ -156,6 +180,7 @@ const GameEngine = {
     // Apply camera transforms
     ctx.save();
     ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+    ctx.scale(ZOOM, ZOOM); // Apply zoom before rotation/translation
     
     if (PERSPECTIVE_MODE === 'player-perspective') {
       // Rotate the entire world around the player
