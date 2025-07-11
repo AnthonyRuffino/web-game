@@ -6,6 +6,8 @@ const RENDER_MODE = 'shape'; // 'shape' or 'sprite'
 
 // Perspective mode: 'fixed-north' or 'player-perspective'
 let PERSPECTIVE_MODE = 'fixed-north'; // default
+
+// Update perspective mode functions to use console system
 window.setPerspectiveMode = function(mode) {
   if (mode === 'fixed-north' || mode === 'player-perspective') {
     PERSPECTIVE_MODE = mode;
@@ -14,6 +16,7 @@ window.setPerspectiveMode = function(mode) {
     console.warn('[Game] Invalid perspective mode:', mode);
   }
 };
+
 window.togglePerspectiveMode = function() {
   PERSPECTIVE_MODE = (PERSPECTIVE_MODE === 'fixed-north') ? 'player-perspective' : 'fixed-north';
   console.log('[Game] Perspective mode toggled to', PERSPECTIVE_MODE);
@@ -23,12 +26,19 @@ window.togglePerspectiveMode = function() {
 let ZOOM = 1.0;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3.0;
+
 window.setZoom = function(z) {
   ZOOM = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
   console.log('[Game] Zoom set to', ZOOM);
 };
-window.zoomIn = function() { setZoom(ZOOM * 1.1); };
-window.zoomOut = function() { setZoom(ZOOM / 1.1); };
+
+window.zoomIn = function() { 
+  setZoom(ZOOM * 1.1); 
+};
+
+window.zoomOut = function() { 
+  setZoom(ZOOM / 1.1); 
+};
 
 // Attach wheel event to canvas (after DOM loaded)
 document.addEventListener('DOMContentLoaded', () => {
