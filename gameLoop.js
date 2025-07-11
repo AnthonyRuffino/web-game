@@ -13,8 +13,10 @@ const GameLoop = {
     const delta = (currentTime - this.lastTime) / 1000; // seconds
     this.lastTime = currentTime;
 
-    // TODO: Update game engine with delta
-    // TODO: Render game engine
+    if (typeof GameEngine !== 'undefined') {
+      GameEngine.update(delta);
+      GameEngine.render(ctx);
+    }
 
     requestAnimationFrame(this.loop.bind(this));
   }

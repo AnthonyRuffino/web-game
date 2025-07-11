@@ -43,6 +43,7 @@ This document defines the functional, architectural, and development requirement
 * The player is always rendered as facing up; the game world rotates around the player.
 * Sprites and canvas objects must handle perspective rotation.
 * Some objects (trees, cliffs) use fixed-north render styles; others (bushes, ground clutter) appear truly top-down.
+* **The game must support both fixed-north and player-perspective camera modes. It should be possible to switch between these modes via a variable (for debugging or player preference).**
 
 ### Collision
 

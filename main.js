@@ -1,13 +1,17 @@
 // main.js
 // Entry point for initializing the game
 
-// Grab canvas and context
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas ? canvas.getContext('2d') : null;
 
-// TODO: Initialize game engine
-// TODO: Initialize input handling
-// TODO: Initialize and start game loop
+// Initialize input handling
+if (typeof Input !== 'undefined' && Input.init) {
+  Input.init();
+}
 
-// Example placeholder
-document.title = 'Web Game - Initialized'; 
+// Initialize game engine (no explicit init needed yet)
+
+// Start the game loop
+if (typeof GameLoop !== 'undefined' && GameLoop.start) {
+  GameLoop.start();
+} 

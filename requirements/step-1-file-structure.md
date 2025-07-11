@@ -64,6 +64,7 @@ web-game/
 - No game logic should be in `index.html`—all logic in JS modules.
 - Use clear comments and TODOs for unimplemented sections.
 - Ensure all files are referenced correctly in `index.html`.
+- **The codebase should support both fixed-north and player-perspective camera modes, switchable via a variable for easy testing and debugging.**
 
 ---
 
