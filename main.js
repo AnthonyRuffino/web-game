@@ -45,6 +45,11 @@ if (typeof Input !== 'undefined' && Input.init) {
   Input.init();
 }
 
+// Initialize UI system
+if (typeof UI !== 'undefined' && UI.init) {
+  UI.init();
+}
+
 // Initialize game engine (no explicit init needed yet)
 
 // Start the game loop

@@ -25,6 +25,11 @@ const Input = {
   heldKeys: new Set(),
 
   handleKey(e, isDown) {
+    // Check if UI input bar is open - if so, ignore game input
+    if (typeof UI !== 'undefined' && UI.inputBarOpen) {
+      return;
+    }
+    
     let handled = false;
     
     // Track physically held keys

@@ -166,6 +166,13 @@ This document outlines the next phase of development, building upon the solid fo
   - Error handling and validation ✅
 
 ### 9. Basic UI System
+- **Chat & Command Input Bar:**
+  - Pressing the `Enter` key opens a text input bar at the bottom of the screen, similar to MMORPGs (e.g., World of Warcraft).
+  - While the input bar is open, all key presses are captured as text input and do not trigger game world actions.
+  - Submitting the input (by pressing `Enter` again):
+    - If the text starts with `/`, it is interpreted as a console command and executed via the command system.
+    - If the text does not start with `/`, it is considered as the character "speaking" in the game world (for now, this is a placeholder; in the future, this could display as a speech bubble above the character or trigger interactions with NPCs/entities).
+  - Closing the input bar (e.g., pressing `Escape`) returns control to normal game input.
 - **Requirements:**
   - Inventory toggle with `B` key
   - Grid-based inventory layout (configurable, default 5x5)

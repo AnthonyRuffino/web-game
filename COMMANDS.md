@@ -269,6 +269,26 @@ cmd("worldconfig")            // View detailed configuration
 - **Example:** `cmd("resizecanvas")` - Manually trigger resize
 - **Use:** When automatic resize doesn't work properly
 
+## UI System Commands
+
+### `uihistory`
+- **Description:** Show command history information
+- **Usage:** `cmd("uihistory")`
+- **Example:** `cmd("uihistory")` - Display history settings and recent commands
+- **Shows:** Max history size, current count, recent commands
+
+### `setuihistory <size>`
+- **Description:** Set maximum command history size
+- **Usage:** `cmd("setuihistory 50")`
+- **Example:** `cmd("setuihistory 30")` - Set history to keep 30 commands
+- **Range:** 1 to 100 commands
+
+### `clearuihistory`
+- **Description:** Clear command history
+- **Usage:** `cmd("clearuihistory")`
+- **Example:** `cmd("clearuihistory")` - Remove all saved commands
+- **Note:** History is immediately saved to localStorage
+
 ## Future Commands
 
 The following commands are planned for future implementation:

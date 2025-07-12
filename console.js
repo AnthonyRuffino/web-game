@@ -526,6 +526,45 @@ const Console = {
       }
     });
 
+    // UI system commands
+    this.register('uihistory', 'Show command history information', (args) => {
+      if (typeof UI !== 'undefined') {
+        console.log('[Console] UI Command History:');
+        console.log(`  Max History Size: ${UI.config.maxHistorySize}`);
+        console.log(`  Current History: ${UI.commandHistory.length} commands`);
+        if (UI.commandHistory.length > 0) {
+          console.log('  Recent Commands:');
+          UI.commandHistory.slice(-5).forEach((cmd, index) => {
+            console.log(`    ${UI.commandHistory.length - 4 + index}: ${cmd}`);
+          });
+        }
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
+    this.register('setuihistory', 'Set maximum command history size', (args) => {
+      if (typeof UI !== 'undefined') {
+        const size = parseInt(args[0]);
+        if (!isNaN(size)) {
+          UI.setMaxHistorySize(size);
+        } else {
+          console.error('[Console] Invalid size. Usage: setuihistory <size>');
+        }
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
+    this.register('clearuihistory', 'Clear command history', (args) => {
+      if (typeof UI !== 'undefined') {
+        UI.clearCommandHistory();
+        console.log('[Console] Command history cleared');
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
