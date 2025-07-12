@@ -625,6 +625,7 @@ const Console = {
         console.log(`  Item Icon Opacity: ${UI.config.itemIconOpacity}`);
         console.log(`  Action Bar Slots: ${UI.config.actionBarSlots}`);
         console.log(`  Action Bar Opacity: ${UI.config.actionBarOpacity}`);
+        console.log(`  Action Bar 2 Slots: ${UI.config.actionBarSlots}`);
         console.log(`  Command History: ${UI.commandHistory.length}/${UI.config.maxHistorySize}`);
         if (UI.selectedSlot) {
           console.log(`  Selected Slot: ${UI.selectedSlot.row * UI.config.inventoryGridSize + UI.selectedSlot.col + 1} (row ${UI.selectedSlot.row}, col ${UI.selectedSlot.col})`);
@@ -632,6 +633,10 @@ const Console = {
         if (UI.activeActionSlot !== null) {
           const slotNumber = UI.activeActionSlot === 9 ? '0' : (UI.activeActionSlot + 1).toString();
           console.log(`  Active Action Slot: ${slotNumber} (index ${UI.activeActionSlot})`);
+        }
+        if (UI.activeActionSlot2 !== null) {
+          const slotNumber = UI.activeActionSlot2 === 9 ? '0' : (UI.activeActionSlot2 + 1).toString();
+          console.log(`  Active Action Bar 2 Slot: Shift+${slotNumber} (index ${UI.activeActionSlot2})`);
         }
       } else {
         console.error('[Console] UI system not available');

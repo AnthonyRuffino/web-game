@@ -24,11 +24,12 @@ const UI = {
     actionBarMargin: 20, // Margin from screen edges
     actionBarBackground: 'rgba(20,20,20,0.95)',
     actionBarBorder: '#666',
-    actionBarSlotBackground: 'rgba(40,40,40,0.9)',
+    actionBarSlotBackground: 'rgba(40,40,40,0.6)', // Lower opacity for empty cells
     actionBarSlotHoverBackground: 'rgba(60,60,60,0.9)',
     actionBarSlotActiveBackground: 'rgba(80,80,80,0.9)',
     actionBarOpacity: 0.95, // Configurable action bar opacity
-    actionBarHeight: 80 // Height of action bar (inventory will be shifted up by this amount)
+    actionBarHeight: 80, // Height of action bar (inventory will be shifted up by this amount)
+    actionBarGap: 8 // Gap between the two action bars
   },
 
   // State
@@ -50,6 +51,12 @@ const UI = {
   hoveredActionSlot: null,
   activeActionSlot: null,
   actionBarScale: 1.0,
+  // Secondary action bar state
+  actionBar2Canvas: null,
+  actionBar2Ctx: null,
+  hoveredActionSlot2: null,
+  activeActionSlot2: null,
+  actionBar2Scale: 1.0,
 
   // Initialize UI system
   init() {
@@ -57,11 +64,13 @@ const UI = {
     this.createInputBar();
     this.createInventory();
     this.createActionBar();
+    this.createActionBar2();
     this.setupGlobalListeners();
     console.log('[UI] UI system initialized');
     console.log(`[UI] Command history size: ${this.config.maxHistorySize}`);
     console.log(`[UI] Inventory grid size: ${this.config.inventoryGridSize}x${this.config.inventoryGridSize}`);
     console.log(`[UI] Action bar slots: ${this.config.actionBarSlots}`);
+    console.log(`[UI] Dual action bar system ready`);
   },
 
   // Create the input bar DOM element
@@ -272,6 +281,7 @@ const UI = {
     canvas.style.position = 'fixed';
     canvas.style.bottom = `${this.config.inventoryMargin + this.config.actionBarHeight}px`;
     canvas.style.right = `${this.config.inventoryMargin}px`;
+    // Note: Inventory is positioned to avoid overlapping with the dual action bars
     canvas.style.zIndex = '999';
     canvas.style.display = 'none';
     canvas.style.border = `2px solid ${this.config.inventoryBorder}`;
@@ -337,8 +347,7 @@ const UI = {
     canvas.id = 'ui-action-bar';
     canvas.style.position = 'fixed';
     canvas.style.bottom = `${this.config.actionBarMargin}px`;
-    canvas.style.left = '50%';
-    canvas.style.transform = 'translateX(-50%)';
+    canvas.style.left = `${this.config.actionBarMargin}px`;
     canvas.style.zIndex = '998';
     canvas.style.border = `2px solid ${this.config.actionBarBorder}`;
     canvas.style.borderRadius = '8px';
@@ -388,13 +397,79 @@ const UI = {
     // Apply scale to canvas
     this.actionBarCanvas.width = baseWidth;
     this.actionBarCanvas.height = baseHeight;
-    this.actionBarCanvas.style.transform = `translateX(-50%) scale(${scaleFactor})`;
-    this.actionBarCanvas.style.transformOrigin = 'center bottom';
+    this.actionBarCanvas.style.transform = `scale(${scaleFactor})`;
+    this.actionBarCanvas.style.transformOrigin = 'bottom left';
     
     // Store scale factor for mouse calculations
     this.actionBarScale = scaleFactor;
     
     console.log(`[UI] Action bar scaled to ${(scaleFactor * 100).toFixed(1)}% (${targetWidth.toFixed(0)}px wide)`);
+  },
+
+  // Create second action bar
+  createActionBar2() {
+    // Create second action bar canvas
+    const canvas = document.createElement('canvas');
+    canvas.id = 'ui-action-bar-2';
+    canvas.style.position = 'fixed';
+    canvas.style.bottom = `${this.config.actionBarMargin}px`;
+    canvas.style.left = `${this.config.actionBarMargin + this.config.actionBarSlotSize * this.config.actionBarSlots + this.config.actionBarSpacing * (this.config.actionBarSlots - 1) + 40 + this.config.actionBarGap}px`;
+    canvas.style.zIndex = '998';
+    canvas.style.border = `2px solid ${this.config.actionBarBorder}`;
+    canvas.style.borderRadius = '8px';
+    canvas.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6)';
+    document.body.appendChild(canvas);
+    
+    this.actionBar2Canvas = canvas;
+    this.actionBar2Ctx = canvas.getContext('2d');
+    
+    // Set canvas size based on slots
+    this.updateActionBar2Size();
+    
+    // Add mouse event listeners with proper scaling
+    canvas.addEventListener('mousemove', (e) => this.handleActionBar2MouseMove(e));
+    canvas.addEventListener('click', (e) => this.handleActionBar2Click(e));
+    canvas.addEventListener('mouseleave', () => this.handleActionBar2MouseLeave());
+    
+    // Add window resize listener to update action bar size
+    window.addEventListener('resize', () => {
+      this.updateActionBar2Size();
+      this.renderActionBar2();
+    });
+    
+    // Initial render
+    this.renderActionBar2();
+  },
+
+  // Update second action bar canvas size
+  updateActionBar2Size() {
+    // Calculate base size (same as first action bar)
+    const baseWidth = this.config.actionBarSlots * this.config.actionBarSlotSize + 
+                     (this.config.actionBarSlots - 1) * this.config.actionBarSpacing + 40; // 40px padding
+    const baseHeight = this.config.actionBarSlotSize + 20; // 20px padding
+    
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth;
+    
+    // Calculate scale factor based on viewport size
+    // Use viewport width to ensure action bar fits
+    const maxActionBarWidth = viewportWidth * 0.4; // Max 40% of viewport width (smaller for dual bars)
+    const minActionBarWidth = 400; // Minimum width
+    const targetWidth = Math.max(minActionBarWidth, Math.min(maxActionBarWidth, baseWidth));
+    
+    // Calculate scale factor
+    const scaleFactor = targetWidth / baseWidth;
+    
+    // Apply scale to canvas
+    this.actionBar2Canvas.width = baseWidth;
+    this.actionBar2Canvas.height = baseHeight;
+    this.actionBar2Canvas.style.transform = `scale(${scaleFactor})`;
+    this.actionBar2Canvas.style.transformOrigin = 'bottom left';
+    
+    // Store scale factor for mouse calculations
+    this.actionBar2Scale = scaleFactor;
+    
+    console.log(`[UI] Action bar 2 scaled to ${(scaleFactor * 100).toFixed(1)}% (${targetWidth.toFixed(0)}px wide)`);
   },
 
   // Toggle inventory open/closed
@@ -565,8 +640,67 @@ const UI = {
       ctx.textAlign = 'center';
       ctx.fillText(slotNumber, x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 5);
       
-      // Draw placeholder text for future items
-      ctx.fillStyle = `rgba(136, 136, 136, ${this.config.actionBarOpacity * 0.7})`;
+      // Draw placeholder text for future items (lower opacity)
+      ctx.fillStyle = `rgba(136, 136, 136, ${this.config.actionBarOpacity * 0.4})`;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Empty', x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 20);
+    }
+  },
+
+  // Render second action bar
+  renderActionBar2() {
+    if (!this.actionBar2Ctx) return;
+    
+    const ctx = this.actionBar2Ctx;
+    const canvas = this.actionBar2Canvas;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw background with configurable opacity
+    const bgColor = this.config.actionBarBackground.replace(/[\d.]+\)$/, `${this.config.actionBarOpacity})`);
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw slots
+    const startX = 20;
+    const startY = 10;
+    
+    for (let i = 0; i < this.config.actionBarSlots; i++) {
+      const x = startX + i * (this.config.actionBarSlotSize + this.config.actionBarSpacing);
+      const y = startY;
+      
+      // Determine slot background color with opacity
+      let bgColor = this.config.actionBarSlotBackground;
+      if (this.hoveredActionSlot2 === i) {
+        bgColor = this.config.actionBarSlotHoverBackground;
+      }
+      if (this.activeActionSlot2 === i) {
+        bgColor = this.config.actionBarSlotActiveBackground;
+      }
+      
+      // Apply opacity to slot background
+      bgColor = bgColor.replace(/[\d.]+\)$/, `${this.config.actionBarOpacity})`);
+      
+      // Draw slot
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(x, y, this.config.actionBarSlotSize, this.config.actionBarSlotSize);
+      
+      // Draw slot border
+      ctx.strokeStyle = this.config.actionBarBorder;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, this.config.actionBarSlotSize, this.config.actionBarSlotSize);
+      
+      // Draw slot number (Shift+1-0 keys)
+      const slotNumber = i === 9 ? '0' : (i + 1).toString();
+      ctx.fillStyle = `rgba(255, 255, 255, ${this.config.actionBarOpacity})`;
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(slotNumber, x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 5);
+      
+      // Draw placeholder text for future items (lower opacity)
+      ctx.fillStyle = `rgba(136, 136, 136, ${this.config.actionBarOpacity * 0.4})`;
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('Empty', x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 20);
@@ -622,12 +756,103 @@ const UI = {
     console.log(`[UI] Activated action bar slot: ${slotNumber} (index ${this.activeActionSlot})`);
     
     // In the future: trigger item/spell action here
+    
+    // Clear active state after a short delay (temporary highlighting)
+    setTimeout(() => {
+      this.activeActionSlot = null;
+      this.renderActionBar();
+    }, 150);
   },
 
   // Handle action bar mouse leave
   handleActionBarMouseLeave() {
     this.hoveredActionSlot = null;
     this.renderActionBar();
+  },
+
+  // Handle second action bar mouse movement
+  handleActionBar2MouseMove(e) {
+    const rect = this.actionBar2Canvas.getBoundingClientRect();
+    // Account for scaling in mouse coordinates
+    const x = (e.clientX - rect.left) / this.actionBar2Scale;
+    const y = (e.clientY - rect.top) / this.actionBar2Scale;
+    
+    const startX = 20;
+    const startY = 10;
+    
+    // Find which slot is being hovered
+    for (let i = 0; i < this.config.actionBarSlots; i++) {
+      const slotX = startX + i * (this.config.actionBarSlotSize + this.config.actionBarSpacing);
+      const slotY = startY;
+      
+      if (x >= slotX && x < slotX + this.config.actionBarSlotSize &&
+          y >= slotY && y < slotY + this.config.actionBarSlotSize) {
+        this.hoveredActionSlot2 = i;
+        this.renderActionBar2();
+        return;
+      }
+    }
+    
+    // No slot hovered
+    this.hoveredActionSlot2 = null;
+    this.renderActionBar2();
+  },
+
+  // Handle second action bar click
+  handleActionBar2Click(e) {
+    if (this.hoveredActionSlot2 === null) return;
+    
+    this.activeActionSlot2 = this.hoveredActionSlot2;
+    this.renderActionBar2();
+    
+    // Prevent the click from reaching the game world
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const slotNumber = this.activeActionSlot2 === 9 ? '0' : (this.activeActionSlot2 + 1).toString();
+    console.log(`[UI] Activated action bar 2 slot: Shift+${slotNumber} (index ${this.activeActionSlot2})`);
+    
+    // Execute the bound command for this slot
+    this.executeActionBar2Command(this.activeActionSlot2);
+    
+    // Clear active state after a short delay (temporary highlighting)
+    setTimeout(() => {
+      this.activeActionSlot2 = null;
+      this.renderActionBar2();
+    }, 150);
+  },
+
+  // Handle second action bar mouse leave
+  handleActionBar2MouseLeave() {
+    this.hoveredActionSlot2 = null;
+    this.renderActionBar2();
+  },
+
+  // Execute command for second action bar slot
+  executeActionBar2Command(slotIndex) {
+    // Define commands for each slot (Shift+1 through Shift+0)
+    const commands = {
+      0: 'perspective', // Shift+1
+      1: '', // Shift+2 (empty for now)
+      2: '', // Shift+3 (empty for now)
+      3: '', // Shift+4 (empty for now)
+      4: '', // Shift+5 (empty for now)
+      5: '', // Shift+6 (empty for now)
+      6: '', // Shift+7 (empty for now)
+      7: '', // Shift+8 (empty for now)
+      8: '', // Shift+9 (empty for now)
+      9: 'perspective' // Shift+0 (Control+0 equivalent)
+    };
+    
+    const command = commands[slotIndex];
+    if (command && command.length > 0) {
+      console.log(`[UI] Executing command: ${command}`);
+      if (window.cmd) {
+        window.cmd(command);
+      } else {
+        console.error('[UI] Command system not available');
+      }
+    }
   },
 
   // Set inventory grid size
@@ -737,13 +962,48 @@ const UI = {
         };
         
         if (keyToSlot[e.code] !== undefined) {
-          this.activeActionSlot = keyToSlot[e.code];
-          this.renderActionBar();
+          // Check if Shift is held for second action bar
+          if (e.shiftKey) {
+            this.activeActionSlot2 = keyToSlot[e.code];
+            this.renderActionBar2();
+            
+            const slotNumber = this.activeActionSlot2 === 9 ? '0' : (this.activeActionSlot2 + 1).toString();
+            console.log(`[UI] Activated action bar 2 slot: Shift+${slotNumber} (index ${this.activeActionSlot2})`);
+            
+            // Execute the bound command for this slot
+            this.executeActionBar2Command(this.activeActionSlot2);
+            
+            // Clear active state after a short delay (temporary highlighting)
+            setTimeout(() => {
+              this.activeActionSlot2 = null;
+              this.renderActionBar2();
+            }, 150);
+          } else {
+            this.activeActionSlot = keyToSlot[e.code];
+            this.renderActionBar();
+            
+            const slotNumber = this.activeActionSlot === 9 ? '0' : (this.activeActionSlot + 1).toString();
+            console.log(`[UI] Activated action bar slot: ${slotNumber} (index ${this.activeActionSlot})`);
+            
+            // In the future: trigger item/spell action here
+            
+            // Clear active state after a short delay (temporary highlighting)
+            setTimeout(() => {
+              this.activeActionSlot = null;
+              this.renderActionBar();
+            }, 150);
+          }
           
-          const slotNumber = this.activeActionSlot === 9 ? '0' : (this.activeActionSlot + 1).toString();
-          console.log(`[UI] Activated action bar slot: ${slotNumber} (index ${this.activeActionSlot})`);
-          
-          // In the future: trigger item/spell action here
+          e.preventDefault();
+          return;
+        }
+        
+        // Handle Control+0 for perspective command (equivalent to Shift+0)
+        if (e.code === 'Digit0' && e.ctrlKey) {
+          console.log('[UI] Executing Control+0: perspective command');
+          if (window.cmd) {
+            window.cmd('perspective');
+          }
           e.preventDefault();
           return;
         }

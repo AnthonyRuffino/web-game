@@ -198,23 +198,28 @@ This document outlines the next phase of development, building upon the solid fo
   - Console commands for action bar management ✅
 
 ### 10. Action Bar Implementation ✅ (COMPLETED)
-- **Current Status:** Action bar system fully implemented
+- **Current Status:** Dual action bar system fully implemented
 - **Implemented Features:**
-  - 10-slot action bar at bottom of screen ✅
-  - Number keys 1-0 to trigger slots ✅
+  - Dual 10-slot action bars at bottom-left corner ✅
+  - Primary action bar: Number keys 1-0 to trigger slots ✅
+  - Secondary action bar: Shift+Number keys 1-0 to trigger slots ✅
   - Mouse click support for slot activation ✅
-  - Visual feedback for hover and click ✅
+  - Visual feedback for hover and temporary click/key press ✅
   - Configurable slot count ✅
   - Support for future item/spell binding ✅
+  - First macro implementation: "perspective" command bound to Shift+1 and Control+0 ✅
 - **Action Bar System:**
-  - Centered action bar with configurable slot count (5-20) ✅
+  - Dual action bars positioned at bottom-left corner ✅
   - Responsive scaling based on viewport size ✅
-  - Visual feedback for hover and active states ✅
-  - Number key activation (1-0 keys) ✅
+  - Visual feedback for hover and temporary active states ✅
+  - Number key activation (1-0 keys) for primary bar ✅
+  - Shift+Number key activation (Shift+1-0) for secondary bar ✅
+  - Control+0 as alternative for perspective command ✅
   - Mouse click activation with proper scaling ✅
-  - Configurable opacity and styling ✅
+  - Configurable opacity and styling with lower opacity empty cells ✅
   - Console commands for action bar management ✅
-  - Inventory shifted up to accommodate action bar ✅
+  - Inventory positioned to avoid overlapping with dual action bars ✅
+  - Temporary highlighting (only during mouse press or key hold) ✅
 
 ### 11. Crafting UI and Recipe System
 - **Requirements:**
