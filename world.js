@@ -622,10 +622,7 @@ const World = {
       this.renderChunk(ctx, chunk);
     });
     
-    if (isNearEdge) {
-      // Render objects at wrapped positions when near edge
-      this.renderWrappedWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
-    }
+
     
     // Always render the starting position marker
     const startPos = this.getStartingPosition();
@@ -653,74 +650,6 @@ const World = {
       ctx.textBaseline = 'middle';
       ctx.fillText('X', pos.x, pos.y);
     });
-  },
-
-  // Render world objects at wrapped positions
-  renderWrappedWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight) {
-    const worldWidth = this.width;
-    const worldHeight = this.height;
-    
-    // Calculate the area we need to render objects for
-    const left = cameraX - cameraWidth / 2;
-    const right = cameraX + cameraWidth / 2;
-    const top = cameraY - cameraHeight / 2;
-    const bottom = cameraY + cameraHeight / 2;
-    
-    // Convert to tile coordinates
-    const leftTile = Math.floor(left / this.config.tileSize);
-    const rightTile = Math.ceil(right / this.config.tileSize);
-    const topTile = Math.floor(top / this.config.tileSize);
-    const bottomTile = Math.ceil(bottom / this.config.tileSize);
-    
-    // Render objects for all visible tiles
-    for (let tileY = topTile; tileY <= bottomTile; tileY++) {
-      for (let tileX = leftTile; tileX <= rightTile; tileX++) {
-        // Wrap tile coordinates
-        let wrappedTileX = tileX;
-        let wrappedTileY = tileY;
-        
-        while (wrappedTileX < 0) wrappedTileX += this.config.gridWidth;
-        while (wrappedTileX >= this.config.gridWidth) wrappedTileX -= this.config.gridWidth;
-        while (wrappedTileY < 0) wrappedTileY += this.config.gridHeight;
-        while (wrappedTileY >= this.config.gridHeight) wrappedTileY -= this.config.gridHeight;
-        
-        // Calculate world position
-        const worldX = wrappedTileX * this.config.tileSize + this.config.tileSize / 2;
-        const worldY = wrappedTileY * this.config.tileSize + this.config.tileSize / 2;
-        
-        // Render grass
-        if (this.shouldPlaceGrass(wrappedTileX, wrappedTileY)) {
-          ctx.fillStyle = '#4CAF50';
-          ctx.fillRect(worldX - 8, worldY - 8, 16, 16);
-          ctx.strokeStyle = '#2E7D32';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(worldX - 8, worldY - 8, 16, 16);
-        }
-        
-        // Render trees
-        if (this.shouldPlaceTree(wrappedTileX, wrappedTileY)) {
-          // Tree trunk
-          ctx.fillStyle = '#8D6E63';
-          ctx.fillRect(worldX - 6, worldY - 6, 12, 12);
-          // Tree foliage
-          ctx.fillStyle = '#2E7D32';
-          ctx.beginPath();
-          ctx.arc(worldX, worldY - 8, 12, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        
-        // Render rocks
-        if (this.shouldPlaceRock(wrappedTileX, wrappedTileY)) {
-          ctx.fillStyle = '#757575';
-          ctx.beginPath();
-          ctx.arc(worldX, worldY, 10, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#424242';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-      }
-    }
   },
 
   // Render a single chunk
