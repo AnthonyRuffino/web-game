@@ -155,7 +155,7 @@ const World = {
                   const endY = clusterY + Math.sin(angle) * length;
                   
                   // Draw the grass blade
-                  ctx.strokeStyle = '#4CAF50';
+                  ctx.strokeStyle = '#81C784';
                   ctx.lineWidth = 1.5;
                   ctx.beginPath();
                   ctx.moveTo(clusterX, clusterY);
@@ -179,12 +179,13 @@ const World = {
             tileX: tileX,
             tileY: tileY,
             collision: true,
+            collisionRadius: 18, // Tree collision radius
             draw: function(ctx) {
               // Tree trunk
-              ctx.fillStyle = '#8D6E63';
+              ctx.fillStyle = '#5C4033';
               ctx.fillRect(this.x - 6, this.y - 6, 12, 12);
               // Tree foliage
-              ctx.fillStyle = '#2E7D32';
+              ctx.fillStyle = '#1B5E20';
               ctx.beginPath();
               ctx.arc(this.x, this.y - 8, 12, 0, Math.PI * 2);
               ctx.fill();
@@ -203,6 +204,7 @@ const World = {
             tileX: tileX,
             tileY: tileY,
             collision: true,
+            collisionRadius: 12, // Rock collision radius
             draw: function(ctx) {
               ctx.fillStyle = '#757575';
               ctx.beginPath();

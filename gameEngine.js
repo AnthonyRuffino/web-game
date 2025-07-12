@@ -99,14 +99,24 @@ const Player = {
       const newX = Player.x + moveX * Player.speed * delta;
       const newY = Player.y + moveY * Player.speed * delta;
       
+      // Apply collision detection if available
+      let finalX = newX;
+      let finalY = newY;
+      
+      if (typeof Collision !== 'undefined') {
+        const collisionResult = Collision.testMovement(Player.x, Player.y, newX, newY);
+        finalX = collisionResult.x;
+        finalY = collisionResult.y;
+      }
+      
       // Apply coordinate wrapping
       if (typeof World !== 'undefined') {
-        const wrapped = World.wrapCoordinates(newX, newY);
+        const wrapped = World.wrapCoordinates(finalX, finalY);
         Player.x = wrapped.x;
         Player.y = wrapped.y;
       } else {
-        Player.x = newX;
-        Player.y = newY;
+        Player.x = finalX;
+        Player.y = finalY;
       }
     }
   },
@@ -142,6 +152,11 @@ let inputState = {
 
 const GameEngine = {
   update(delta) {
+    // Update collision spatial grid
+    if (typeof Collision !== 'undefined') {
+      Collision.updateSpatialGrid();
+    }
+    
     Player.update(inputState, delta);
   },
   render(ctx) {
@@ -175,6 +190,11 @@ const GameEngine = {
       World.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight);
     }
     Player.render(ctx);
+    
+    // Render collision debug information
+    if (typeof Collision !== 'undefined') {
+      Collision.renderDebug(ctx);
+    }
     
     ctx.restore();
   },

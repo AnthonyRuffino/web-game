@@ -212,12 +212,42 @@ cmd("worldconfig")            // View detailed configuration
 - **Usage:** `cmd("persistence")`
 - **Example:** `cmd("persistence")` - Display save settings
 
+## Collision System Commands
+
+### `collision`
+- **Description:** Show collision system information
+- **Usage:** `cmd("collision")`
+- **Example:** `cmd("collision")` - Display collision system status
+- **Shows:** Enabled state, debug mode, player radius, spatial grid info
+
+### `togglecollision`
+- **Description:** Toggle collision detection on/off
+- **Usage:** `cmd("togglecollision")`
+- **Example:** `cmd("togglecollision")` - Enable/disable collision detection
+
+### `collisiondebug`
+- **Description:** Toggle collision debug visualization
+- **Usage:** `cmd("collisiondebug")`
+- **Example:** `cmd("collisiondebug")` - Show/hide collision circles
+- **Visual:** Red dashed circle around player, orange circles around obstacles
+
+### `setcollisionradius <radius>`
+- **Description:** Set player collision radius
+- **Usage:** `cmd("setcollisionradius 20")`
+- **Example:** `cmd("setcollisionradius 15")` - Set player collision radius to 15px
+- **Range:** 5 to 50 pixels
+
+### `updatecollision`
+- **Description:** Force update collision spatial grid
+- **Usage:** `cmd("updatecollision")`
+- **Example:** `cmd("updatecollision")` - Manually refresh collision data
+- **Debug:** Shows number of grid cells and entities tracked
+
 ## Future Commands
 
 The following commands are planned for future implementation:
 - `debug` - Toggle debug information display
 - `fps` - Show current frame rate
-- `collision` - Toggle collision detection visualization
 
 ---
 

@@ -421,6 +421,61 @@ const Console = {
       }
     });
 
+    // Collision system commands
+    this.register('collision', 'Show collision system information', (args) => {
+      if (typeof Collision !== 'undefined') {
+        const info = Collision.getInfo();
+        console.log('[Console] Collision System Information:');
+        console.log(`  Enabled: ${info.enabled}`);
+        console.log(`  Debug Mode: ${info.debug}`);
+        console.log(`  Player Radius: ${info.playerRadius}px`);
+        console.log(`  Spatial Grid Size: ${info.spatialGridSize}px`);
+        console.log(`  Grid Cells: ${info.gridCellCount}`);
+        console.log(`  Tracked Entities: ${info.totalEntities}`);
+      } else {
+        console.error('[Console] Collision system not available');
+      }
+    });
+
+    this.register('togglecollision', 'Toggle collision detection on/off', (args) => {
+      if (typeof Collision !== 'undefined') {
+        Collision.toggleCollision();
+      } else {
+        console.error('[Console] Collision system not available');
+      }
+    });
+
+    this.register('collisiondebug', 'Toggle collision debug visualization', (args) => {
+      if (typeof Collision !== 'undefined') {
+        Collision.toggleDebug();
+      } else {
+        console.error('[Console] Collision system not available');
+      }
+    });
+
+    this.register('setcollisionradius', 'Set player collision radius', (args) => {
+      if (typeof Collision !== 'undefined') {
+        const radius = parseFloat(args[0]);
+        if (!isNaN(radius) && radius > 0) {
+          Collision.setPlayerRadius(radius);
+        } else {
+          console.error('[Console] Invalid radius. Usage: setcollisionradius <radius>');
+        }
+      } else {
+        console.error('[Console] Collision system not available');
+      }
+    });
+
+    this.register('updatecollision', 'Force update collision spatial grid', (args) => {
+      if (typeof Collision !== 'undefined') {
+        Collision.updateSpatialGrid();
+        const info = Collision.getInfo();
+        console.log(`[Console] Spatial grid updated: ${info.gridCellCount} cells, ${info.totalEntities} entities`);
+      } else {
+        console.error('[Console] Collision system not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };

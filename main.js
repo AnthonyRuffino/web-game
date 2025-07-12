@@ -22,6 +22,11 @@ if (typeof Background !== 'undefined' && Background.init) {
   Background.init();
 }
 
+// Initialize collision system
+if (typeof Collision !== 'undefined' && Collision.init) {
+  Collision.init();
+}
+
 // Initialize persistence system (loads saved state if available)
 if (typeof Persistence !== 'undefined' && Persistence.init) {
   // Persistence.init() is called automatically when DOM loads
