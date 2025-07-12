@@ -351,6 +351,76 @@ const Console = {
       }
     });
 
+    // Persistence system commands
+    this.register('save', 'Manually save game state', (args) => {
+      if (typeof Persistence !== 'undefined') {
+        const success = Persistence.saveGameState();
+        if (success) {
+          console.log('[Console] Game state saved successfully');
+        } else {
+          console.error('[Console] Failed to save game state');
+        }
+      } else {
+        console.error('[Console] Persistence system not available');
+      }
+    });
+
+    this.register('load', 'Manually load game state', (args) => {
+      if (typeof Persistence !== 'undefined') {
+        const success = Persistence.loadGameState();
+        if (success) {
+          console.log('[Console] Game state loaded successfully');
+        } else {
+          console.log('[Console] No saved game state found or load failed');
+        }
+      } else {
+        console.error('[Console] Persistence system not available');
+      }
+    });
+
+    this.register('saveinfo', 'Show information about saved game state', (args) => {
+      if (typeof Persistence !== 'undefined') {
+        const saveInfo = Persistence.getSaveInfo();
+        if (saveInfo) {
+          console.log('[Console] Save Information:');
+          console.log(`  Version: ${saveInfo.version}`);
+          console.log(`  Last Saved: ${new Date(saveInfo.timestamp).toLocaleString()}`);
+          console.log(`  Player Position: (${saveInfo.playerPosition.x.toFixed(1)}, ${saveInfo.playerPosition.y.toFixed(1)})`);
+          console.log(`  World Seed: ${saveInfo.worldSeed}`);
+        } else {
+          console.log('[Console] No saved game state found');
+        }
+      } else {
+        console.error('[Console] Persistence system not available');
+      }
+    });
+
+    this.register('clearsave', 'Clear saved game state', (args) => {
+      if (typeof Persistence !== 'undefined') {
+        const success = Persistence.clearSavedState();
+        if (success) {
+          console.log('[Console] Saved game state cleared');
+        } else {
+          console.error('[Console] Failed to clear saved game state');
+        }
+      } else {
+        console.error('[Console] Persistence system not available');
+      }
+    });
+
+    this.register('persistence', 'Show persistence system configuration', (args) => {
+      if (typeof Persistence !== 'undefined') {
+        const config = Persistence.getConfig();
+        console.log('[Console] Persistence Configuration:');
+        console.log(`  Auto Save: ${config.autoSave ? 'Enabled' : 'Disabled'}`);
+        console.log(`  Save Interval: ${config.saveInterval}ms`);
+        console.log(`  Storage Key: ${config.storageKey}`);
+        console.log(`  Last Save: ${Persistence.lastSaveTime ? new Date(Persistence.lastSaveTime).toLocaleString() : 'Never'}`);
+      } else {
+        console.error('[Console] Persistence system not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };

@@ -185,12 +185,36 @@ cmd("worldconfig")            // View detailed configuration
 4. **Coordinate System:** Y coordinates increase northward (up on screen)
 5. **Background Patterns:** The background provides visual feedback for movement - dots are fixed in world coordinates
 
+## Persistence Commands
+
+### `save`
+- **Description:** Manually save game state to localStorage
+- **Usage:** `cmd("save")`
+- **Example:** `cmd("save")` - Save current game state immediately
+
+### `load`
+- **Description:** Manually load game state from localStorage
+- **Usage:** `cmd("load")`
+- **Example:** `cmd("load")` - Load saved game state
+
+### `saveinfo`
+- **Description:** Show information about saved game state
+- **Usage:** `cmd("saveinfo")`
+- **Example:** `cmd("saveinfo")` - Display save file details
+
+### `clearsave`
+- **Description:** Clear saved game state from localStorage
+- **Usage:** `cmd("clearsave")`
+- **Example:** `cmd("clearsave")` - Delete saved game state
+
+### `persistence`
+- **Description:** Show persistence system configuration
+- **Usage:** `cmd("persistence")`
+- **Example:** `cmd("persistence")` - Display save settings
+
 ## Future Commands
 
 The following commands are planned for future implementation:
-- `restartGame <seed>` - Restart with new world seed
-- `save` - Manually save game state
-- `load` - Manually load game state
 - `debug` - Toggle debug information display
 - `fps` - Show current frame rate
 - `collision` - Toggle collision detection visualization

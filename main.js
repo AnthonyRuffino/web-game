@@ -22,6 +22,13 @@ if (typeof Background !== 'undefined' && Background.init) {
   Background.init();
 }
 
+// Initialize persistence system (loads saved state if available)
+if (typeof Persistence !== 'undefined' && Persistence.init) {
+  // Persistence.init() is called automatically when DOM loads
+  // It will load saved state and override the default starting position if needed
+  console.log('[Main] Persistence system will initialize automatically');
+}
+
 // Initialize input handling
 if (typeof Input !== 'undefined' && Input.init) {
   Input.init();
