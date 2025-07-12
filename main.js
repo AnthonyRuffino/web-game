@@ -1,7 +1,13 @@
 // main.js
 // Entry point for initializing the game
 
-const canvas = document.getElementById('gameCanvas');
+// Initialize responsive canvas system first
+if (typeof ResponsiveCanvas !== 'undefined' && ResponsiveCanvas.init) {
+  ResponsiveCanvas.init();
+}
+
+// Get canvas and context from responsive canvas system
+const canvas = ResponsiveCanvas ? ResponsiveCanvas.canvas : document.getElementById('gameCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
 
 // Initialize world system first

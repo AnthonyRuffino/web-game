@@ -243,6 +243,32 @@ cmd("worldconfig")            // View detailed configuration
 - **Example:** `cmd("updatecollision")` - Manually refresh collision data
 - **Debug:** Shows number of grid cells and entities tracked
 
+## Responsive Canvas Commands
+
+### `canvasinfo`
+- **Description:** Show responsive canvas information
+- **Usage:** `cmd("canvasinfo")`
+- **Example:** `cmd("canvasinfo")` - Display canvas and viewport details
+- **Shows:** Canvas size, viewport size, aspect ratios, constraints
+
+### `setaspectratio <ratio>`
+- **Description:** Set canvas aspect ratio
+- **Usage:** `cmd("setaspectratio 1.777")`
+- **Example:** `cmd("setaspectratio 1.333")` - Set to 4:3 aspect ratio
+- **Common Ratios:** 1.777 (16:9), 1.333 (4:3), 2.333 (21:9)
+
+### `toggleaspectratio`
+- **Description:** Toggle between common aspect ratios
+- **Usage:** `cmd("toggleaspectratio")`
+- **Example:** `cmd("toggleaspectratio")` - Cycle through 16:9, 4:3, 21:9
+- **Cycles:** 16:9 → 4:3 → 21:9 → 16:9
+
+### `resizecanvas`
+- **Description:** Force canvas resize
+- **Usage:** `cmd("resizecanvas")`
+- **Example:** `cmd("resizecanvas")` - Manually trigger resize
+- **Use:** When automatic resize doesn't work properly
+
 ## Future Commands
 
 The following commands are planned for future implementation:

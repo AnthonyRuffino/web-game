@@ -5,12 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Web Game</title>
   <style>
-    body { background: #222; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    #gameCanvas { background: #111; display: block; }
+    /* Responsive canvas styling will be handled by JavaScript */
+    body { 
+      margin: 0; 
+      padding: 0; 
+      overflow: hidden; 
+      background: #000000; 
+    }
+    #gameCanvas { 
+      background: #111; 
+      display: block; 
+    }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <canvas id="gameCanvas"></canvas>
   <script>
     // Disable right-click context menu on canvas
     document.getElementById('gameCanvas').addEventListener('contextmenu', (e) => {
@@ -22,6 +31,7 @@
   <script src="world.js"></script>
   <script src="persistence.js"></script>
   <script src="collision.js"></script>
+  <script src="responsiveCanvas.js"></script>
   <script src="gameEngine.js"></script>
   <script src="input.js"></script>
   <script src="gameLoop.js"></script>

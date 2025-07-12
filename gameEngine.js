@@ -60,7 +60,7 @@ const Player = {
   x: 0, // Will be set by world system
   y: 0, // Will be set by world system
   angle: 0, // radians, 0 = up
-  speed: 1000, // pixels per second
+  speed: 700, // pixels per second
   rotSpeed: Math.PI, // radians per second
   size: 30, // triangle size
 
@@ -160,11 +160,15 @@ const GameEngine = {
     Player.update(inputState, delta);
   },
   render(ctx) {
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    // Get canvas dimensions from responsive canvas system
+    const canvasWidth = ResponsiveCanvas ? ResponsiveCanvas.currentWidth : ctx.canvas.width;
+    const canvasHeight = ResponsiveCanvas ? ResponsiveCanvas.currentHeight : ctx.canvas.height;
+    
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     
     // Apply camera transforms
     ctx.save();
-    ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+    ctx.translate(canvasWidth / 2, canvasHeight / 2);
     ctx.scale(ZOOM, ZOOM); // Apply zoom before rotation/translation
     
     if (PERSPECTIVE_MODE === 'player-perspective') {
@@ -178,15 +182,15 @@ const GameEngine = {
     
     // Render background texture as part of the world
     if (typeof Background !== 'undefined') {
-      const cameraWidth = ctx.canvas.width / ZOOM;
-      const cameraHeight = ctx.canvas.height / ZOOM;
+      const cameraWidth = canvasWidth / ZOOM;
+      const cameraHeight = canvasHeight / ZOOM;
       Background.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight, ZOOM);
     }
     
     // Render world using chunk system
     if (typeof World !== 'undefined') {
-      const cameraWidth = ctx.canvas.width / ZOOM;
-      const cameraHeight = ctx.canvas.height / ZOOM;
+      const cameraWidth = canvasWidth / ZOOM;
+      const cameraHeight = canvasHeight / ZOOM;
       World.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight);
     }
     Player.render(ctx);

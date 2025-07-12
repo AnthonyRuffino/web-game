@@ -476,6 +476,56 @@ const Console = {
       }
     });
 
+    // Responsive canvas commands
+    this.register('canvasinfo', 'Show responsive canvas information', (args) => {
+      if (typeof ResponsiveCanvas !== 'undefined') {
+        const info = ResponsiveCanvas.getInfo();
+        console.log('[Console] Responsive Canvas Information:');
+        console.log(`  Canvas Size: ${info.width}x${info.height}`);
+        console.log(`  Viewport Size: ${info.viewportWidth}x${info.viewportHeight}`);
+        console.log(`  Aspect Ratio: ${info.aspectRatioName} (${info.aspectRatio.toFixed(3)})`);
+        console.log(`  Target Ratio: ${info.targetAspectRatio.toFixed(3)}`);
+        console.log(`  Min Size: ${info.config.minWidth}x${info.config.minHeight}`);
+        console.log(`  Max Size: ${info.config.maxWidth}x${info.config.maxHeight}`);
+      } else {
+        console.error('[Console] Responsive canvas system not available');
+      }
+    });
+
+    this.register('setaspectratio', 'Set canvas aspect ratio', (args) => {
+      if (typeof ResponsiveCanvas !== 'undefined') {
+        const ratio = parseFloat(args[0]);
+        if (!isNaN(ratio) && ratio > 0) {
+          ResponsiveCanvas.setAspectRatio(ratio);
+        } else {
+          console.error('[Console] Invalid ratio. Usage: setaspectratio <ratio>');
+          console.log('[Console] Common ratios: 1.777 (16:9), 1.333 (4:3), 2.333 (21:9)');
+        }
+      } else {
+        console.error('[Console] Responsive canvas system not available');
+      }
+    });
+
+    this.register('toggleaspectratio', 'Toggle between common aspect ratios', (args) => {
+      if (typeof ResponsiveCanvas !== 'undefined') {
+        ResponsiveCanvas.toggleAspectRatio();
+        const info = ResponsiveCanvas.getInfo();
+        console.log(`[Console] Aspect ratio changed to ${info.aspectRatioName}`);
+      } else {
+        console.error('[Console] Responsive canvas system not available');
+      }
+    });
+
+    this.register('resizecanvas', 'Force canvas resize', (args) => {
+      if (typeof ResponsiveCanvas !== 'undefined') {
+        ResponsiveCanvas.updateCanvasSize();
+        const info = ResponsiveCanvas.getInfo();
+        console.log(`[Console] Canvas resized to ${info.width}x${info.height}`);
+      } else {
+        console.error('[Console] Responsive canvas system not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
