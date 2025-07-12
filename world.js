@@ -5,8 +5,8 @@ const World = {
   // World configuration
   config: {
     // World size in grid cells (tiles) - easily configurable
-    gridWidth: 100,   // 100 tiles wide
-    gridHeight: 100,  // 100 tiles tall
+    gridWidth: 1000,   // 100 tiles wide
+    gridHeight: 1000,  // 100 tiles tall
     tileSize: 40,     // pixels per tile
     seed: 42,         // default seed
     chunkSize: 16     // tiles per chunk (16x16 chunks)
@@ -73,7 +73,12 @@ const World = {
     const key = this.getChunkKey(chunkX, chunkY);
     
     if (this.chunkCache.has(key)) {
-      return this.chunkCache.get(key);
+      const chunk = this.chunkCache.get(key);
+      // Ensure chunk has proper structure (fix any old chunks)
+      if (!chunk.entities) {
+        chunk.entities = [];
+      }
+      return chunk;
     }
 
     // Generate new chunk
@@ -92,6 +97,7 @@ const World = {
       worldY: chunkY * this.config.chunkSize,
       tiles: [],
       objects: [],
+      entities: [],
       lastAccessed: Date.now()
     };
 
@@ -106,7 +112,96 @@ const World = {
         // Generate tile based on position and seed
         const tile = this.generateTile(tileX, tileY);
         chunk.tiles.push(tile);
+        
+        // Generate grass tiles deterministically
+        if (this.shouldPlaceGrass(tileX, tileY)) {
+          const grassX = tileX * this.config.tileSize + this.config.tileSize / 2;
+          const grassY = tileY * this.config.tileSize + this.config.tileSize / 2;
+          
+          chunk.entities.push({
+            type: 'grass',
+            x: grassX,
+            y: grassY,
+            tileX: tileX,
+            tileY: tileY,
+            draw: function(ctx) {
+              ctx.fillStyle = '#4CAF50'; // Green color
+              ctx.fillRect(this.x - 8, this.y - 8, 16, 16);
+              ctx.strokeStyle = '#2E7D32';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(this.x - 8, this.y - 8, 16, 16);
+            }
+          });
+        }
+        
+        // Generate trees and rocks deterministically
+        if (this.shouldPlaceTree(tileX, tileY)) {
+          const treeX = tileX * this.config.tileSize + this.config.tileSize / 2;
+          const treeY = tileY * this.config.tileSize + this.config.tileSize / 2;
+          
+          chunk.entities.push({
+            type: 'tree',
+            x: treeX,
+            y: treeY,
+            tileX: tileX,
+            tileY: tileY,
+            collision: true,
+            draw: function(ctx) {
+              // Tree trunk
+              ctx.fillStyle = '#8D6E63';
+              ctx.fillRect(this.x - 6, this.y - 6, 12, 12);
+              // Tree foliage
+              ctx.fillStyle = '#2E7D32';
+              ctx.beginPath();
+              ctx.arc(this.x, this.y - 8, 12, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          });
+        }
+        
+        if (this.shouldPlaceRock(tileX, tileY)) {
+          const rockX = tileX * this.config.tileSize + this.config.tileSize / 2;
+          const rockY = tileY * this.config.tileSize + this.config.tileSize / 2;
+          
+          chunk.entities.push({
+            type: 'rock',
+            x: rockX,
+            y: rockY,
+            tileX: tileX,
+            tileY: tileY,
+            collision: true,
+            draw: function(ctx) {
+              ctx.fillStyle = '#757575';
+              ctx.beginPath();
+              ctx.arc(this.x, this.y, 10, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.strokeStyle = '#424242';
+              ctx.lineWidth = 2;
+              ctx.stroke();
+            }
+          });
+        }
       }
+    }
+
+    // Add starting position X marker if this chunk contains it
+    const startPos = this.getStartingPosition();
+    const startTile = this.pixelToTile(startPos.x, startPos.y);
+    if (startTile.x >= startTileX && startTile.x < endTileX && 
+        startTile.y >= startTileY && startTile.y < endTileY) {
+      chunk.entities.push({
+        type: 'letterTile',
+        letter: 'X',
+        x: startPos.x,
+        y: startPos.y,
+        draw: function(ctx) {
+          ctx.fillStyle = 'red';
+          ctx.font = 'bold 36px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(this.letter, this.x, this.y);
+        }
+      });
     }
 
     return chunk;
@@ -125,6 +220,42 @@ const World = {
       worldY: tileY * this.config.tileSize,
       hash: hash
     };
+  },
+
+  // Determine if grass should be placed at a given tile position
+  shouldPlaceGrass(tileX, tileY) {
+    // Use deterministic hash based on position and seed
+    const hash = this.simpleHash(`${this.config.seed}-grass-${tileX}-${tileY}`);
+    
+    // Place grass on approximately 15% of tiles
+    const grassChance = 0.15;
+    const normalizedHash = (hash % 1000) / 1000;
+    
+    return normalizedHash < grassChance;
+  },
+
+  // Determine if a tree should be placed at a given tile position
+  shouldPlaceTree(tileX, tileY) {
+    // Use deterministic hash based on position and seed
+    const hash = this.simpleHash(`${this.config.seed}-tree-${tileX}-${tileY}`);
+    
+    // Place trees on approximately 5% of tiles
+    const treeChance = 0.05;
+    const normalizedHash = (hash % 1000) / 1000;
+    
+    return normalizedHash < treeChance;
+  },
+
+  // Determine if a rock should be placed at a given tile position
+  shouldPlaceRock(tileX, tileY) {
+    // Use deterministic hash based on position and seed
+    const hash = this.simpleHash(`${this.config.seed}-rock-${tileX}-${tileY}`);
+    
+    // Place rocks on approximately 3% of tiles
+    const rockChance = 0.03;
+    const normalizedHash = (hash % 1000) / 1000;
+    
+    return normalizedHash < rockChance;
   },
 
   // Get chunks that need to be rendered based on camera view
@@ -324,52 +455,13 @@ const World = {
     // Handle wrapping by rendering chunks that should be visible on the opposite side
     this.renderWrappedChunks(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
     
-    // Directly render the starting position marker with wrapping
-    this.renderStartingMarker(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
+    // Directly render world objects with wrapping
+    this.renderWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
     
     // Clean up distant chunks (silently)
     this.cleanupChunks(cameraX / this.config.tileSize, cameraY / this.config.tileSize);
     
     ctx.restore();
-  },
-
-  // Directly render the starting position marker with proper wrapping
-  renderStartingMarker(ctx, cameraX, cameraY, cameraWidth, cameraHeight) {
-    const startPos = this.getStartingPosition();
-    const worldWidth = this.width;
-    const worldHeight = this.height;
-    
-    // Calculate visible world area
-    const left = cameraX - cameraWidth / 2;
-    const right = cameraX + cameraWidth / 2;
-    const top = cameraY - cameraHeight / 2;
-    const bottom = cameraY + cameraHeight / 2;
-    
-    // Check if starting position is in view (including wrapping)
-    const positions = [startPos];
-    
-    // Add wrapped positions if needed
-    if (left < 0 && startPos.x > worldWidth + left) {
-      positions.push({ x: startPos.x - worldWidth, y: startPos.y });
-    }
-    if (right > worldWidth && startPos.x < right - worldWidth) {
-      positions.push({ x: startPos.x + worldWidth, y: startPos.y });
-    }
-    if (top < 0 && startPos.y > worldHeight + top) {
-      positions.push({ x: startPos.x, y: startPos.y - worldHeight });
-    }
-    if (bottom > worldHeight && startPos.y < bottom - worldHeight) {
-      positions.push({ x: startPos.x, y: startPos.y + worldHeight });
-    }
-    
-    // Render the X marker at all relevant positions
-    positions.forEach(pos => {
-      ctx.fillStyle = 'red';
-      ctx.font = 'bold 36px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('X', pos.x, pos.y);
-    });
   },
 
   // Render chunks that appear on the opposite side due to wrapping
@@ -446,12 +538,142 @@ const World = {
     }
   },
 
+  // Directly render world objects with proper wrapping
+  renderWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight) {
+    const worldWidth = this.width;
+    const worldHeight = this.height;
+    
+    // Calculate visible world area
+    const left = cameraX - cameraWidth / 2;
+    const right = cameraX + cameraWidth / 2;
+    const top = cameraY - cameraHeight / 2;
+    const bottom = cameraY + cameraHeight / 2;
+    
+    // Get player tile position for edge detection
+    const playerTile = this.pixelToTile(cameraX, cameraY);
+    const edgeThreshold = 2;
+    
+    // Check if we need to render wrapped objects
+    const isNearEdge = playerTile.x <= edgeThreshold || 
+                      playerTile.x >= this.config.gridWidth - 1 - edgeThreshold ||
+                      playerTile.y <= edgeThreshold || 
+                      playerTile.y >= this.config.gridHeight - 1 - edgeThreshold;
+    
+    // Render regular chunk entities for visible chunks
+    const visibleChunks = this.getVisibleChunks(cameraX, cameraY, cameraWidth, cameraHeight);
+    visibleChunks.forEach(chunk => {
+      this.renderChunk(ctx, chunk);
+    });
+    
+    if (isNearEdge) {
+      // Render objects at wrapped positions when near edge
+      this.renderWrappedWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
+    }
+    
+    // Always render the starting position marker
+    const startPos = this.getStartingPosition();
+    const positions = [startPos];
+    
+    // Add wrapped positions for X marker if needed
+    if (left < 0 && startPos.x > worldWidth + left) {
+      positions.push({ x: startPos.x - worldWidth, y: startPos.y });
+    }
+    if (right > worldWidth && startPos.x < right - worldWidth) {
+      positions.push({ x: startPos.x + worldWidth, y: startPos.y });
+    }
+    if (top < 0 && startPos.y > worldHeight + top) {
+      positions.push({ x: startPos.x, y: startPos.y - worldHeight });
+    }
+    if (bottom > worldHeight && startPos.y < bottom - worldHeight) {
+      positions.push({ x: startPos.x, y: startPos.y + worldHeight });
+    }
+    
+    // Render the X marker at all relevant positions
+    positions.forEach(pos => {
+      ctx.fillStyle = 'red';
+      ctx.font = 'bold 36px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('X', pos.x, pos.y);
+    });
+  },
+
+  // Render world objects at wrapped positions
+  renderWrappedWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight) {
+    const worldWidth = this.width;
+    const worldHeight = this.height;
+    
+    // Calculate the area we need to render objects for
+    const left = cameraX - cameraWidth / 2;
+    const right = cameraX + cameraWidth / 2;
+    const top = cameraY - cameraHeight / 2;
+    const bottom = cameraY + cameraHeight / 2;
+    
+    // Convert to tile coordinates
+    const leftTile = Math.floor(left / this.config.tileSize);
+    const rightTile = Math.ceil(right / this.config.tileSize);
+    const topTile = Math.floor(top / this.config.tileSize);
+    const bottomTile = Math.ceil(bottom / this.config.tileSize);
+    
+    // Render objects for all visible tiles
+    for (let tileY = topTile; tileY <= bottomTile; tileY++) {
+      for (let tileX = leftTile; tileX <= rightTile; tileX++) {
+        // Wrap tile coordinates
+        let wrappedTileX = tileX;
+        let wrappedTileY = tileY;
+        
+        while (wrappedTileX < 0) wrappedTileX += this.config.gridWidth;
+        while (wrappedTileX >= this.config.gridWidth) wrappedTileX -= this.config.gridWidth;
+        while (wrappedTileY < 0) wrappedTileY += this.config.gridHeight;
+        while (wrappedTileY >= this.config.gridHeight) wrappedTileY -= this.config.gridHeight;
+        
+        // Calculate world position
+        const worldX = wrappedTileX * this.config.tileSize + this.config.tileSize / 2;
+        const worldY = wrappedTileY * this.config.tileSize + this.config.tileSize / 2;
+        
+        // Render grass
+        if (this.shouldPlaceGrass(wrappedTileX, wrappedTileY)) {
+          ctx.fillStyle = '#4CAF50';
+          ctx.fillRect(worldX - 8, worldY - 8, 16, 16);
+          ctx.strokeStyle = '#2E7D32';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(worldX - 8, worldY - 8, 16, 16);
+        }
+        
+        // Render trees
+        if (this.shouldPlaceTree(wrappedTileX, wrappedTileY)) {
+          // Tree trunk
+          ctx.fillStyle = '#8D6E63';
+          ctx.fillRect(worldX - 6, worldY - 6, 12, 12);
+          // Tree foliage
+          ctx.fillStyle = '#2E7D32';
+          ctx.beginPath();
+          ctx.arc(worldX, worldY - 8, 12, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        
+        // Render rocks
+        if (this.shouldPlaceRock(wrappedTileX, wrappedTileY)) {
+          ctx.fillStyle = '#757575';
+          ctx.beginPath();
+          ctx.arc(worldX, worldY, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#424242';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+    }
+  },
+
   // Render a single chunk
   renderChunk(ctx, chunk) {
     // Render chunk objects only (no X marker here anymore)
-    chunk.objects.forEach(obj => {
-      // Future objects will be rendered here
-    });
+    if (chunk.entities && Array.isArray(chunk.entities)) {
+      chunk.entities.forEach(entity => {
+        entity.draw(ctx);
+      });
+    }
   },
 
   // Get world info for debugging

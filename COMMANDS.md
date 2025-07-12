@@ -106,6 +106,12 @@ Show chunk loading information and statistics.
 - **Usage:** `cmd("chunkinfo")`
 - **Shows:** Chunk size, total chunks, loaded chunks, player position, visible chunks
 
+### `worldobjects`
+Show information about world objects and generation.
+- **Usage:** `cmd("worldobjects")`
+- **Shows:** Generation probabilities, current tile objects, nearby tile samples
+- **Features:** Shows grass, trees, and rocks placement based on world seed
+
 ## Developer Tools
 
 ### `help`

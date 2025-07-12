@@ -29,7 +29,6 @@ const ZOOM_MAX = 3.0;
 
 window.setZoom = function(z) {
   ZOOM = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
-  console.log('[Game] Zoom set to', ZOOM);
 };
 
 window.zoomIn = function() { 
@@ -61,7 +60,7 @@ const Player = {
   x: 0, // Will be set by world system
   y: 0, // Will be set by world system
   angle: 0, // radians, 0 = up
-  speed: 200, // pixels per second
+  speed: 1000, // pixels per second
   rotSpeed: Math.PI, // radians per second
   size: 30, // triangle size
 

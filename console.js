@@ -302,6 +302,55 @@ const Console = {
       }
     });
 
+    this.register('worldobjects', 'Show information about world objects and generation', (args) => {
+      if (typeof World !== 'undefined') {
+        const info = World.getInfo();
+        const playerTile = World.pixelToTile(Player.x, Player.y);
+        
+        console.log('[Console] World Objects Information:');
+        console.log(`  World Seed: ${info.seed}`);
+        console.log(`  Player Tile: (${playerTile.x}, ${playerTile.y})`);
+        
+        // Show generation probabilities
+        console.log('  Generation Probabilities:');
+        console.log('    Grass: 15% of tiles');
+        console.log('    Trees: 5% of tiles');
+        console.log('    Rocks: 3% of tiles');
+        
+        // Show sample generation for current tile
+        const grassHere = World.shouldPlaceGrass(playerTile.x, playerTile.y);
+        const treeHere = World.shouldPlaceTree(playerTile.x, playerTile.y);
+        const rockHere = World.shouldPlaceRock(playerTile.x, playerTile.y);
+        
+        console.log('  Current Tile Objects:');
+        console.log(`    Grass: ${grassHere ? 'Yes' : 'No'}`);
+        console.log(`    Tree: ${treeHere ? 'Yes' : 'No'}`);
+        console.log(`    Rock: ${rockHere ? 'Yes' : 'No'}`);
+        
+        // Show sample generation for nearby tiles
+        console.log('  Nearby Tiles (sample):');
+        for (let dx = -2; dx <= 2; dx++) {
+          for (let dy = -2; dy <= 2; dy++) {
+            const checkTileX = playerTile.x + dx;
+            const checkTileY = playerTile.y + dy;
+            const grass = World.shouldPlaceGrass(checkTileX, checkTileY);
+            const tree = World.shouldPlaceTree(checkTileX, checkTileY);
+            const rock = World.shouldPlaceRock(checkTileX, checkTileY);
+            
+            if (grass || tree || rock) {
+              const objects = [];
+              if (grass) objects.push('G');
+              if (tree) objects.push('T');
+              if (rock) objects.push('R');
+              console.log(`    (${checkTileX}, ${checkTileY}): ${objects.join('')}`);
+            }
+          }
+        }
+      } else {
+        console.error('[Console] World system not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
