@@ -623,9 +623,44 @@ const Console = {
         console.log(`  Inventory Grid: ${UI.config.inventoryGridSize}x${UI.config.inventoryGridSize}`);
         console.log(`  Inventory Opacity: ${UI.config.inventoryOpacity}`);
         console.log(`  Item Icon Opacity: ${UI.config.itemIconOpacity}`);
+        console.log(`  Action Bar Slots: ${UI.config.actionBarSlots}`);
+        console.log(`  Action Bar Opacity: ${UI.config.actionBarOpacity}`);
         console.log(`  Command History: ${UI.commandHistory.length}/${UI.config.maxHistorySize}`);
         if (UI.selectedSlot) {
           console.log(`  Selected Slot: ${UI.selectedSlot.row * UI.config.inventoryGridSize + UI.selectedSlot.col + 1} (row ${UI.selectedSlot.row}, col ${UI.selectedSlot.col})`);
+        }
+        if (UI.activeActionSlot !== null) {
+          const slotNumber = UI.activeActionSlot === 9 ? '0' : (UI.activeActionSlot + 1).toString();
+          console.log(`  Active Action Slot: ${slotNumber} (index ${UI.activeActionSlot})`);
+        }
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
+    // Action bar commands
+    this.register('setactionbarslots', 'Set action bar slot count', (args) => {
+      if (typeof UI !== 'undefined') {
+        const slots = parseInt(args[0]);
+        if (!isNaN(slots)) {
+          UI.setActionBarSlots(slots);
+        } else {
+          console.error('[Console] Invalid slot count. Usage: setactionbarslots <count>');
+          console.log('[Console] Valid range: 5-20');
+        }
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
+    this.register('setactionbaropacity', 'Set action bar opacity', (args) => {
+      if (typeof UI !== 'undefined') {
+        const opacity = parseFloat(args[0]);
+        if (!isNaN(opacity)) {
+          UI.setActionBarOpacity(opacity);
+        } else {
+          console.error('[Console] Invalid opacity. Usage: setactionbaropacity <opacity>');
+          console.log('[Console] Valid range: 0.1-1.0');
         }
       } else {
         console.error('[Console] UI system not available');

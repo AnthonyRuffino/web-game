@@ -16,7 +16,19 @@ const UI = {
     slotHoverBackground: 'rgba(60,60,60,0.9)',
     slotSelectedBackground: 'rgba(80,80,80,0.9)',
     inventoryOpacity: 0.95, // Configurable inventory opacity
-    itemIconOpacity: 0.9 // Configurable item icon opacity (for future)
+    itemIconOpacity: 0.9, // Configurable item icon opacity (for future)
+    // Action bar configuration
+    actionBarSlots: 10, // Number of action bar slots (1-0 keys)
+    actionBarSlotSize: 60, // Size of each action bar slot in pixels
+    actionBarSpacing: 4, // Spacing between action bar slots
+    actionBarMargin: 20, // Margin from screen edges
+    actionBarBackground: 'rgba(20,20,20,0.95)',
+    actionBarBorder: '#666',
+    actionBarSlotBackground: 'rgba(40,40,40,0.9)',
+    actionBarSlotHoverBackground: 'rgba(60,60,60,0.9)',
+    actionBarSlotActiveBackground: 'rgba(80,80,80,0.9)',
+    actionBarOpacity: 0.95, // Configurable action bar opacity
+    actionBarHeight: 80 // Height of action bar (inventory will be shifted up by this amount)
   },
 
   // State
@@ -32,16 +44,24 @@ const UI = {
   hoveredSlot: null,
   selectedSlot: null,
   inventoryScale: 1.0,
+  // Action bar state
+  actionBarCanvas: null,
+  actionBarCtx: null,
+  hoveredActionSlot: null,
+  activeActionSlot: null,
+  actionBarScale: 1.0,
 
   // Initialize UI system
   init() {
     this.loadCommandHistory();
     this.createInputBar();
     this.createInventory();
+    this.createActionBar();
     this.setupGlobalListeners();
     console.log('[UI] UI system initialized');
     console.log(`[UI] Command history size: ${this.config.maxHistorySize}`);
     console.log(`[UI] Inventory grid size: ${this.config.inventoryGridSize}x${this.config.inventoryGridSize}`);
+    console.log(`[UI] Action bar slots: ${this.config.actionBarSlots}`);
   },
 
   // Create the input bar DOM element
@@ -250,7 +270,7 @@ const UI = {
     const canvas = document.createElement('canvas');
     canvas.id = 'ui-inventory';
     canvas.style.position = 'fixed';
-    canvas.style.bottom = `${this.config.inventoryMargin}px`;
+    canvas.style.bottom = `${this.config.inventoryMargin + this.config.actionBarHeight}px`;
     canvas.style.right = `${this.config.inventoryMargin}px`;
     canvas.style.zIndex = '999';
     canvas.style.display = 'none';
@@ -308,6 +328,73 @@ const UI = {
     this.inventoryScale = scaleFactor;
     
     console.log(`[UI] Inventory scaled to ${(scaleFactor * 100).toFixed(1)}% (${targetSize.toFixed(0)}px)`);
+  },
+
+  // Create action bar
+  createActionBar() {
+    // Create action bar canvas
+    const canvas = document.createElement('canvas');
+    canvas.id = 'ui-action-bar';
+    canvas.style.position = 'fixed';
+    canvas.style.bottom = `${this.config.actionBarMargin}px`;
+    canvas.style.left = '50%';
+    canvas.style.transform = 'translateX(-50%)';
+    canvas.style.zIndex = '998';
+    canvas.style.border = `2px solid ${this.config.actionBarBorder}`;
+    canvas.style.borderRadius = '8px';
+    canvas.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6)';
+    document.body.appendChild(canvas);
+    
+    this.actionBarCanvas = canvas;
+    this.actionBarCtx = canvas.getContext('2d');
+    
+    // Set canvas size based on slots
+    this.updateActionBarSize();
+    
+    // Add mouse event listeners with proper scaling
+    canvas.addEventListener('mousemove', (e) => this.handleActionBarMouseMove(e));
+    canvas.addEventListener('click', (e) => this.handleActionBarClick(e));
+    canvas.addEventListener('mouseleave', () => this.handleActionBarMouseLeave());
+    
+    // Add window resize listener to update action bar size
+    window.addEventListener('resize', () => {
+      this.updateActionBarSize();
+      this.renderActionBar();
+    });
+    
+    // Initial render
+    this.renderActionBar();
+  },
+
+  // Update action bar canvas size
+  updateActionBarSize() {
+    // Calculate base size
+    const baseWidth = this.config.actionBarSlots * this.config.actionBarSlotSize + 
+                     (this.config.actionBarSlots - 1) * this.config.actionBarSpacing + 40; // 40px padding
+    const baseHeight = this.config.actionBarSlotSize + 20; // 20px padding
+    
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth;
+    
+    // Calculate scale factor based on viewport size
+    // Use viewport width to ensure action bar fits
+    const maxActionBarWidth = viewportWidth * 0.8; // Max 80% of viewport width
+    const minActionBarWidth = 400; // Minimum width
+    const targetWidth = Math.max(minActionBarWidth, Math.min(maxActionBarWidth, baseWidth));
+    
+    // Calculate scale factor
+    const scaleFactor = targetWidth / baseWidth;
+    
+    // Apply scale to canvas
+    this.actionBarCanvas.width = baseWidth;
+    this.actionBarCanvas.height = baseHeight;
+    this.actionBarCanvas.style.transform = `translateX(-50%) scale(${scaleFactor})`;
+    this.actionBarCanvas.style.transformOrigin = 'center bottom';
+    
+    // Store scale factor for mouse calculations
+    this.actionBarScale = scaleFactor;
+    
+    console.log(`[UI] Action bar scaled to ${(scaleFactor * 100).toFixed(1)}% (${targetWidth.toFixed(0)}px wide)`);
   },
 
   // Toggle inventory open/closed
@@ -427,10 +514,120 @@ const UI = {
     console.log(`[UI] Selected inventory slot: ${this.selectedSlot.row * this.config.inventoryGridSize + this.selectedSlot.col + 1} (row ${this.selectedSlot.row}, col ${this.selectedSlot.col})`);
   },
 
+  // Render action bar
+  renderActionBar() {
+    if (!this.actionBarCtx) return;
+    
+    const ctx = this.actionBarCtx;
+    const canvas = this.actionBarCanvas;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw background with configurable opacity
+    const bgColor = this.config.actionBarBackground.replace(/[\d.]+\)$/, `${this.config.actionBarOpacity})`);
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw slots
+    const startX = 20;
+    const startY = 10;
+    
+    for (let i = 0; i < this.config.actionBarSlots; i++) {
+      const x = startX + i * (this.config.actionBarSlotSize + this.config.actionBarSpacing);
+      const y = startY;
+      
+      // Determine slot background color with opacity
+      let bgColor = this.config.actionBarSlotBackground;
+      if (this.hoveredActionSlot === i) {
+        bgColor = this.config.actionBarSlotHoverBackground;
+      }
+      if (this.activeActionSlot === i) {
+        bgColor = this.config.actionBarSlotActiveBackground;
+      }
+      
+      // Apply opacity to slot background
+      bgColor = bgColor.replace(/[\d.]+\)$/, `${this.config.actionBarOpacity})`);
+      
+      // Draw slot
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(x, y, this.config.actionBarSlotSize, this.config.actionBarSlotSize);
+      
+      // Draw slot border
+      ctx.strokeStyle = this.config.actionBarBorder;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, this.config.actionBarSlotSize, this.config.actionBarSlotSize);
+      
+      // Draw slot number (1-0 keys)
+      const slotNumber = i === 9 ? '0' : (i + 1).toString();
+      ctx.fillStyle = `rgba(255, 255, 255, ${this.config.actionBarOpacity})`;
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(slotNumber, x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 5);
+      
+      // Draw placeholder text for future items
+      ctx.fillStyle = `rgba(136, 136, 136, ${this.config.actionBarOpacity * 0.7})`;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Empty', x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 20);
+    }
+  },
+
   // Handle inventory mouse leave
   handleInventoryMouseLeave() {
     this.hoveredSlot = null;
     this.renderInventory();
+  },
+
+  // Handle action bar mouse movement
+  handleActionBarMouseMove(e) {
+    const rect = this.actionBarCanvas.getBoundingClientRect();
+    // Account for scaling in mouse coordinates
+    const x = (e.clientX - rect.left) / this.actionBarScale;
+    const y = (e.clientY - rect.top) / this.actionBarScale;
+    
+    const startX = 20;
+    const startY = 10;
+    
+    // Find which slot is being hovered
+    for (let i = 0; i < this.config.actionBarSlots; i++) {
+      const slotX = startX + i * (this.config.actionBarSlotSize + this.config.actionBarSpacing);
+      const slotY = startY;
+      
+      if (x >= slotX && x < slotX + this.config.actionBarSlotSize &&
+          y >= slotY && y < slotY + this.config.actionBarSlotSize) {
+        this.hoveredActionSlot = i;
+        this.renderActionBar();
+        return;
+      }
+    }
+    
+    // No slot hovered
+    this.hoveredActionSlot = null;
+    this.renderActionBar();
+  },
+
+  // Handle action bar click
+  handleActionBarClick(e) {
+    if (this.hoveredActionSlot === null) return;
+    
+    this.activeActionSlot = this.hoveredActionSlot;
+    this.renderActionBar();
+    
+    // Prevent the click from reaching the game world
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const slotNumber = this.activeActionSlot === 9 ? '0' : (this.activeActionSlot + 1).toString();
+    console.log(`[UI] Activated action bar slot: ${slotNumber} (index ${this.activeActionSlot})`);
+    
+    // In the future: trigger item/spell action here
+  },
+
+  // Handle action bar mouse leave
+  handleActionBarMouseLeave() {
+    this.hoveredActionSlot = null;
+    this.renderActionBar();
   },
 
   // Set inventory grid size
@@ -473,6 +670,29 @@ const UI = {
     }
   },
 
+  // Set action bar slot count
+  setActionBarSlots(slots) {
+    if (slots >= 5 && slots <= 20) {
+      this.config.actionBarSlots = slots;
+      this.updateActionBarSize();
+      this.renderActionBar();
+      console.log(`[UI] Action bar slots set to ${slots}`);
+    } else {
+      console.error('[UI] Invalid action bar slot count. Must be between 5 and 20.');
+    }
+  },
+
+  // Set action bar opacity
+  setActionBarOpacity(opacity) {
+    if (opacity >= 0.1 && opacity <= 1.0) {
+      this.config.actionBarOpacity = opacity;
+      this.renderActionBar();
+      console.log(`[UI] Action bar opacity set to ${opacity}`);
+    } else {
+      console.error('[UI] Invalid action bar opacity. Must be between 0.1 and 1.0.');
+    }
+  },
+
   // Set up global key listeners
   setupGlobalListeners() {
     window.addEventListener('keydown', (e) => {
@@ -507,6 +727,26 @@ const UI = {
           return;
         }
         // Do not block any other keys
+      }
+      
+      // Handle action bar number keys (1-0) when input bar is not open
+      if (!this.inputBarOpen) {
+        const keyToSlot = {
+          'Digit1': 0, 'Digit2': 1, 'Digit3': 2, 'Digit4': 3, 'Digit5': 4,
+          'Digit6': 5, 'Digit7': 6, 'Digit8': 7, 'Digit9': 8, 'Digit0': 9
+        };
+        
+        if (keyToSlot[e.code] !== undefined) {
+          this.activeActionSlot = keyToSlot[e.code];
+          this.renderActionBar();
+          
+          const slotNumber = this.activeActionSlot === 9 ? '0' : (this.activeActionSlot + 1).toString();
+          console.log(`[UI] Activated action bar slot: ${slotNumber} (index ${this.activeActionSlot})`);
+          
+          // In the future: trigger item/spell action here
+          e.preventDefault();
+          return;
+        }
       }
       
       // Handle inventory toggle (B key) - toggle when input bar is not open
