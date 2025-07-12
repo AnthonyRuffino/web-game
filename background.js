@@ -24,10 +24,14 @@ const Background = {
     ctx.globalAlpha = this.config.dotAlpha;
     
     // Calculate the area we need to render based on camera view
-    const startX = Math.floor(cameraX - cameraWidth / 2);
-    const endX = Math.ceil(cameraX + cameraWidth / 2);
-    const startY = Math.floor(cameraY - cameraHeight / 2);
-    const endY = Math.ceil(cameraY + cameraHeight / 2);
+    // In player-perspective mode, we need to extend the area to prevent void corners
+    const isPlayerPerspective = typeof PERSPECTIVE_MODE !== 'undefined' && PERSPECTIVE_MODE === 'player-perspective';
+    const extensionFactor = isPlayerPerspective ? 1.5 : 1.0; // Extend by 50% in player-perspective
+    
+    const startX = Math.floor(cameraX - (cameraWidth / 2) * extensionFactor);
+    const endX = Math.ceil(cameraX + (cameraWidth / 2) * extensionFactor);
+    const startY = Math.floor(cameraY - (cameraHeight / 2) * extensionFactor);
+    const endY = Math.ceil(cameraY + (cameraHeight / 2) * extensionFactor);
     
     // Calculate dot spacing (fixed in world coordinates, not affected by zoom)
     const spacing = this.config.dotSpacing;
