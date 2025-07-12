@@ -86,7 +86,41 @@ const Background = {
 
   // Update background configuration
   setConfig(newConfig) {
-    this.config = { ...this.config, ...newConfig };
+    // Handle type conversion for numeric values
+    const processedConfig = {};
+    
+    for (const [key, value] of Object.entries(newConfig)) {
+      if (key === 'dotSize' || key === 'dotSpacing') {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue) && numValue >= 0) {
+          processedConfig[key] = numValue;
+        } else {
+          console.warn(`[Background] Invalid ${key} value: ${value}. Must be a positive number.`);
+          continue;
+        }
+      } else if (key === 'dotAlpha') {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue) && numValue >= 0 && numValue <= 1) {
+          processedConfig[key] = numValue;
+        } else {
+          console.warn(`[Background] Invalid ${key} value: ${value}. Must be between 0 and 1.`);
+          continue;
+        }
+      } else if (key === 'dotColor') {
+        // Basic color validation (could be improved)
+        if (typeof value === 'string' && (value.startsWith('#') || value.startsWith('rgb'))) {
+          processedConfig[key] = value;
+        } else {
+          console.warn(`[Background] Invalid ${key} value: ${value}. Must be a valid color.`);
+          continue;
+        }
+      } else {
+        console.warn(`[Background] Unknown configuration property: ${key}`);
+        continue;
+      }
+    }
+    
+    this.config = { ...this.config, ...processedConfig };
     console.log('[Background] Configuration updated:', this.config);
   },
 

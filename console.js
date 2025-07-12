@@ -188,6 +188,32 @@ const Console = {
       }
     });
 
+    this.register('bgpreset', 'Apply preset background configurations (dense, sparse, bright, subtle)', (args) => {
+      if (args.length !== 1) {
+        console.log('[Console] Usage: bgpreset <preset>');
+        console.log('[Console] Presets: dense, sparse, bright, subtle');
+        return;
+      }
+      if (typeof Background !== 'undefined') {
+        const preset = args[0].toLowerCase();
+        const presets = {
+          dense: { dotSize: 1, dotSpacing: 10, dotColor: '#333333', dotAlpha: 0.4 },
+          sparse: { dotSize: 3, dotSpacing: 40, dotColor: '#333333', dotAlpha: 0.2 },
+          bright: { dotSize: 2, dotSpacing: 20, dotColor: '#666666', dotAlpha: 0.6 },
+          subtle: { dotSize: 1, dotSpacing: 30, dotColor: '#222222', dotAlpha: 0.1 }
+        };
+        
+        if (presets[preset]) {
+          Background.setConfig(presets[preset]);
+          console.log(`[Console] Applied ${preset} preset`);
+        } else {
+          console.log('[Console] Unknown preset. Available: dense, sparse, bright, subtle');
+        }
+      } else {
+        console.error('[Console] Background system not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
