@@ -4,6 +4,19 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
 
+// Initialize world system first
+if (typeof World !== 'undefined' && World.init) {
+  World.init();
+  
+  // Set player starting position based on world seed
+  if (typeof Player !== 'undefined') {
+    const startPos = World.getStartingPosition();
+    Player.x = startPos.x;
+    Player.y = startPos.y;
+    console.log(`[Main] Player positioned at (${Player.x}, ${Player.y})`);
+  }
+}
+
 // Initialize background system
 if (typeof Background !== 'undefined' && Background.init) {
   Background.init();

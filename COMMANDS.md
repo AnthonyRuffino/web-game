@@ -78,6 +78,34 @@ Apply a preset background configuration.
   - `bright` - Medium, bright dots (dotSize: 2, spacing: 20, alpha: 0.6)
   - `subtle` - Small, very faint dots (dotSize: 1, spacing: 30, alpha: 0.1)
 
+## World & Chunk System
+
+### `worldinfo`
+Show world information and configuration.
+- **Usage:** `cmd("worldinfo")`
+- **Shows:** World size, tile dimensions, seed, starting position, traversal time
+
+### `worldconfig`
+Show detailed world configuration.
+- **Usage:** `cmd("worldconfig")`
+- **Shows:** All world configuration parameters
+
+### `setseed <seed>`
+Set world seed and restart the game.
+- **Usage:** `cmd("setseed 42")`
+- **Example:** `cmd("setseed 12345")` - Restart with specific seed
+- **Note:** Player is moved to new starting position
+
+### `restartgame`
+Restart the game with a new random seed.
+- **Usage:** `cmd("restartgame")`
+- **Note:** Player is moved to new starting position
+
+### `chunkinfo`
+Show chunk loading information and statistics.
+- **Usage:** `cmd("chunkinfo")`
+- **Shows:** Chunk size, total chunks, loaded chunks, player position, visible chunks
+
 ## Developer Tools
 
 ### `help`
@@ -131,6 +159,16 @@ cmd("bgpreset bright")        // Set bright background
 cmd("setzoom 1.5")            // Set comfortable zoom
 cmd("setspeed 250")           // Set movement speed
 cmd("stats")                  // Verify settings
+```
+
+### World & Chunk Testing
+```javascript
+cmd("worldinfo")              // Check world configuration
+cmd("chunkinfo")              // See chunk loading stats
+cmd("setseed 42")             // Restart with specific seed
+cmd("chunkinfo")              // Check chunks after restart
+cmd("restartgame")            // Restart with random seed
+cmd("worldconfig")            // View detailed configuration
 ```
 
 ## Tips

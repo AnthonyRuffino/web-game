@@ -55,62 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// World config
-const WORLD_SEED = 42; // For now, static; later, make configurable
-const TILE_SIZE = 40; // pixels
-const WORLD_WIDTH = 20; // tiles
-const WORLD_HEIGHT = 15; // tiles
-
-// Simple deterministic function for player start (could be seeded hash later)
-function getPlayerStart(seed) {
-  // For now, always center
-  return { x: Math.floor(WORLD_WIDTH / 2), y: Math.floor(WORLD_HEIGHT / 2) };
-}
-
-// World object
-const World = {
-  seed: WORLD_SEED,
-  width: WORLD_WIDTH,
-  height: WORLD_HEIGHT,
-  tileSize: TILE_SIZE,
-  getStart() {
-    return getPlayerStart(this.seed);
-  },
-  render(ctx) {
-    // Draw grid
-    ctx.save();
-    ctx.strokeStyle = '#444';
-    ctx.lineWidth = 1;
-    for (let x = 0; x <= this.width; x++) {
-      ctx.beginPath();
-      ctx.moveTo(x * this.tileSize, 0);
-      ctx.lineTo(x * this.tileSize, this.height * this.tileSize);
-      ctx.stroke();
-    }
-    for (let y = 0; y <= this.height; y++) {
-      ctx.beginPath();
-      ctx.moveTo(0, y * this.tileSize);
-      ctx.lineTo(this.width * this.tileSize, y * this.tileSize);
-      ctx.stroke();
-    }
-    // Draw red 'X' at player start
-    const start = this.getStart();
-    const cx = start.x * this.tileSize + this.tileSize / 2;
-    const cy = start.y * this.tileSize + this.tileSize / 2;
-    ctx.fillStyle = 'red';
-    ctx.font = 'bold 36px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('X', cx, cy);
-    ctx.restore();
-  }
-};
-
 // Player object
 const Player = {
-  // Start at world start tile center
-  x: World.getStart().x * TILE_SIZE + TILE_SIZE / 2,
-  y: World.getStart().y * TILE_SIZE + TILE_SIZE / 2,
+  // Start at world starting position
+  x: 0, // Will be set by world system
+  y: 0, // Will be set by world system
   angle: 0, // radians, 0 = up
   speed: 200, // pixels per second
   rotSpeed: Math.PI, // radians per second
@@ -146,8 +95,20 @@ const Player = {
     if (len > 0) {
       moveX /= len;
       moveY /= len;
-      Player.x += moveX * Player.speed * delta;
-      Player.y += moveY * Player.speed * delta;
+      
+      // Calculate new position
+      const newX = Player.x + moveX * Player.speed * delta;
+      const newY = Player.y + moveY * Player.speed * delta;
+      
+      // Apply coordinate wrapping
+      if (typeof World !== 'undefined') {
+        const wrapped = World.wrapCoordinates(newX, newY);
+        Player.x = wrapped.x;
+        Player.y = wrapped.y;
+      } else {
+        Player.x = newX;
+        Player.y = newY;
+      }
     }
   },
 
@@ -208,8 +169,12 @@ const GameEngine = {
       Background.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight, ZOOM);
     }
     
-    // Render world and player in world coordinates
-    World.render(ctx);
+    // Render world using chunk system
+    if (typeof World !== 'undefined') {
+      const cameraWidth = ctx.canvas.width / ZOOM;
+      const cameraHeight = ctx.canvas.height / ZOOM;
+      World.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight);
+    }
     Player.render(ctx);
     
     ctx.restore();

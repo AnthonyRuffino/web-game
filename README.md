@@ -53,8 +53,10 @@ A browser-based 2D top-down RPG inspired by *World of Warcraft*, *Realm of the M
 
 - **[CONTROLS.md](CONTROLS.md)** - Complete player control guide and game mechanics
 - **[COMMANDS.md](COMMANDS.md)** - Console commands and debugging tools
-- **[requirements/step-2-advanced-features.md](requirements/step-2-advanced-features.md)** - Technical implementation details
+
 - **[requirements/initial-requirements.md](requirements/initial-requirements.md)** - Full game requirements and vision
+- **[requirements/step-1-the-basics.md](requirements/step-1-the-basics.md)** - The basics
+- **[requirements/step-2-advanced-features.md](requirements/step-2-advanced-features.md)** - Advanced Features
 
 ## 🛠️ Technical Details
 

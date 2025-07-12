@@ -214,6 +214,94 @@ const Console = {
       }
     });
 
+    // World system commands
+    this.register('worldinfo', 'Show world information and configuration', (args) => {
+      if (typeof World !== 'undefined') {
+        const info = World.getInfo();
+        console.log('[Console] World Information:');
+        console.log(`  Size: ${info.size}`);
+        console.log(`  Tiles: ${info.tiles}`);
+        console.log(`  Tile Size: ${info.tileSize} pixels`);
+        console.log(`  Seed: ${info.seed}`);
+        console.log(`  Starting Position: (${info.startingPosition.x.toFixed(1)}, ${info.startingPosition.y.toFixed(1)})`);
+        console.log(`  Traversal Time: ~${info.traversalTime} seconds`);
+      } else {
+        console.error('[Console] World system not available');
+      }
+    });
+
+    this.register('setseed', 'Set world seed and restart game', (args) => {
+      if (args.length !== 1) {
+        console.log('[Console] Usage: setseed <seed>');
+        return;
+      }
+      const seed = parseInt(args[0]);
+      if (isNaN(seed)) {
+        console.log('[Console] Invalid seed. Must be a number.');
+        return;
+      }
+      if (typeof World !== 'undefined') {
+        const startPos = World.setSeed(seed);
+        if (typeof Player !== 'undefined') {
+          Player.x = startPos.x;
+          Player.y = startPos.y;
+          console.log(`[Console] World restarted with seed ${seed}`);
+          console.log(`[Console] Player moved to starting position (${startPos.x.toFixed(1)}, ${startPos.y.toFixed(1)})`);
+        }
+      } else {
+        console.error('[Console] World system not available');
+      }
+    });
+
+    this.register('restartgame', 'Restart game with new random seed', (args) => {
+      const seed = Math.floor(Math.random() * 10000);
+      if (typeof World !== 'undefined') {
+        const startPos = World.setSeed(seed);
+        if (typeof Player !== 'undefined') {
+          Player.x = startPos.x;
+          Player.y = startPos.y;
+          console.log(`[Console] Game restarted with random seed ${seed}`);
+          console.log(`[Console] Player moved to starting position (${startPos.x.toFixed(1)}, ${startPos.y.toFixed(1)})`);
+        }
+      } else {
+        console.error('[Console] World system not available');
+      }
+    });
+
+    this.register('worldconfig', 'Show world configuration', (args) => {
+      if (typeof World !== 'undefined') {
+        console.log('[Console] World configuration:', World.getConfig());
+      } else {
+        console.error('[Console] World system not available');
+      }
+    });
+
+    this.register('chunkinfo', 'Show chunk loading information', (args) => {
+      if (typeof World !== 'undefined') {
+        const info = World.getInfo();
+        const playerTile = World.pixelToTile(Player.x, Player.y);
+        const playerChunk = World.worldToChunk(playerTile.x, playerTile.y);
+        
+        console.log('[Console] Chunk Information:');
+        console.log(`  Chunk Size: ${info.chunkSize}x${info.chunkSize} tiles`);
+        console.log(`  Total Chunks: ${info.chunks}`);
+        console.log(`  Loaded Chunks: ${info.loadedChunks}`);
+        console.log(`  Player Tile: (${playerTile.x}, ${playerTile.y})`);
+        console.log(`  Player Chunk: (${playerChunk.x}, ${playerChunk.y})`);
+        
+        // Show visible chunks
+        const cameraWidth = 800 / 1.0; // Approximate camera width
+        const cameraHeight = 600 / 1.0; // Approximate camera height
+        const visibleChunks = World.getVisibleChunks(Player.x, Player.y, cameraWidth, cameraHeight);
+        console.log(`  Visible Chunks: ${visibleChunks.length}`);
+        visibleChunks.forEach((chunk, index) => {
+          console.log(`    ${index + 1}. Chunk (${chunk.x}, ${chunk.y})`);
+        });
+      } else {
+        console.error('[Console] World system not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
