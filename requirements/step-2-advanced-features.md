@@ -1,4 +1,8 @@
-# Step 2: Advanced Game Features and Systems
+# Step 2: Advanced Features
+
+> **Note:** World wrapping functionality has been temporarily skipped to focus on improving world generation and entity rendering. The world is now large enough that wrapping issues occur less frequently.
+
+## Overview
 
 This document outlines the next phase of development, building upon the solid foundation established in Step 1. Step 2 focuses on implementing core gameplay systems, collision detection, UI elements, world structure, and developer tools.
 
@@ -31,7 +35,7 @@ This document outlines the next phase of development, building upon the solid fo
   - Provides proper visual feedback for player movement ✅
 
 ### 2. World Structure & Wrapping ✅ (COMPLETED)
-- **Current Status:** World structure and wrapping system fully implemented
+- **Current Status:** World structure implemented, wrapping system skipped for now
 - **Implemented Features:**
   - Finite rectangular world with edge wrapping ✅
   - Moving east leads to west side, west to east, north to south, south to north ✅
@@ -41,28 +45,28 @@ This document outlines the next phase of development, building upon the solid fo
   - Deterministic starting position based on world seed ✅
   - Console commands for world management (`worldinfo`, `setseed`, `restartgame`) ✅
 - **World Configuration:**
-  - 100x100 tile world (4000x4000 pixels)
-  - ~20 second traversal time at default speed
-  - Red boundary line shows world edges
-  - Grid system for tile-based operations
-  - Coordinate wrapping prevents out-of-bounds movement
-  - Configurable via gridWidth/gridHeight in world.js
+  - 100x100 tile world (4000x4000 pixels) ✅
+  - ~20 second traversal time at default speed ✅
+  - Red boundary line shows world edges ✅
+  - Grid system for tile-based operations ✅
+  - Coordinate wrapping prevents out-of-bounds movement ✅
+  - Configurable via gridWidth/gridHeight in world.js ✅
 
-### 3. Procedural Generation & Starting Position
-- **Requirements:**
-  - Deterministic starting position selection based on world seed
-  - Starting position ensures initial grid (red 'X') is visible
-  - Consistent starting position across game sessions with same seed
-  - Console command `restartGame(seed)` to restart with new seed
-  - Procedural generation algorithm for deterministic world layout
-
-### 4. Grass Tiles & Basic World Objects
+### 3. Grass Tiles & Basic World Objects
 - **Requirements:**
   - Procedural placement of grass tiles at deterministic coordinates
   - Grass tiles visually distinct from background texture
   - Grass tiles are non-interactive in Step 2 (no harvesting yet)
   - Basic world objects (trees, rocks) for collision testing
   - All objects deterministically placed based on world seed
+
+### 4. Procedural Generation & Starting Position
+- **Requirements:**
+  - Deterministic starting position selection based on world seed
+  - Starting position ensures initial grid (red 'X') is visible
+  - Consistent starting position across game sessions with same seed
+  - Console command `restartGame(seed)` to restart with new seed
+  - Procedural generation algorithm for deterministic world layout
 
 ### 5. Basic Persistence System
 - **Requirements:**

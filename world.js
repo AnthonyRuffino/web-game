@@ -125,11 +125,44 @@ const World = {
             tileX: tileX,
             tileY: tileY,
             draw: function(ctx) {
-              ctx.fillStyle = '#4CAF50'; // Green color
-              ctx.fillRect(this.x - 8, this.y - 8, 16, 16);
-              ctx.strokeStyle = '#2E7D32';
-              ctx.lineWidth = 1;
-              ctx.strokeRect(this.x - 8, this.y - 8, 16, 16);
+              // Generate deterministic cluster positions and directions for this grass
+              const clusterHash = World.betterHash(`${World.config.seed}-grass-cluster-${this.tileX}-${this.tileY}`);
+              const clusterSeed = clusterHash % 1000;
+              
+              // Draw 3 clusters of grass
+              for (let cluster = 0; cluster < 3; cluster++) {
+                // Calculate cluster center within the tile
+                const clusterOffsetX = ((clusterSeed + cluster * 123) % 200 - 100) / 100; // -1 to 1
+                const clusterOffsetY = ((clusterSeed + cluster * 456) % 200 - 100) / 100; // -1 to 1
+                const clusterX = this.x + clusterOffsetX * 12; // Within tile bounds
+                const clusterY = this.y + clusterOffsetY * 12;
+                
+                // Calculate base direction for this cluster
+                const baseAngle = ((clusterSeed + cluster * 789) % 360) * Math.PI / 180;
+                
+                // Draw 4-6 grass blades per cluster
+                const bladeCount = 4 + (clusterSeed + cluster * 321) % 3; // 4-6 blades
+                for (let blade = 0; blade < bladeCount; blade++) {
+                  // Vary the angle slightly for each blade
+                  const angleVariation = ((clusterSeed + cluster * 100 + blade * 50) % 60 - 30) * Math.PI / 180;
+                  const angle = baseAngle + angleVariation;
+                  
+                  // Vary the length slightly
+                  const length = 8 + (clusterSeed + cluster * 200 + blade * 30) % 6; // 8-13 pixels
+                  
+                  // Calculate blade end point
+                  const endX = clusterX + Math.cos(angle) * length;
+                  const endY = clusterY + Math.sin(angle) * length;
+                  
+                  // Draw the grass blade
+                  ctx.strokeStyle = '#4CAF50';
+                  ctx.lineWidth = 1.5;
+                  ctx.beginPath();
+                  ctx.moveTo(clusterX, clusterY);
+                  ctx.lineTo(endX, endY);
+                  ctx.stroke();
+                }
+              }
             }
           });
         }
@@ -224,11 +257,13 @@ const World = {
 
   // Determine if grass should be placed at a given tile position
   shouldPlaceGrass(tileX, tileY) {
-    // Use deterministic hash based on position and seed
-    const hash = this.simpleHash(`${this.config.seed}-grass-${tileX}-${tileY}`);
+    // Use better hash for more random distribution
+    const hash = this.betterHash(`${this.config.seed}-grass-${tileX}-${tileY}`);
     
-    // Place grass on approximately 15% of tiles
-    const grassChance = 0.15;
+    // Place grass on approximately 15% of tiles with some variation
+    const baseChance = 0.15;
+    const variation = (hash % 200 - 100) / 1000; // ±10% variation
+    const grassChance = Math.max(0.05, Math.min(0.25, baseChance + variation));
     const normalizedHash = (hash % 1000) / 1000;
     
     return normalizedHash < grassChance;
@@ -236,11 +271,13 @@ const World = {
 
   // Determine if a tree should be placed at a given tile position
   shouldPlaceTree(tileX, tileY) {
-    // Use deterministic hash based on position and seed
-    const hash = this.simpleHash(`${this.config.seed}-tree-${tileX}-${tileY}`);
+    // Use better hash for more random distribution
+    const hash = this.betterHash(`${this.config.seed}-tree-${tileX}-${tileY}`);
     
-    // Place trees on approximately 5% of tiles
-    const treeChance = 0.05;
+    // Place trees on approximately 5% of tiles with some variation
+    const baseChance = 0.05;
+    const variation = (hash % 150 - 75) / 1000; // ±7.5% variation
+    const treeChance = Math.max(0.02, Math.min(0.08, baseChance + variation));
     const normalizedHash = (hash % 1000) / 1000;
     
     return normalizedHash < treeChance;
@@ -248,11 +285,13 @@ const World = {
 
   // Determine if a rock should be placed at a given tile position
   shouldPlaceRock(tileX, tileY) {
-    // Use deterministic hash based on position and seed
-    const hash = this.simpleHash(`${this.config.seed}-rock-${tileX}-${tileY}`);
+    // Use better hash for more random distribution
+    const hash = this.betterHash(`${this.config.seed}-rock-${tileX}-${tileY}`);
     
-    // Place rocks on approximately 3% of tiles
-    const rockChance = 0.03;
+    // Place rocks on approximately 3% of tiles with some variation
+    const baseChance = 0.03;
+    const variation = (hash % 100 - 50) / 1000; // ±5% variation
+    const rockChance = Math.max(0.01, Math.min(0.05, baseChance + variation));
     const normalizedHash = (hash % 1000) / 1000;
     
     return normalizedHash < rockChance;
@@ -409,6 +448,24 @@ const World = {
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
+    return Math.abs(hash);
+  },
+
+  // Better hash function for more random distribution
+  betterHash(str) {
+    let hash = 0;
+    const seedStr = str.toString();
+    for (let i = 0; i < seedStr.length; i++) {
+      const char = seedStr.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    // Add additional mixing for better distribution
+    hash = hash ^ (hash >>> 16);
+    hash = Math.imul(hash, 0x85ebca6b);
+    hash = hash ^ (hash >>> 13);
+    hash = Math.imul(hash, 0xc2b2ae35);
+    hash = hash ^ (hash >>> 16);
     return Math.abs(hash);
   },
 
