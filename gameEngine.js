@@ -201,6 +201,13 @@ const GameEngine = {
       ctx.translate(-Player.x, -Player.y);
     }
     
+    // Render background texture as part of the world
+    if (typeof Background !== 'undefined') {
+      const cameraWidth = ctx.canvas.width / ZOOM;
+      const cameraHeight = ctx.canvas.height / ZOOM;
+      Background.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight, ZOOM);
+    }
+    
     // Render world and player in world coordinates
     World.render(ctx);
     Player.render(ctx);

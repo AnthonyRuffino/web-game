@@ -161,6 +161,33 @@ const Console = {
       console.log('[Console] Web Game v1.0.0 - Step 2 Development');
     });
 
+    // Background texture commands
+    this.register('bgconfig', 'Show background texture configuration', (args) => {
+      if (typeof Background !== 'undefined') {
+        console.log('[Console] Background configuration:', Background.getConfig());
+      } else {
+        console.error('[Console] Background system not available');
+      }
+    });
+
+    this.register('bgset', 'Set background texture property (property value)', (args) => {
+      if (args.length !== 2) {
+        console.log('[Console] Usage: bgset <property> <value>');
+        console.log('[Console] Properties: dotSize, dotSpacing, dotColor, dotAlpha');
+        return;
+      }
+      if (typeof Background !== 'undefined') {
+        const property = args[0];
+        const value = args[1];
+        const config = {};
+        config[property] = value;
+        Background.setConfig(config);
+        console.log(`[Console] Set ${property} to ${value}`);
+      } else {
+        console.error('[Console] Background system not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
