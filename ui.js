@@ -9,11 +9,14 @@ const UI = {
     inventoryGridSize: 5, // Default 5x5 inventory
     inventorySlotSize: 60, // Size of each inventory slot in pixels
     inventorySpacing: 4, // Spacing between slots
+    inventoryMargin: 20, // Margin from screen edges
     inventoryBackground: 'rgba(20,20,20,0.95)',
     inventoryBorder: '#666',
     slotBackground: 'rgba(40,40,40,0.9)',
     slotHoverBackground: 'rgba(60,60,60,0.9)',
-    slotSelectedBackground: 'rgba(80,80,80,0.9)'
+    slotSelectedBackground: 'rgba(80,80,80,0.9)',
+    inventoryOpacity: 0.95, // Configurable inventory opacity
+    itemIconOpacity: 0.9 // Configurable item icon opacity (for future)
   },
 
   // State
@@ -28,6 +31,7 @@ const UI = {
   inventoryCtx: null,
   hoveredSlot: null,
   selectedSlot: null,
+  inventoryScale: 1.0,
 
   // Initialize UI system
   init() {
@@ -246,9 +250,8 @@ const UI = {
     const canvas = document.createElement('canvas');
     canvas.id = 'ui-inventory';
     canvas.style.position = 'fixed';
-    canvas.style.top = '50%';
-    canvas.style.left = '50%';
-    canvas.style.transform = 'translate(-50%, -50%)';
+    canvas.style.bottom = `${this.config.inventoryMargin}px`;
+    canvas.style.right = `${this.config.inventoryMargin}px`;
     canvas.style.zIndex = '999';
     canvas.style.display = 'none';
     canvas.style.border = `2px solid ${this.config.inventoryBorder}`;
@@ -262,19 +265,49 @@ const UI = {
     // Set canvas size based on grid
     this.updateInventorySize();
     
-    // Add mouse event listeners
+    // Add mouse event listeners with proper scaling
     canvas.addEventListener('mousemove', (e) => this.handleInventoryMouseMove(e));
     canvas.addEventListener('click', (e) => this.handleInventoryClick(e));
     canvas.addEventListener('mouseleave', () => this.handleInventoryMouseLeave());
+    
+    // Add window resize listener to update inventory size
+    window.addEventListener('resize', () => {
+      if (this.inventoryOpen) {
+        this.updateInventorySize();
+        this.renderInventory();
+      }
+    });
   },
 
   // Update inventory canvas size
   updateInventorySize() {
-    const totalSize = this.config.inventoryGridSize * this.config.inventorySlotSize + 
-                     (this.config.inventoryGridSize - 1) * this.config.inventorySpacing + 40; // 40px padding
+    // Calculate base size
+    const baseSize = this.config.inventoryGridSize * this.config.inventorySlotSize + 
+                    (this.config.inventoryGridSize - 1) * this.config.inventorySpacing + 40; // 40px padding
     
-    this.inventoryCanvas.width = totalSize;
-    this.inventoryCanvas.height = totalSize;
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate scale factor based on viewport size
+    // Use the smaller dimension to ensure inventory fits
+    const maxInventorySize = Math.min(viewportWidth * 0.4, viewportHeight * 0.4); // Max 40% of viewport
+    const minInventorySize = 200; // Minimum size
+    const targetSize = Math.max(minInventorySize, Math.min(maxInventorySize, baseSize));
+    
+    // Calculate scale factor
+    const scaleFactor = targetSize / baseSize;
+    
+    // Apply scale to canvas
+    this.inventoryCanvas.width = baseSize;
+    this.inventoryCanvas.height = baseSize;
+    this.inventoryCanvas.style.transform = `scale(${scaleFactor})`;
+    this.inventoryCanvas.style.transformOrigin = 'bottom right';
+    
+    // Store scale factor for mouse calculations
+    this.inventoryScale = scaleFactor;
+    
+    console.log(`[UI] Inventory scaled to ${(scaleFactor * 100).toFixed(1)}% (${targetSize.toFixed(0)}px)`);
   },
 
   // Toggle inventory open/closed
@@ -283,6 +316,7 @@ const UI = {
     this.inventoryCanvas.style.display = this.inventoryOpen ? 'block' : 'none';
     
     if (this.inventoryOpen) {
+      this.updateInventorySize(); // Update size when opening
       this.renderInventory();
     }
     
@@ -299,8 +333,9 @@ const UI = {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw background
-    ctx.fillStyle = this.config.inventoryBackground;
+    // Draw background with configurable opacity
+    const bgColor = this.config.inventoryBackground.replace(/[\d.]+\)$/, `${this.config.inventoryOpacity})`);
+    ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Draw title
@@ -318,7 +353,7 @@ const UI = {
         const x = startX + col * (this.config.inventorySlotSize + this.config.inventorySpacing);
         const y = startY + row * (this.config.inventorySlotSize + this.config.inventorySpacing);
         
-        // Determine slot background color
+        // Determine slot background color with opacity
         let bgColor = this.config.slotBackground;
         if (this.hoveredSlot && this.hoveredSlot.row === row && this.hoveredSlot.col === col) {
           bgColor = this.config.slotHoverBackground;
@@ -326,6 +361,9 @@ const UI = {
         if (this.selectedSlot && this.selectedSlot.row === row && this.selectedSlot.col === col) {
           bgColor = this.config.slotSelectedBackground;
         }
+        
+        // Apply opacity to slot background
+        bgColor = bgColor.replace(/[\d.]+\)$/, `${this.config.inventoryOpacity})`);
         
         // Draw slot
         ctx.fillStyle = bgColor;
@@ -336,8 +374,8 @@ const UI = {
         ctx.lineWidth = 1;
         ctx.strokeRect(x, y, this.config.inventorySlotSize, this.config.inventorySlotSize);
         
-        // Draw slot number (for debugging)
-        ctx.fillStyle = '#888';
+        // Draw slot number (for debugging) with opacity
+        ctx.fillStyle = `rgba(136, 136, 136, ${this.config.inventoryOpacity})`;
         ctx.font = '12px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(`${row * this.config.inventoryGridSize + col + 1}`, x + this.config.inventorySlotSize / 2, y + this.config.inventorySlotSize / 2 + 4);
@@ -348,8 +386,9 @@ const UI = {
   // Handle inventory mouse movement
   handleInventoryMouseMove(e) {
     const rect = this.inventoryCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // Account for scaling in mouse coordinates
+    const x = (e.clientX - rect.left) / this.inventoryScale;
+    const y = (e.clientY - rect.top) / this.inventoryScale;
     
     const startX = 20;
     const startY = 40;
@@ -381,6 +420,10 @@ const UI = {
     this.selectedSlot = { ...this.hoveredSlot };
     this.renderInventory();
     
+    // Prevent the click from reaching the game world
+    e.preventDefault();
+    e.stopPropagation();
+    
     console.log(`[UI] Selected inventory slot: ${this.selectedSlot.row * this.config.inventoryGridSize + this.selectedSlot.col + 1} (row ${this.selectedSlot.row}, col ${this.selectedSlot.col})`);
   },
 
@@ -404,41 +447,70 @@ const UI = {
     }
   },
 
+  // Set inventory opacity
+  setInventoryOpacity(opacity) {
+    if (opacity >= 0.1 && opacity <= 1.0) {
+      this.config.inventoryOpacity = opacity;
+      if (this.inventoryOpen) {
+        this.renderInventory();
+      }
+      console.log(`[UI] Inventory opacity set to ${opacity}`);
+    } else {
+      console.error('[UI] Invalid inventory opacity. Must be between 0.1 and 1.0.');
+    }
+  },
+
+  // Set item icon opacity (for future use)
+  setItemIconOpacity(opacity) {
+    if (opacity >= 0.1 && opacity <= 1.0) {
+      this.config.itemIconOpacity = opacity;
+      if (this.inventoryOpen) {
+        this.renderInventory();
+      }
+      console.log(`[UI] Item icon opacity set to ${opacity}`);
+    } else {
+      console.error('[UI] Invalid item icon opacity. Must be between 0.1 and 1.0.');
+    }
+  },
+
   // Set up global key listeners
   setupGlobalListeners() {
     window.addEventListener('keydown', (e) => {
-      // If input bar is open, handle input events
+      // If input bar is open, handle input events and block only special keys
       if (this.inputBarOpen) {
         if (e.code === 'Escape') {
           this.closeInputBar();
           e.preventDefault();
+          return;
         } else if (e.code === 'Enter') {
           this.submitInputBar();
           e.preventDefault();
+          return;
         } else if (e.code === 'ArrowUp') {
           this.navigateHistoryUp();
           e.preventDefault();
+          return;
         } else if (e.code === 'ArrowDown') {
           this.navigateHistoryDown();
           e.preventDefault();
+          return;
         }
-        // All other keys are handled by the input element
+        // All other keys: let the input element handle them (do not preventDefault)
         return;
       }
       
-      // If inventory is open, handle inventory-specific keys
+      // If inventory is open, only handle Escape to close it, let all other keys through
       if (this.inventoryOpen) {
         if (e.code === 'Escape') {
           this.toggleInventory();
           e.preventDefault();
+          return;
         }
-        // Block all other keys when inventory is open
-        e.preventDefault();
-        return;
+        // Do not block any other keys
       }
       
-      // Handle inventory toggle (B key) - only when neither input bar nor inventory is open
-      if (e.code === 'KeyB' && !this.inputBarOpen && !this.inventoryOpen) {
+      // Handle inventory toggle (B key) - toggle when input bar is not open
+      if (e.code === 'KeyB' && !this.inputBarOpen) {
         this.toggleInventory();
         e.preventDefault();
         return;

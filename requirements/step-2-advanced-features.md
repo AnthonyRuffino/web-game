@@ -183,6 +183,10 @@ This document outlines the next phase of development, building upon the solid fo
   - Inventory state management (open/closed) ✅
   - Configurable grid size (3x3 to 10x10) ✅
   - Console commands for inventory management ✅
+  - Positioned at bottom-right of screen (leaving space for action bars) ✅
+  - Configurable opacity for inventory background ✅
+  - Configurable opacity for item icons (placeholder for future) ✅
+  - Press `B` again to close inventory ✅
 
 ### 10. Action Bar Implementation
 - **Requirements:**

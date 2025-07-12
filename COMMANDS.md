@@ -301,6 +301,18 @@ cmd("worldconfig")            // View detailed configuration
 - **Example:** `cmd("setinventorysize 8")` - Set to 8x8 grid
 - **Range:** 3 to 10 slots per side
 
+### `setinventoryopacity <opacity>`
+- **Description:** Set inventory background opacity
+- **Usage:** `cmd("setinventoryopacity 0.8")`
+- **Example:** `cmd("setinventoryopacity 0.5")` - Make inventory more transparent
+- **Range:** 0.1 to 1.0 (0.1 = very transparent, 1.0 = fully opaque)
+
+### `setitemopacity <opacity>`
+- **Description:** Set item icon opacity (for future items)
+- **Usage:** `cmd("setitemopacity 0.9")`
+- **Example:** `cmd("setitemopacity 0.7")` - Make item icons more transparent
+- **Range:** 0.1 to 1.0
+
 ### `uiinfo`
 - **Description:** Show UI system information
 - **Usage:** `cmd("uiinfo")`

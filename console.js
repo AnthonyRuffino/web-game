@@ -587,12 +587,42 @@ const Console = {
       }
     });
 
+    this.register('setinventoryopacity', 'Set inventory opacity', (args) => {
+      if (typeof UI !== 'undefined') {
+        const opacity = parseFloat(args[0]);
+        if (!isNaN(opacity)) {
+          UI.setInventoryOpacity(opacity);
+        } else {
+          console.error('[Console] Invalid opacity. Usage: setinventoryopacity <opacity>');
+          console.log('[Console] Valid range: 0.1-1.0');
+        }
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
+    this.register('setitemopacity', 'Set item icon opacity', (args) => {
+      if (typeof UI !== 'undefined') {
+        const opacity = parseFloat(args[0]);
+        if (!isNaN(opacity)) {
+          UI.setItemIconOpacity(opacity);
+        } else {
+          console.error('[Console] Invalid opacity. Usage: setitemopacity <opacity>');
+          console.log('[Console] Valid range: 0.1-1.0');
+        }
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
     this.register('uiinfo', 'Show UI system information', (args) => {
       if (typeof UI !== 'undefined') {
         console.log('[Console] UI System Information:');
         console.log(`  Input Bar: ${UI.inputBarOpen ? 'Open' : 'Closed'}`);
         console.log(`  Inventory: ${UI.inventoryOpen ? 'Open' : 'Closed'}`);
         console.log(`  Inventory Grid: ${UI.config.inventoryGridSize}x${UI.config.inventoryGridSize}`);
+        console.log(`  Inventory Opacity: ${UI.config.inventoryOpacity}`);
+        console.log(`  Item Icon Opacity: ${UI.config.itemIconOpacity}`);
         console.log(`  Command History: ${UI.commandHistory.length}/${UI.config.maxHistorySize}`);
         if (UI.selectedSlot) {
           console.log(`  Selected Slot: ${UI.selectedSlot.row * UI.config.inventoryGridSize + UI.selectedSlot.col + 1} (row ${UI.selectedSlot.row}, col ${UI.selectedSlot.col})`);
