@@ -105,6 +105,32 @@ This document defines the functional, architectural, and development requirement
 
 ## 🏗️ World, Building & NPCs
 
+### World Structure & Wrapping
+
+* **World Wrapping**: The game world is a finite rectangular area that wraps around at the edges.
+  * Moving east eventually leads to the west side of the world.
+  * Moving west eventually leads to the east side of the world.
+  * Moving north eventually leads to the south side of the world.
+  * Moving south eventually leads to the north side of the world.
+  * Initial world size should be small enough that a player can traverse from edge to edge in approximately 10-15 seconds at normal movement speed.
+  * World size should be configurable and expandable for future development.
+
+### Procedural Generation & Starting Position
+
+* **Deterministic Starting Position**: For each world seed, the procedural generation algorithm must deterministically select a starting position for the player.
+  * The starting position should be chosen so that the initial grid (with the red 'X') is visible to the player.
+  * Starting position should be consistent across game sessions with the same seed.
+  * Console command to restart the game with a new random seed.
+  * Future: Menu system for seed selection and character creation.
+
+### World Background & Visual Feedback
+
+* **Background Texture**: The entire playable world must have a background texture to provide visual feedback for player movement.
+  * When a world tile lacks any objects or tiles, it should display a background texture instead of the void of the black canvas.
+  * Background texture should be simple and lightweight (e.g., dots pattern rendered on canvas).
+  * Texture should be consistent across the entire world to provide relative motion reference.
+  * Background texture is purely aesthetic and does not require complex procedural generation.
+
 ### World Loading & Procedural Generation
 
 * The world must be divided into **chunks**; only chunks near the player are loaded into memory at any time.
@@ -112,8 +138,38 @@ This document defines the functional, architectural, and development requirement
   * World generation is deterministic, based on a seed and consistent hashing—no random number generation at runtime.
   * Chunks are pregenerated and cached before the player enters their view (preloading to avoid pop-in).
   * Cached chunks must be invalidated and removed from memory/cache when far from the player.
-  * Since the world is editable (e.g., buildings), the chunk cache must support overlaying player modifications on top of procedural data.
-  * Chunk caching should utilize the browser's local cache/storage for persistence.
+  * Since the world is editable (e.g., buildings, harvesting, collecting, destruction, entities and creatures which perish, etc.), the chunk cache must support overlaying player modifications on top of procedural data.
+  * Chunk caching should utilize the browser's localStorage for persistence.
+
+### Resource Tiles & World Objects
+
+* **Grass Tiles**: Procedural generation should place grass tiles at deterministic coordinates throughout the world.
+  * Grass tiles should be harvestable resources (later called "grass-patch" in inventory).
+  * Grass tiles should be removable and placeable by players (requires tools like shovels).
+  * Grass tile (and in later iterations this will also apply to tree chopping, rock breaking, etc.) placement and removal must be part of world state determination logic before render time (i.e. either loaded from in memory cache objects or localStorage (on browser refresh) or generated as needed and the persistent changes (if any) applied and then recahced before render time)
+  * Grass tiles should be visually distinct from background texture.
+
+* **World Objects**: Procedural generation should place various objects:
+  * Trees, rocks, and other natural obstacles.
+  * NPCs and creatures (rabbits, etc.).
+  * All objects should be deterministically placed based on world seed.
+  * Objects should be harvestable, destructible, or interactive based on their type.
+
+### World State Persistence
+
+* **Local Storage Persistence**: Game state must be periodically saved to browser localStorage.
+  * Player position and world seed should be persisted (Step 2).
+  * World state changes (harvested resources, destroyed objects) should be persisted (later steps).
+  * Game world tick number should be persisted to resume exactly where left off.
+  * Singleton timeout function for periodic state snapshots to localStorage.
+
+* **Future Server Architecture**: Design should support future client-server model:
+  * Server as source of truth for world state.
+  * Persistent database storage with configurable write intervals.
+  * Streaming architecture (Kafka/Redis Streams) for state change events.
+  * ACID transactions for critical items (PostgreSQL).  Potentially leveraging Postgres over Kafka where possible (ideal achitecture is supported by redis and postgres only)
+  * Non-persistent streams for respawning resources (berries, etc.).
+  * Client-side caching and messaging patterns that can port to server-client model.
 
 ### Building System
 
@@ -158,6 +214,9 @@ This document defines the functional, architectural, and development requirement
   * `setSpeed(value)`
   * `printPlayerStats()`
   * `spawnItem("torch")`
+  * `restartGame(seed)` - Restart with new seed
+  * `setZoom(value)`
+  * `togglePerspective()`
 * Easily extensible command registry.
 
 ---
@@ -167,6 +226,9 @@ This document defines the functional, architectural, and development requirement
 * RPG-style attributes: strength, agility, intelligence, etc.
 * Affects combat stats, crafting ability, movement speed, etc.
 * Progression system TBD.
+* Character creation and naming system (future).
+* Character and world selection/launch menu to staring game (future) after a browser refresh.
+* Starting classes or attribute selection like DnD with point spread (future).
 
 ---
 
@@ -176,8 +238,7 @@ Mark these as placeholders or TODOs:
 
 * Multiplayer support
 * Quest system
-* World saving/loading
-* Procedural terrain generation
+* Advanced procedural terrain generation
 * Mob spawning and AI
 * Farming / fishing / cooking systems
 * Mounts / taming
@@ -186,8 +247,10 @@ Mark these as placeholders or TODOs:
 * Equipment / armor slots
 * Dialogue / NPC shops
 * World map & fast travel
-* Save game system (browser local storage or server-backed)
 * Configurable mods/plugins
+* Resource harvesting tools (shovels, axes, etc.)
+* Advanced world state management
+* Server-client architecture implementation
 
 ---
 
