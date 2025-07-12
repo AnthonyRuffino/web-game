@@ -289,6 +289,24 @@ cmd("worldconfig")            // View detailed configuration
 - **Example:** `cmd("clearuihistory")` - Remove all saved commands
 - **Note:** History is immediately saved to localStorage
 
+### `inventory`
+- **Description:** Toggle inventory open/closed
+- **Usage:** `cmd("inventory")`
+- **Example:** `cmd("inventory")` - Open or close inventory
+- **Note:** Same as pressing B key
+
+### `setinventorysize <size>`
+- **Description:** Set inventory grid size
+- **Usage:** `cmd("setinventorysize 6")`
+- **Example:** `cmd("setinventorysize 8")` - Set to 8x8 grid
+- **Range:** 3 to 10 slots per side
+
+### `uiinfo`
+- **Description:** Show UI system information
+- **Usage:** `cmd("uiinfo")`
+- **Example:** `cmd("uiinfo")` - Display UI status and settings
+- **Shows:** Input bar state, inventory state, grid size, history info
+
 ## Future Commands
 
 The following commands are planned for future implementation:

@@ -25,8 +25,8 @@ const Input = {
   heldKeys: new Set(),
 
   handleKey(e, isDown) {
-    // Check if UI input bar is open - if so, ignore game input
-    if (typeof UI !== 'undefined' && UI.inputBarOpen) {
+    // Check if UI input bar or inventory is open - if so, ignore game input
+    if (typeof UI !== 'undefined' && (UI.inputBarOpen || UI.inventoryOpen)) {
       return;
     }
     

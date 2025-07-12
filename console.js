@@ -565,6 +565,43 @@ const Console = {
       }
     });
 
+    this.register('inventory', 'Toggle inventory open/closed', (args) => {
+      if (typeof UI !== 'undefined') {
+        UI.toggleInventory();
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
+    this.register('setinventorysize', 'Set inventory grid size', (args) => {
+      if (typeof UI !== 'undefined') {
+        const size = parseInt(args[0]);
+        if (!isNaN(size)) {
+          UI.setInventoryGridSize(size);
+        } else {
+          console.error('[Console] Invalid size. Usage: setinventorysize <size>');
+          console.log('[Console] Valid range: 3-10');
+        }
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
+    this.register('uiinfo', 'Show UI system information', (args) => {
+      if (typeof UI !== 'undefined') {
+        console.log('[Console] UI System Information:');
+        console.log(`  Input Bar: ${UI.inputBarOpen ? 'Open' : 'Closed'}`);
+        console.log(`  Inventory: ${UI.inventoryOpen ? 'Open' : 'Closed'}`);
+        console.log(`  Inventory Grid: ${UI.config.inventoryGridSize}x${UI.config.inventoryGridSize}`);
+        console.log(`  Command History: ${UI.commandHistory.length}/${UI.config.maxHistorySize}`);
+        if (UI.selectedSlot) {
+          console.log(`  Selected Slot: ${UI.selectedSlot.row * UI.config.inventoryGridSize + UI.selectedSlot.col + 1} (row ${UI.selectedSlot.row}, col ${UI.selectedSlot.col})`);
+        }
+      } else {
+        console.error('[Console] UI system not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
