@@ -12,6 +12,18 @@ This document defines the functional, architectural, and development requirement
 * **Preserve Modularity**: Maintain logical modularity across files. Do not cram all logic into one JS file.
 * **Expose Debug APIs**: Ensure developer tools are available in the browser console for every major system.
 * **Highlight Deferred Features**: Mark any long-term features that are stubbed or partially implemented clearly in the codebase.
+* **Documentation Maintenance**: Proactively maintain and update documentation as features are implemented:
+  * Keep step-by-step requirement documents current with completion status
+  * Create dedicated documentation files for user-facing features (e.g., COMMANDS.md, CONTROLS.md)
+  * Update README.md with current project status and quick start information
+  * Document API interfaces and system interactions
+  * Provide examples and usage patterns for all major features
+* **Documentation Opportunities**: Look for opportunities to create dedicated documentation files when:
+  * New command systems are implemented
+  * New UI systems are added
+  * New game mechanics are introduced
+  * Configuration options become available
+  * Debug tools are added
 
 ---
 
