@@ -861,6 +861,15 @@ window.UI.console = {
       }
     });
 
+    // Macro management UI command
+    this.register('macro', 'Open the macro management UI', (args) => {
+      if (window.UI.macroManager && typeof window.UI.macroManager.openMacroUI === 'function') {
+        window.UI.macroManager.openMacroUI();
+      } else {
+        console.error('[Console] Macro manager UI not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };

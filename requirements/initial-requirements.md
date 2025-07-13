@@ -113,6 +113,19 @@ This document defines the functional, architectural, and development requirement
   * Forge, Anvil, Stove, etc. unlock tiers like stone/iron/diamond.
 * Recipes, tiers, and tool effectiveness must be extensible.
 
+### Macro Management UI (NEW)
+
+* The game must provide a visual macro management system accessible via the `/macro` command or a UI button.
+* Macro management is done through a pop-up grid UI similar to the inventory, where each cell represents a macro slot.
+* Clicking an empty cell opens a macro creation dialog, allowing the user to:
+  * Enter a macro name
+  * Enter the macro command
+  * Upload a PNG icon or generate a random icon (preview before saving)
+* Macros can be edited or deleted by clicking on them in the grid.
+* Macros can be bound to action bar slots via a dropdown selection in the edit dialog.
+* All macro data, including icon images, are saved to localStorage only upon saving.
+* If a macro is deleted, its action bar binding is not automatically removed.
+
 ---
 
 ## 🏗️ World, Building & NPCs

@@ -162,3 +162,11 @@ if (!window.UI) {
 
 // Merge our UI object with the global one
 Object.assign(window.UI, UI);
+
+// Centralized input blocking function
+window.UI.isInputBlocked = function() {
+  return (
+    (window.UI.inputBar && window.UI.inputBar.inputBarOpen) ||
+    !!window.UI._macroDialogInputBlocked
+  );
+};

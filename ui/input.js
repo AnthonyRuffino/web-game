@@ -30,13 +30,13 @@ window.UI.input = {
 
   // Check if input should be blocked
   isInputBlocked() {
-    return window.UI && window.UI.inputBar && window.UI.inputBar.inputBarOpen;
+    return window.UI && typeof window.UI.isInputBlocked === 'function' && window.UI.isInputBlocked();
   },
 
   handleKey(e, isDown) {
     // Explicitly block all movement input if the input bar is open
     if (this.isInputBlocked()) {
-      console.log('[Input] Movement blocked: input bar is open');
+      console.log('[Input] Movement blocked: input is blocked');
       return;
     }
     

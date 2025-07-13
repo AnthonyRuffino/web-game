@@ -240,6 +240,56 @@ This document outlines the next phase of development, building upon the solid fo
   - Craft button with success/failure feedback
   - Extensible recipe system for future items
 
+### 12. Macro Management UI System (NEW)
+
+**Overview:**
+- Introduce a visual macro management system accessible via the `/macro` command or a UI button.
+- Users can create, edit, delete, and bind macros through a pop-up grid UI similar to the inventory.
+
+**UI/UX Requirements:**
+- Macro grid UI:
+  - Launched from `/macro` command or UI button.
+  - Grid layout, each cell is a macro slot (empty or filled).
+  - Clicking an empty cell opens a macro creation dialog.
+  - Clicking a filled cell opens an edit dialog for that macro.
+- Macro creation dialog:
+  - Input for macro name (required, unique). When this component has the focus, inputs should be blocked for movement and keybinds.
+  - Input for macro command (required). When this component has the focus, inputs should be blocked for movement and keybinds.
+  - PNG icon upload (with preview, not saved until macro is saved).
+  - Button to generate a random icon (uses existing random icon logic, previewed but not saved until macro is saved).
+  - Save button to create macro and persist to localStorage.
+- Macro edit dialog:
+  - Edit name, command, or icon (upload or randomize).
+  - Delete macro button.
+  - Bind to action bar:
+    - Dropdown to select action bar name.
+    - Dropdown to select slot (populated based on selected bar).
+    - If a slot is already bound, new macro replaces the old one.
+  - Save changes button.
+- Macro deletion:
+  - Deleting a macro does not automatically remove its action bar binding; orphaned bindings are allowed.
+  - If a macro is deleted, action bar slot may show missing icon or error on use (acceptable for now).
+
+**Implementation Steps:**
+1. Add `/macro` command to open the macro management UI.
+2. Implement macro grid UI (modal/pop-up, similar to inventory grid).
+3. Implement macro creation dialog:
+   - Name, command, PNG upload, random icon, preview, save.
+4. Implement macro edit dialog:
+   - Edit/delete macro, change icon, rebind to action bar slot.
+5. Integrate with existing macro storage and action bar binding logic.
+6. Ensure all macro data (including icon) is only saved to localStorage on save.
+7. Allow preview of uploaded or generated icon before saving.
+8. Update documentation and help commands to reflect new macro UI system.
+
+**Testing Requirements:**
+- [ ] Macro grid UI opens from `/macro` command or button.
+- [ ] Empty cell click opens creation dialog; filled cell click opens edit dialog.
+- [ ] PNG upload and random icon generation work and preview correctly.
+- [ ] Macros can be created, edited, deleted, and bound to action bar slots.
+- [ ] Macro data is only saved on explicit save.
+- [ ] Deleting a macro does not break the game if its slot is still bound.
+
 ---
 
 ## 🗂️ New Files Required

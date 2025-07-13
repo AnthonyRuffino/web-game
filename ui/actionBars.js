@@ -295,7 +295,7 @@ window.UI.actionBarManager = {
   // Global event handling for key bindings
   handleGlobalKey(e) {
     // Explicitly block all action bar processing if the input bar is open
-    if (typeof UI !== 'undefined' && UI.inputBar && UI.inputBar.inputBarOpen) {
+    if (typeof window !== 'undefined' && window.UI && typeof window.UI.isInputBlocked === 'function' && window.UI.isInputBlocked()) {
       return;
     }
     
