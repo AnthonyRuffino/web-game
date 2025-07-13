@@ -60,7 +60,7 @@ const Player = {
   x: 0, // Will be set by world system
   y: 0, // Will be set by world system
   angle: 0, // radians, 0 = up
-  speed: 700, // pixels per second
+  speed: 400, // pixels per second
   rotSpeed: Math.PI, // radians per second
   size: 30, // triangle size
 
@@ -101,8 +101,9 @@ const Player = {
       moveY /= len;
       
       // Calculate new position
-      const newX = Player.x + moveX * Player.speed * delta;
-      const newY = Player.y + moveY * Player.speed * delta;
+      const speed = Player.speed * (input.backward ? 0.5 : 1);
+      const newX = Player.x + moveX * speed * delta;
+      const newY = Player.y + moveY * speed * delta;
       
       // Apply collision detection if available
       let finalX = newX;

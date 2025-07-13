@@ -275,13 +275,11 @@ const World = {
   shouldPlaceTree(tileX, tileY) {
     // Use better hash for more random distribution
     const hash = this.betterHash(`${this.config.seed}-tree-${tileX}-${tileY}`);
-    
-    // Place trees on approximately 5% of tiles with some variation
-    const baseChance = 0.05;
+    // Place trees on approximately 2.5% of tiles with some variation (was 5%)
+    const baseChance = 0.025;
     const variation = (hash % 150 - 75) / 1000; // ±7.5% variation
-    const treeChance = Math.max(0.02, Math.min(0.08, baseChance + variation));
+    const treeChance = Math.max(0.01, Math.min(0.04, baseChance + variation));
     const normalizedHash = (hash % 1000) / 1000;
-    
     return normalizedHash < treeChance;
   },
 
@@ -289,13 +287,11 @@ const World = {
   shouldPlaceRock(tileX, tileY) {
     // Use better hash for more random distribution
     const hash = this.betterHash(`${this.config.seed}-rock-${tileX}-${tileY}`);
-    
-    // Place rocks on approximately 3% of tiles with some variation
-    const baseChance = 0.03;
+    // Place rocks on approximately 1.5% of tiles with some variation (was 3%)
+    const baseChance = 0.015;
     const variation = (hash % 100 - 50) / 1000; // ±5% variation
-    const rockChance = Math.max(0.01, Math.min(0.05, baseChance + variation));
+    const rockChance = Math.max(0.005, Math.min(0.025, baseChance + variation));
     const normalizedHash = (hash % 1000) / 1000;
-    
     return normalizedHash < rockChance;
   },
 
