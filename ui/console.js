@@ -862,7 +862,62 @@ window.UI.console = {
     });
 
     // Macro management UI command
-    this.register('macro', 'Open the macro management UI', (args) => {
+    this.register('macro', 'Open the macro management UI, or use subcommands: create, assign', (args) => {
+      if (!args || args.length === 0) {
+        if (window.UI.macroManager && typeof window.UI.macroManager.openMacroUI === 'function') {
+          window.UI.macroManager.openMacroUI();
+        } else {
+          console.error('[Console] Macro manager UI not available');
+        }
+        return;
+      }
+      const sub = args[0].toLowerCase();
+      if (sub === 'create') {
+        // Parse args: name=... command=...
+        let name = null, command = null;
+        for (let i = 1; i < args.length; i++) {
+          if (args[i].startsWith('name=')) name = args[i].slice(5);
+          if (args[i].startsWith('command=')) command = args[i].slice(8);
+        }
+        if (!name || !command) {
+          console.log("Usage: /macro create name=macroName command=yourCommand");
+          return;
+        }
+        if (window.UI.macroManager.macros[name]) {
+          console.log(`[Console] Macro '${name}' already exists.`);
+          return;
+        }
+        // Create macro with random icon
+        window.UI.macroManager.macros[name] = {
+          name: name,
+          command: command,
+          created: Date.now()
+        };
+        window.UI.macroManager.generateMacroIcon(name);
+        window.UI.macroManager.saveMacros();
+        console.log(`[Console] Macro '${name}' created with random icon.`);
+        return;
+      }
+      if (sub === 'assign') {
+        // Usage: /macro assign bar-slot macroName
+        if (args.length !== 3) {
+          console.log("Usage: /macro assign bar-slot macroName");
+          return;
+        }
+        const barSlot = args[1];
+        const macroName = args[2];
+        if (!window.UI.macroManager.macros[macroName]) {
+          console.log(`[Console] Macro '${macroName}' does not exist.`);
+          return;
+        }
+        const ok = window.UI.macroManager.assignMacro(barSlot, macroName);
+        if (ok) {
+          window.UI.macroManager.saveMacros();
+          console.log(`[Console] Macro '${macroName}' assigned to ${barSlot}.`);
+        }
+        return;
+      }
+      // Fallback: open UI
       if (window.UI.macroManager && typeof window.UI.macroManager.openMacroUI === 'function') {
         window.UI.macroManager.openMacroUI();
       } else {

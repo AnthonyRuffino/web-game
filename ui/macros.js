@@ -732,11 +732,16 @@ window.UI.macroManager = {
       bindBtn.onclick = () => {
         const barName = barSelect.value;
         const slotIdx = parseInt(slotSelect.value, 10);
+        const currentName = nameInput.value.trim();
         if (!barName || isNaN(slotIdx)) {
           alert('Select an action bar and slot to bind.');
           return;
         }
-        window.UI.macroManager.assignMacro(`${barName}-${slotIdx}`, nameInput.value.trim());
+        if (!this.macros[currentName]) {
+          alert('Macro must be saved before binding.');
+          return;
+        }
+        window.UI.macroManager.assignMacro(`${barName}-${slotIdx}`, currentName);
         this.saveMacros();
         document.body.removeChild(dialogOverlay);
         setMacroDialogInputBlock(false);
