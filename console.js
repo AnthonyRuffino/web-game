@@ -638,6 +638,16 @@ const Console = {
           const slotNumber = UI.activeActionSlot2 === 9 ? '0' : (UI.activeActionSlot2 + 1).toString();
           console.log(`  Active Action Bar 2 Slot: Shift+${slotNumber} (index ${UI.activeActionSlot2})`);
         }
+        console.log(`  Macros: ${Object.keys(UI.macros).length} created`);
+        if (Object.keys(UI.macros).length > 0) {
+          console.log('  Macro Bindings:');
+          Object.keys(UI.actionBarBindings.bar1).forEach(slot => {
+            console.log(`    Bar 1 Slot ${slot}: ${UI.actionBarBindings.bar1[slot]}`);
+          });
+          Object.keys(UI.actionBarBindings.bar2).forEach(slot => {
+            console.log(`    Bar 2 Slot ${slot}: ${UI.actionBarBindings.bar2[slot]}`);
+          });
+        }
       } else {
         console.error('[Console] UI system not available');
       }
@@ -669,6 +679,136 @@ const Console = {
         }
       } else {
         console.error('[Console] UI system not available');
+      }
+    });
+
+    // Macro system commands
+    this.register('macro', 'Macro system commands', (args) => {
+      if (args.length === 0) {
+        console.log('[Console] Macro system commands:');
+        console.log('  macro create <name>=<command> - Create a new macro');
+        console.log('  macro place <bar-slot> <name> - Place macro in action bar slot');
+        console.log('  macro list - List all macros');
+        console.log('  macro info <name> - Show macro information');
+        console.log('  macro delete <name> - Delete a macro');
+        console.log('  macro clear - Clear all macros');
+        return;
+      }
+
+      const subCommand = args[0].toLowerCase();
+      
+      switch (subCommand) {
+        case 'create':
+          if (args.length < 2) {
+            console.error('[Console] Usage: macro create <name>=<command>');
+            return;
+          }
+          const createParts = args[1].split('=');
+          if (createParts.length !== 2) {
+            console.error('[Console] Usage: macro create <name>=<command>');
+            return;
+          }
+          if (typeof UI !== 'undefined') {
+            UI.createMacro(createParts[0], createParts[1]);
+          } else {
+            console.error('[Console] UI system not available');
+          }
+          break;
+
+        case 'place':
+          if (args.length < 3) {
+            console.error('[Console] Usage: macro place <bar-slot> <name>');
+            console.log('[Console] Example: macro place 2-0 perspective');
+            return;
+          }
+          if (typeof UI !== 'undefined') {
+            UI.placeMacro(args[1], args[2]);
+          } else {
+            console.error('[Console] UI system not available');
+          }
+          break;
+
+        case 'list':
+          if (typeof UI !== 'undefined') {
+            const macroNames = Object.keys(UI.macros);
+            if (macroNames.length === 0) {
+              console.log('[Console] No macros found');
+            } else {
+              console.log('[Console] Available macros:');
+              macroNames.forEach(name => {
+                console.log(`  ${name}: ${UI.macros[name].command}`);
+              });
+            }
+          } else {
+            console.error('[Console] UI system not available');
+          }
+          break;
+
+        case 'info':
+          if (args.length < 2) {
+            console.error('[Console] Usage: macro info <name>');
+            return;
+          }
+          if (typeof UI !== 'undefined') {
+            const macro = UI.macros[args[1]];
+            if (macro) {
+              console.log(`[Console] Macro: ${macro.name}`);
+              console.log(`  Command: ${macro.command}`);
+              console.log(`  Created: ${new Date(macro.created).toLocaleString()}`);
+            } else {
+              console.error(`[Console] Macro '${args[1]}' not found`);
+            }
+          } else {
+            console.error('[Console] UI system not available');
+          }
+          break;
+
+        case 'delete':
+          if (args.length < 2) {
+            console.error('[Console] Usage: macro delete <name>');
+            return;
+          }
+          if (typeof UI !== 'undefined') {
+            if (UI.macros[args[1]]) {
+              delete UI.macros[args[1]];
+              delete UI.macroIcons[args[1]];
+              // Remove from action bar bindings
+              Object.keys(UI.actionBarBindings.bar1).forEach(slot => {
+                if (UI.actionBarBindings.bar1[slot] === args[1]) {
+                  delete UI.actionBarBindings.bar1[slot];
+                }
+              });
+              Object.keys(UI.actionBarBindings.bar2).forEach(slot => {
+                if (UI.actionBarBindings.bar2[slot] === args[1]) {
+                  delete UI.actionBarBindings.bar2[slot];
+                }
+              });
+              UI.saveMacros();
+              console.log(`[Console] Deleted macro '${args[1]}'`);
+            } else {
+              console.error(`[Console] Macro '${args[1]}' not found`);
+            }
+          } else {
+            console.error('[Console] UI system not available');
+          }
+          break;
+
+        case 'clear':
+          if (typeof UI !== 'undefined') {
+            UI.macros = {};
+            UI.macroIcons = {};
+            UI.actionBarBindings = { bar1: {}, bar2: {} };
+            UI.saveMacros();
+            console.log('[Console] All macros cleared');
+          } else {
+            console.error('[Console] UI system not available');
+          }
+          break;
+
+        default:
+          console.error(`[Console] Unknown macro command: ${subCommand}`);
+          console.log('[Console] Use "macro" for help');
+          break;
       }
     });
 

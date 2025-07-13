@@ -29,7 +29,10 @@ const UI = {
     actionBarSlotActiveBackground: 'rgba(80,80,80,0.9)',
     actionBarOpacity: 0.95, // Configurable action bar opacity
     actionBarHeight: 80, // Height of action bar (inventory will be shifted up by this amount)
-    actionBarGap: 8 // Gap between the two action bars
+    actionBarGap: 8, // Gap between the two action bars
+    // Macro system configuration
+    macroStorageKey: 'ui_macros',
+    macroIconSize: 48 // Size of macro icons in pixels
   },
 
   // State
@@ -57,10 +60,18 @@ const UI = {
   hoveredActionSlot2: null,
   activeActionSlot2: null,
   actionBar2Scale: 1.0,
+  // Macro system state
+  macros: {}, // Store macro data
+  macroIcons: {}, // Store macro icon data URLs
+  actionBarBindings: { // Store which macros are bound to which slots
+    bar1: {}, // Primary action bar bindings
+    bar2: {} // Secondary action bar bindings
+  },
 
   // Initialize UI system
   init() {
     this.loadCommandHistory();
+    this.loadMacros();
     this.createInputBar();
     this.createInventory();
     this.createActionBar();
@@ -71,6 +82,7 @@ const UI = {
     console.log(`[UI] Inventory grid size: ${this.config.inventoryGridSize}x${this.config.inventoryGridSize}`);
     console.log(`[UI] Action bar slots: ${this.config.actionBarSlots}`);
     console.log(`[UI] Dual action bar system ready`);
+    console.log(`[UI] Macro system loaded: ${Object.keys(this.macros).length} macros`);
   },
 
   // Create the input bar DOM element
@@ -210,6 +222,39 @@ const UI = {
       localStorage.setItem(this.config.storageKey, JSON.stringify(this.commandHistory));
     } catch (error) {
       console.warn('[UI] Failed to save command history:', error);
+    }
+  },
+
+  // Load macros from localStorage
+  loadMacros() {
+    try {
+      const saved = localStorage.getItem(this.config.macroStorageKey);
+      if (saved) {
+        const data = JSON.parse(saved);
+        this.macros = data.macros || {};
+        this.macroIcons = data.macroIcons || {};
+        this.actionBarBindings = data.actionBarBindings || { bar1: {}, bar2: {} };
+        console.log(`[UI] Loaded ${Object.keys(this.macros).length} macros from storage`);
+      }
+    } catch (error) {
+      console.warn('[UI] Failed to load macros:', error);
+      this.macros = {};
+      this.macroIcons = {};
+      this.actionBarBindings = { bar1: {}, bar2: {} };
+    }
+  },
+
+  // Save macros to localStorage
+  saveMacros() {
+    try {
+      const data = {
+        macros: this.macros,
+        macroIcons: this.macroIcons,
+        actionBarBindings: this.actionBarBindings
+      };
+      localStorage.setItem(this.config.macroStorageKey, JSON.stringify(data));
+    } catch (error) {
+      console.warn('[UI] Failed to save macros:', error);
     }
   },
 
@@ -633,18 +678,35 @@ const UI = {
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, this.config.actionBarSlotSize, this.config.actionBarSlotSize);
       
-      // Draw slot number (1-0 keys)
+      // Check if there's a macro bound to this slot
+      const macroName = this.getMacroForSlot(1, i);
+      
+      if (macroName && this.macroIcons[macroName]) {
+        // Draw macro icon
+        const img = new Image();
+        img.onload = () => {
+          const iconSize = this.config.macroIconSize * 0.8; // Slightly smaller than slot
+          const iconX = x + (this.config.actionBarSlotSize - iconSize) / 2;
+          const iconY = y + (this.config.actionBarSlotSize - iconSize) / 2;
+          ctx.drawImage(img, iconX, iconY, iconSize, iconSize);
+        };
+        img.src = this.macroIcons[macroName];
+      }
+      
+      // Draw slot number (1-0 keys) - always on top
       const slotNumber = i === 9 ? '0' : (i + 1).toString();
       ctx.fillStyle = `rgba(255, 255, 255, ${this.config.actionBarOpacity})`;
       ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(slotNumber, x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 5);
       
-      // Draw placeholder text for future items (lower opacity)
-      ctx.fillStyle = `rgba(136, 136, 136, ${this.config.actionBarOpacity * 0.4})`;
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Empty', x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 20);
+      // Draw placeholder text only if no macro
+      if (!macroName) {
+        ctx.fillStyle = `rgba(136, 136, 136, ${this.config.actionBarOpacity * 0.4})`;
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Empty', x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 20);
+      }
     }
   },
 
@@ -692,18 +754,35 @@ const UI = {
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, this.config.actionBarSlotSize, this.config.actionBarSlotSize);
       
-      // Draw slot number (Shift+1-0 keys)
+      // Check if there's a macro bound to this slot
+      const macroName = this.getMacroForSlot(2, i);
+      
+      if (macroName && this.macroIcons[macroName]) {
+        // Draw macro icon
+        const img = new Image();
+        img.onload = () => {
+          const iconSize = this.config.macroIconSize * 0.8; // Slightly smaller than slot
+          const iconX = x + (this.config.actionBarSlotSize - iconSize) / 2;
+          const iconY = y + (this.config.actionBarSlotSize - iconSize) / 2;
+          ctx.drawImage(img, iconX, iconY, iconSize, iconSize);
+        };
+        img.src = this.macroIcons[macroName];
+      }
+      
+      // Draw slot number (Shift+1-0 keys) - always on top
       const slotNumber = i === 9 ? '0' : (i + 1).toString();
       ctx.fillStyle = `rgba(255, 255, 255, ${this.config.actionBarOpacity})`;
       ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(slotNumber, x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 5);
       
-      // Draw placeholder text for future items (lower opacity)
-      ctx.fillStyle = `rgba(136, 136, 136, ${this.config.actionBarOpacity * 0.4})`;
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Empty', x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 20);
+      // Draw placeholder text only if no macro
+      if (!macroName) {
+        ctx.fillStyle = `rgba(136, 136, 136, ${this.config.actionBarOpacity * 0.4})`;
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Empty', x + this.config.actionBarSlotSize / 2, y + this.config.actionBarSlotSize / 2 + 20);
+      }
     }
   },
 
@@ -755,7 +834,11 @@ const UI = {
     const slotNumber = this.activeActionSlot === 9 ? '0' : (this.activeActionSlot + 1).toString();
     console.log(`[UI] Activated action bar slot: ${slotNumber} (index ${this.activeActionSlot})`);
     
-    // In the future: trigger item/spell action here
+    // Execute macro if bound to this slot
+    const macroName = this.getMacroForSlot(1, this.activeActionSlot);
+    if (macroName) {
+      this.executeMacro(macroName);
+    }
     
     // Clear active state after a short delay (temporary highlighting)
     setTimeout(() => {
@@ -812,8 +895,11 @@ const UI = {
     const slotNumber = this.activeActionSlot2 === 9 ? '0' : (this.activeActionSlot2 + 1).toString();
     console.log(`[UI] Activated action bar 2 slot: Shift+${slotNumber} (index ${this.activeActionSlot2})`);
     
-    // Execute the bound command for this slot
-    this.executeActionBar2Command(this.activeActionSlot2);
+    // Execute macro if bound to this slot
+    const macroName = this.getMacroForSlot(2, this.activeActionSlot2);
+    if (macroName) {
+      this.executeMacro(macroName);
+    }
     
     // Clear active state after a short delay (temporary highlighting)
     setTimeout(() => {
@@ -828,32 +914,7 @@ const UI = {
     this.renderActionBar2();
   },
 
-  // Execute command for second action bar slot
-  executeActionBar2Command(slotIndex) {
-    // Define commands for each slot (Shift+1 through Shift+0)
-    const commands = {
-      0: 'perspective', // Shift+1
-      1: '', // Shift+2 (empty for now)
-      2: '', // Shift+3 (empty for now)
-      3: '', // Shift+4 (empty for now)
-      4: '', // Shift+5 (empty for now)
-      5: '', // Shift+6 (empty for now)
-      6: '', // Shift+7 (empty for now)
-      7: '', // Shift+8 (empty for now)
-      8: '', // Shift+9 (empty for now)
-      9: 'perspective' // Shift+0 (Control+0 equivalent)
-    };
-    
-    const command = commands[slotIndex];
-    if (command && command.length > 0) {
-      console.log(`[UI] Executing command: ${command}`);
-      if (window.cmd) {
-        window.cmd(command);
-      } else {
-        console.error('[UI] Command system not available');
-      }
-    }
-  },
+
 
   // Set inventory grid size
   setInventoryGridSize(size) {
@@ -905,6 +966,147 @@ const UI = {
     } else {
       console.error('[UI] Invalid action bar slot count. Must be between 5 and 20.');
     }
+  },
+
+  // Create a new macro
+  createMacro(name, command) {
+    if (this.macros[name]) {
+      console.error(`[UI] Macro '${name}' already exists`);
+      return false;
+    }
+
+    // Create macro data
+    this.macros[name] = {
+      name: name,
+      command: command,
+      created: Date.now()
+    };
+
+    // Generate dynamic icon
+    this.generateMacroIcon(name);
+
+    // Save to localStorage
+    this.saveMacros();
+
+    console.log(`[UI] Created macro '${name}' with command '${command}'`);
+    return true;
+  },
+
+  // Generate a dynamic icon for a macro
+  generateMacroIcon(macroName) {
+    // Create a temporary canvas for icon generation
+    const canvas = document.createElement('canvas');
+    canvas.width = this.config.macroIconSize;
+    canvas.height = this.config.macroIconSize;
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Generate random colors
+    const colors = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+      '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+    ];
+    const bgColor = colors[Math.floor(Math.random() * colors.length)];
+    const shapeColor = colors[Math.floor(Math.random() * colors.length)];
+
+    // Draw background
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw random shapes
+    const shapeCount = Math.floor(Math.random() * 3) + 2; // 2-4 shapes
+    for (let i = 0; i < shapeCount; i++) {
+      ctx.fillStyle = shapeColor;
+      const shapeType = Math.floor(Math.random() * 3); // 0=circle, 1=rect, 2=triangle
+      
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * canvas.height;
+      const size = Math.random() * 20 + 10;
+
+      switch (shapeType) {
+        case 0: // Circle
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case 1: // Rectangle
+          ctx.fillRect(x - size/2, y - size/2, size, size);
+          break;
+        case 2: // Triangle
+          ctx.beginPath();
+          ctx.moveTo(x, y - size/2);
+          ctx.lineTo(x - size/2, y + size/2);
+          ctx.lineTo(x + size/2, y + size/2);
+          ctx.closePath();
+          ctx.fill();
+          break;
+      }
+    }
+
+    // Convert to data URL
+    this.macroIcons[macroName] = canvas.toDataURL('image/png');
+  },
+
+  // Place a macro in an action bar slot
+  placeMacro(barSlot, macroName) {
+    if (!this.macros[macroName]) {
+      console.error(`[UI] Macro '${macroName}' does not exist`);
+      return false;
+    }
+
+    // Parse bar-slot format (e.g., "1-0" for bar 1 slot 0, "2-5" for bar 2 slot 5)
+    const parts = barSlot.split('-');
+    if (parts.length !== 2) {
+      console.error('[UI] Invalid bar-slot format. Use "bar-slot" (e.g., "1-0", "2-5")');
+      return false;
+    }
+
+    const bar = parseInt(parts[0]);
+    const slot = parseInt(parts[1]);
+
+    if (bar !== 1 && bar !== 2) {
+      console.error('[UI] Invalid bar number. Must be 1 or 2');
+      return false;
+    }
+
+    if (slot < 0 || slot >= this.config.actionBarSlots) {
+      console.error(`[UI] Invalid slot number. Must be 0-${this.config.actionBarSlots - 1}`);
+      return false;
+    }
+
+    const barKey = bar === 1 ? 'bar1' : 'bar2';
+    this.actionBarBindings[barKey][slot] = macroName;
+
+    // Save to localStorage
+    this.saveMacros();
+
+    console.log(`[UI] Placed macro '${macroName}' in action bar ${bar} slot ${slot}`);
+    return true;
+  },
+
+  // Execute a macro
+  executeMacro(macroName) {
+    if (!this.macros[macroName]) {
+      console.error(`[UI] Macro '${macroName}' does not exist`);
+      return false;
+    }
+
+    const command = this.macros[macroName].command;
+    console.log(`[UI] Executing macro '${macroName}': ${command}`);
+    
+    if (window.cmd) {
+      window.cmd(command);
+    } else {
+      console.error('[UI] Command system not available');
+    }
+  },
+
+  // Get macro bound to a specific slot
+  getMacroForSlot(bar, slot) {
+    const barKey = bar === 1 ? 'bar1' : 'bar2';
+    return this.actionBarBindings[barKey][slot] || null;
   },
 
   // Set action bar opacity
@@ -970,8 +1172,11 @@ const UI = {
             const slotNumber = this.activeActionSlot2 === 9 ? '0' : (this.activeActionSlot2 + 1).toString();
             console.log(`[UI] Activated action bar 2 slot: Shift+${slotNumber} (index ${this.activeActionSlot2})`);
             
-            // Execute the bound command for this slot
-            this.executeActionBar2Command(this.activeActionSlot2);
+            // Execute macro if bound to this slot
+            const macroName = this.getMacroForSlot(2, this.activeActionSlot2);
+            if (macroName) {
+              this.executeMacro(macroName);
+            }
             
             // Clear active state after a short delay (temporary highlighting)
             setTimeout(() => {
@@ -985,7 +1190,11 @@ const UI = {
             const slotNumber = this.activeActionSlot === 9 ? '0' : (this.activeActionSlot + 1).toString();
             console.log(`[UI] Activated action bar slot: ${slotNumber} (index ${this.activeActionSlot})`);
             
-            // In the future: trigger item/spell action here
+            // Execute macro if bound to this slot
+            const macroName = this.getMacroForSlot(1, this.activeActionSlot);
+            if (macroName) {
+              this.executeMacro(macroName);
+            }
             
             // Clear active state after a short delay (temporary highlighting)
             setTimeout(() => {
@@ -998,15 +1207,7 @@ const UI = {
           return;
         }
         
-        // Handle Control+0 for perspective command (equivalent to Shift+0)
-        if (e.code === 'Digit0' && e.ctrlKey) {
-          console.log('[UI] Executing Control+0: perspective command');
-          if (window.cmd) {
-            window.cmd('perspective');
-          }
-          e.preventDefault();
-          return;
-        }
+
       }
       
       // Handle inventory toggle (B key) - toggle when input bar is not open

@@ -198,7 +198,7 @@ This document outlines the next phase of development, building upon the solid fo
   - Console commands for action bar management ✅
 
 ### 10. Action Bar Implementation ✅ (COMPLETED)
-- **Current Status:** Dual action bar system fully implemented
+- **Current Status:** Dual action bar system with macro support fully implemented
 - **Implemented Features:**
   - Dual 10-slot action bars at bottom-left corner ✅
   - Primary action bar: Number keys 1-0 to trigger slots ✅
@@ -206,20 +206,27 @@ This document outlines the next phase of development, building upon the solid fo
   - Mouse click support for slot activation ✅
   - Visual feedback for hover and temporary click/key press ✅
   - Configurable slot count ✅
-  - Support for future item/spell binding ✅
-  - First macro implementation: "perspective" command bound to Shift+1 and Control+0 ✅
+  - Full macro system with command-based creation and management ✅
+  - Dynamic icon generation for macros ✅
+  - Macro binding to action bar slots ✅
 - **Action Bar System:**
   - Dual action bars positioned at bottom-left corner ✅
   - Responsive scaling based on viewport size ✅
   - Visual feedback for hover and temporary active states ✅
   - Number key activation (1-0 keys) for primary bar ✅
   - Shift+Number key activation (Shift+1-0) for secondary bar ✅
-  - Control+0 as alternative for perspective command ✅
   - Mouse click activation with proper scaling ✅
   - Configurable opacity and styling with lower opacity empty cells ✅
   - Console commands for action bar management ✅
   - Inventory positioned to avoid overlapping with dual action bars ✅
   - Temporary highlighting (only during mouse press or key hold) ✅
+- **Macro System:**
+  - Command-based macro creation (`/macro create name=command`) ✅
+  - Dynamic PNG icon generation with random shapes and colors ✅
+  - localStorage persistence for macro data and icons ✅
+  - Macro placement in action bar slots (`/macro place bar-slot macroName`) ✅
+  - Macro execution when action bar slots are activated ✅
+  - Example: "perspective" macro bound to Shift+0 (secondary action bar slot 10) ✅
 
 ### 11. Crafting UI and Recipe System
 - **Requirements:**
