@@ -13,7 +13,6 @@ const Console = {
       handler,
       name
     };
-    console.log(`[Console] Registered command: ${name}`);
   },
 
   // Execute a command

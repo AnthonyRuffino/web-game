@@ -56,7 +56,6 @@ const Persistence = {
       localStorage.setItem(this.config.storageKey, JSON.stringify(gameState));
       this.lastSaveTime = Date.now();
       
-      console.log('[Persistence] Game state saved successfully');
       return true;
     } catch (error) {
       console.error('[Persistence] Failed to save game state:', error);
@@ -126,7 +125,6 @@ const Persistence = {
       this.startPeriodicSaving(); // Schedule next save
     }, this.config.saveInterval);
     
-    console.log(`[Persistence] Periodic saving started (${this.config.saveInterval}ms interval)`);
   },
 
   // Stop periodic saving
