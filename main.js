@@ -32,6 +32,9 @@ async function startGame() {
   // Dynamically load all core game modules in order
   const coreModules = [
     'core/background.js',
+    'core/entities/rock.js',
+    'core/entities/tree.js',
+    'core/entityRenderer.js',
     'core/world.js',
     'core/persistence.js',
     'core/collision.js',
@@ -47,6 +50,10 @@ async function startGame() {
   // Initialize responsive canvas system
   if (window.UI.responsiveCanvas && window.UI.responsiveCanvas.init) {
     window.UI.responsiveCanvas.init();
+  }
+
+  if (typeof EntityRenderer !== 'undefined' && EntityRenderer.init) {
+    await EntityRenderer.init();
   }
 
   // Get canvas and context from responsive canvas system

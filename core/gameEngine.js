@@ -1,9 +1,6 @@
 // gameEngine.js
 // Core game logic and state management
 
-// Config: shape or sprite rendering
-const RENDER_MODE = 'shape'; // 'shape' or 'sprite'
-
 // Perspective mode: 'fixed-north' or 'player-perspective'
 let PERSPECTIVE_MODE = 'fixed-north'; // default
 
@@ -63,6 +60,8 @@ const Player = {
   speed: 400, // pixels per second
   rotSpeed: Math.PI, // radians per second
   size: 30, // triangle size
+  renderType: 'shape', // 'shape' or 'sprite'
+  sprite: null, // Image object for sprite rendering
 
   update(input, delta) {
     // Block movement if input bar is open
@@ -132,16 +131,32 @@ const Player = {
     ctx.save();
     ctx.translate(Player.x, Player.y);
     ctx.rotate(Player.angle);
-    ctx.beginPath();
-    ctx.moveTo(0, -Player.size); // tip
-    ctx.lineTo(Player.size * 0.6, Player.size * 0.8); // right base
-    ctx.lineTo(-Player.size * 0.6, Player.size * 0.8); // left base
-    ctx.closePath();
-    ctx.fillStyle = '#ffeb3b';
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 3;
-    ctx.fill();
-    ctx.stroke();
+    
+    if (Player.renderType === 'sprite' && Player.sprite) {
+      // Draw sprite
+      const spriteWidth = Player.sprite.width || Player.size * 2;
+      const spriteHeight = Player.sprite.height || Player.size * 2;
+      ctx.drawImage(
+        Player.sprite,
+        -spriteWidth / 2, // Center the sprite
+        -spriteHeight / 2,
+        spriteWidth,
+        spriteHeight
+      );
+    } else {
+      // Draw shape (triangle)
+      ctx.beginPath();
+      ctx.moveTo(0, -Player.size); // tip
+      ctx.lineTo(Player.size * 0.6, Player.size * 0.8); // right base
+      ctx.lineTo(-Player.size * 0.6, Player.size * 0.8); // left base
+      ctx.closePath();
+      ctx.fillStyle = '#ffeb3b';
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 3;
+      ctx.fill();
+      ctx.stroke();
+    }
+    
     ctx.restore();
   }
 };

@@ -12,14 +12,18 @@ A browser-based 2D top-down RPG inspired by *World of Warcraft*, *Realm of the M
 - **Crafting & Building**: Create tools, weapons, buildings, and crafting stations
 - **Character Progression**: RPG-style attributes and skill development
 - **Multiplayer Support**: Shared worlds with other players (future feature)
+- **Flexible Rendering**: All entities (player, trees, rocks, grass, etc.) can be rendered as shapes or sprites (PNGs).
+- **Configurable Hitboxes**: Hitboxes for collision and interaction are configurable and independent of the visual representation. Grass and similar entities are non-blocking but may be interactable in the future.
+- **Custom Player Sprites**: The player character can use a custom PNG image for appearance, with future support for dynamic equipment visuals.
 
 ### World Features
 - **Procedural Generation**: Every world is unique based on a seed, but consistent across sessions
 - **Dynamic Environment**: Resources respawn, weather changes, day/night cycles
 - **Building System**: Construct houses, workshops, and entire settlements
 - **NPCs & Housing**: Attract NPCs by building suitable housing for them
+- **Flexible Entity Rendering**: Trees, rocks, grass, and all world objects can be rendered as shapes or sprites. Hitboxes are decoupled from visuals for accurate collision and interaction.
 
-## 🚀 Current Status
+## �� Current Status
 
 **Step 2 Complete** - The game now features a solid foundation with:
 

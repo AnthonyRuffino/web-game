@@ -2,36 +2,33 @@
 // World structure, wrapping, and coordinate management
 
 const World = {
-  // World configuration
+  // Configuration
   config: {
-    // World size in grid cells (tiles) - easily configurable
-    gridWidth: 1000,   // 100 tiles wide
-    gridHeight: 1000,  // 100 tiles tall
-    tileSize: 40,     // pixels per tile
-    seed: 42,         // default seed
-    chunkSize: 16     // tiles per chunk (16x16 chunks)
+    seed: 12345,
+    chunkSize: 16, // tiles per chunk
+    tileSize: 32, // pixels per tile
+    worldSize: 1000, // chunks per world dimension
+    startingChunkX: 0,
+    startingChunkY: 0
   },
 
-  // Chunk cache for loaded chunks
+  // Chunk cache for performance
   chunkCache: new Map(),
 
-  // Initialize world system
+  // Initialize the world system
   init() {
-    console.log('[World] World system initialized');
-    console.log(`[World] World size: ${this.config.gridWidth}x${this.config.gridHeight} tiles`);
-    console.log(`[World] World size: ${this.width}x${this.height} pixels`);
-    console.log(`[World] Chunk size: ${this.config.chunkSize}x${this.config.chunkSize} tiles`);
-    console.log(`[World] Total chunks: ${this.getChunkCount().total}`);
-    console.log(`[World] Traversal time: ~${this.calculateTraversalTime()} seconds`);
+    console.log('[World] Initializing world system...');
+    // Initialize EntityRenderer if available
+    console.log(`[World] World initialized with seed: ${this.config.seed}`);
   },
 
   // Calculate world dimensions in pixels
   get width() {
-    return this.config.gridWidth * this.config.tileSize;
+    return this.config.worldSize * this.config.tileSize;
   },
 
   get height() {
-    return this.config.gridHeight * this.config.tileSize;
+    return this.config.worldSize * this.config.tileSize;
   },
 
   // Calculate approximate traversal time based on player speed
@@ -43,8 +40,8 @@ const World = {
 
   // Get chunk count
   getChunkCount() {
-    const chunksX = Math.ceil(this.config.gridWidth / this.config.chunkSize);
-    const chunksY = Math.ceil(this.config.gridHeight / this.config.chunkSize);
+    const chunksX = Math.ceil(this.config.worldSize / this.config.chunkSize);
+    const chunksY = Math.ceil(this.config.worldSize / this.config.chunkSize);
     return { x: chunksX, y: chunksY, total: chunksX * chunksY };
   },
 
@@ -104,8 +101,8 @@ const World = {
     // Generate tiles for this chunk
     const startTileX = chunkX * this.config.chunkSize;
     const startTileY = chunkY * this.config.chunkSize;
-    const endTileX = Math.min(startTileX + this.config.chunkSize, this.config.gridWidth);
-    const endTileY = Math.min(startTileY + this.config.chunkSize, this.config.gridHeight);
+    const endTileX = Math.min(startTileX + this.config.chunkSize, this.config.worldSize);
+    const endTileY = Math.min(startTileY + this.config.chunkSize, this.config.worldSize);
 
     for (let tileY = startTileY; tileY < endTileY; tileY++) {
       for (let tileX = startTileX; tileX < endTileX; tileX++) {
@@ -124,6 +121,8 @@ const World = {
             y: grassY,
             tileX: tileX,
             tileY: tileY,
+            renderType: 'shape', // 'shape' or 'sprite'
+            sprite: null, // Image object for sprite rendering
             draw: function(ctx) {
               // Generate deterministic cluster positions and directions for this grass
               const clusterHash = World.betterHash(`${World.config.seed}-grass-cluster-${this.tileX}-${this.tileY}`);
@@ -180,15 +179,31 @@ const World = {
             tileY: tileY,
             collision: true,
             collisionRadius: 18, // Tree collision radius
+            renderType: 'shape', // 'shape' or 'sprite'
+            sprite: null, // Image object for sprite rendering
             draw: function(ctx) {
-              // Tree trunk
-              ctx.fillStyle = '#5C4033';
-              ctx.fillRect(this.x - 6, this.y - 6, 12, 12);
-              // Tree foliage
-              ctx.fillStyle = '#1B5E20';
-              ctx.beginPath();
-              ctx.arc(this.x, this.y - 8, 12, 0, Math.PI * 2);
-              ctx.fill();
+              if (this.renderType === 'sprite' && this.sprite) {
+                // Draw sprite
+                const spriteWidth = this.sprite.width || 24;
+                const spriteHeight = this.sprite.height || 24;
+                ctx.drawImage(
+                  this.sprite,
+                  this.x - spriteWidth / 2,
+                  this.y - spriteHeight / 2,
+                  spriteWidth,
+                  spriteHeight
+                );
+              } else {
+                // Draw shape (tree trunk and foliage)
+                // Tree trunk
+                ctx.fillStyle = '#5C4033';
+                ctx.fillRect(this.x - 6, this.y - 6, 12, 12);
+                // Tree foliage
+                ctx.fillStyle = '#1B5E20';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y - 8, 12, 0, Math.PI * 2);
+                ctx.fill();
+              }
             }
           });
         }
@@ -197,23 +212,27 @@ const World = {
           const rockX = tileX * this.config.tileSize + this.config.tileSize / 2;
           const rockY = tileY * this.config.tileSize + this.config.tileSize / 2;
           
+          // Create rock using EntityRenderer
+          const rockEntity = EntityRenderer.createRock({
+            isSprite: false,
+            size: 20,
+            baseColor: '#757575',
+            strokeColor: '#424242',
+            textureColor: '#424242',
+            opacity: 1.0,
+            textureSpots: 3, // Number of texture spots
+            strokeWidth: 2
+          });
+          
+          // Merge with world-specific properties
           chunk.entities.push({
-            type: 'rock',
+            ...rockEntity,
             x: rockX,
             y: rockY,
             tileX: tileX,
             tileY: tileY,
             collision: true,
-            collisionRadius: 12, // Rock collision radius
-            draw: function(ctx) {
-              ctx.fillStyle = '#757575';
-              ctx.beginPath();
-              ctx.arc(this.x, this.y, 10, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.strokeStyle = '#424242';
-              ctx.lineWidth = 2;
-              ctx.stroke();
-            }
+            collisionRadius: 12 // Rock collision radius
           });
         }
       }
@@ -229,12 +248,28 @@ const World = {
         letter: 'X',
         x: startPos.x,
         y: startPos.y,
+        renderType: 'shape', // 'shape' or 'sprite'
+        sprite: null, // Image object for sprite rendering
         draw: function(ctx) {
-          ctx.fillStyle = 'red';
-          ctx.font = 'bold 36px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(this.letter, this.x, this.y);
+          if (this.renderType === 'sprite' && this.sprite) {
+            // Draw sprite
+            const spriteWidth = this.sprite.width || 36;
+            const spriteHeight = this.sprite.height || 36;
+            ctx.drawImage(
+              this.sprite,
+              this.x - spriteWidth / 2,
+              this.y - spriteHeight / 2,
+              spriteWidth,
+              spriteHeight
+            );
+          } else {
+            // Draw shape (red X)
+            ctx.fillStyle = 'red';
+            ctx.font = 'bold 36px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(this.letter, this.x, this.y);
+          }
         }
       });
     }
@@ -400,8 +435,8 @@ const World = {
   // Get world dimensions in tiles
   getTileDimensions() {
     return {
-      width: this.config.gridWidth,
-      height: this.config.gridHeight
+      width: this.config.worldSize,
+      height: this.config.worldSize
     };
   },
 
@@ -508,7 +543,7 @@ const World = {
     });
     
     // Handle wrapping by rendering chunks that should be visible on the opposite side
-    this.renderWrappedChunks(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
+    //this.renderWrappedChunks(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
     
     // Directly render world objects with wrapping
     this.renderWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
@@ -610,9 +645,9 @@ const World = {
     
     // Check if we need to render wrapped objects
     const isNearEdge = playerTile.x <= edgeThreshold || 
-                      playerTile.x >= this.config.gridWidth - 1 - edgeThreshold ||
+                      playerTile.x >= this.config.worldSize - 1 - edgeThreshold ||
                       playerTile.y <= edgeThreshold || 
-                      playerTile.y >= this.config.gridHeight - 1 - edgeThreshold;
+                      playerTile.y >= this.config.worldSize - 1 - edgeThreshold;
     
     // Render regular chunk entities for visible chunks
     const visibleChunks = this.getVisibleChunks(cameraX, cameraY, cameraWidth, cameraHeight);
