@@ -1,7 +1,11 @@
-// input.js
+// ui/input.js
 // Keyboard and mouse input handling
 
-const Input = {
+// Ensure UI object exists
+if (!window.UI) window.UI = {};
+
+// Input system
+window.UI.input = {
   state: {
     left: false,
     right: false,
@@ -24,9 +28,15 @@ const Input = {
   // Track which keys are physically held down
   heldKeys: new Set(),
 
+  // Check if input should be blocked
+  isInputBlocked() {
+    return window.UI && window.UI.inputBar && window.UI.inputBar.inputBarOpen;
+  },
+
   handleKey(e, isDown) {
-    // Only block input if the input bar is open (not inventory)
-    if (typeof UI !== 'undefined' && UI.inputBarOpen) {
+    // Explicitly block all movement input if the input bar is open
+    if (this.isInputBlocked()) {
+      console.log('[Input] Movement blocked: input bar is open');
       return;
     }
     
@@ -34,63 +44,63 @@ const Input = {
     
     // Track physically held keys
     if (isDown) {
-      Input.heldKeys.add(e.code);
+      window.UI.input.heldKeys.add(e.code);
     } else {
-      Input.heldKeys.delete(e.code);
+      window.UI.input.heldKeys.delete(e.code);
     }
     
     // Handle key releases first - always process them regardless of modifiers
     if (!isDown) {
       if (e.code === 'KeyA') {
-        Input.state.left = false;
-        Input.state.strafeLeft = false;
+        window.UI.input.state.left = false;
+        window.UI.input.state.strafeLeft = false;
         handled = true;
       }
       if (e.code === 'KeyD') {
-        Input.state.right = false;
-        Input.state.strafeRight = false;
+        window.UI.input.state.right = false;
+        window.UI.input.state.strafeRight = false;
         handled = true;
       }
       if (e.code === 'KeyW') {
-        Input.state.forward = false;
+        window.UI.input.state.forward = false;
         handled = true;
       }
       if (e.code === 'KeyS') {
-        Input.state.backward = false;
+        window.UI.input.state.backward = false;
         handled = true;
       }
       if (e.code === 'KeyQ') {
-        Input.state.strafeLeft = false;
+        window.UI.input.state.strafeLeft = false;
         handled = true;
       }
       if (e.code === 'KeyE') {
-        Input.state.strafeRight = false;
+        window.UI.input.state.strafeRight = false;
         handled = true;
       }
     } else {
       // Handle key presses with modifiers
-      if (Input.state.rightClick && (e.code === 'KeyA' || e.code === 'KeyD')) {
+      if (window.UI.input.state.rightClick && (e.code === 'KeyA' || e.code === 'KeyD')) {
         // Right-click + A/D = strafe
         if (e.code === 'KeyA') {
-          Input.state.strafeLeft = true;
+          window.UI.input.state.strafeLeft = true;
           handled = true;
         }
         if (e.code === 'KeyD') {
-          Input.state.strafeRight = true;
+          window.UI.input.state.strafeRight = true;
           handled = true;
         }
       } else if (e.shiftKey && (e.code === 'KeyA' || e.code === 'KeyD')) {
         // Shift+A/D = strafe
         if (e.code === 'KeyA') {
-          Input.state.strafeLeft = true;
+          window.UI.input.state.strafeLeft = true;
           handled = true;
         }
         if (e.code === 'KeyD') {
-          Input.state.strafeRight = true;
+          window.UI.input.state.strafeRight = true;
           handled = true;
         }
-      } else if (Input.keyMap[e.code]) {
-        Input.state[Input.keyMap[e.code]] = true;
+      } else if (window.UI.input.keyMap[e.code]) {
+        window.UI.input.state[window.UI.input.keyMap[e.code]] = true;
         handled = true;
       }
     }
@@ -98,78 +108,81 @@ const Input = {
     if (handled) {
       e.preventDefault();
       if (typeof GameEngine !== 'undefined' && GameEngine.setInputState) {
-        GameEngine.setInputState({ ...Input.state });
+        GameEngine.setInputState({ ...window.UI.input.state });
       }
     }
   },
 
   updateHeldKeysForModifier() {
     // Update A/D keys based on current modifier state
-    if (Input.heldKeys.has('KeyA')) {
-      if (Input.state.rightClick) {
-        Input.state.left = false;
-        Input.state.strafeLeft = true;
+    if (window.UI.input.heldKeys.has('KeyA')) {
+      if (window.UI.input.state.rightClick) {
+        window.UI.input.state.left = false;
+        window.UI.input.state.strafeLeft = true;
       } else {
-        Input.state.left = true;
-        Input.state.strafeLeft = false;
+        window.UI.input.state.left = true;
+        window.UI.input.state.strafeLeft = false;
       }
     }
-    if (Input.heldKeys.has('KeyD')) {
-      if (Input.state.rightClick) {
-        Input.state.right = false;
-        Input.state.strafeRight = true;
+    if (window.UI.input.heldKeys.has('KeyD')) {
+      if (window.UI.input.state.rightClick) {
+        window.UI.input.state.right = false;
+        window.UI.input.state.strafeRight = true;
       } else {
-        Input.state.right = true;
-        Input.state.strafeRight = false;
+        window.UI.input.state.right = true;
+        window.UI.input.state.strafeRight = false;
       }
     }
   },
 
   handleMouse(e, isDown) {
     if (e.button === 2) { // Right mouse button
-      Input.state.rightClick = isDown;
+      window.UI.input.state.rightClick = isDown;
       // Update any currently held A/D keys when right-click state changes
-      Input.updateHeldKeysForModifier();
+      window.UI.input.updateHeldKeysForModifier();
       if (typeof GameEngine !== 'undefined' && GameEngine.setInputState) {
-        GameEngine.setInputState({ ...Input.state });
+        GameEngine.setInputState({ ...window.UI.input.state });
       }
     }
   },
 
   resetInputState() {
     // Reset all input state to false
-    Object.keys(Input.state).forEach(key => {
-      Input.state[key] = false;
+    Object.keys(window.UI.input.state).forEach(key => {
+      window.UI.input.state[key] = false;
     });
-    Input.heldKeys.clear();
+    window.UI.input.heldKeys.clear();
     // Update game engine with reset state
     if (typeof GameEngine !== 'undefined' && GameEngine.setInputState) {
-      GameEngine.setInputState({ ...Input.state });
+      GameEngine.setInputState({ ...window.UI.input.state });
     }
   },
 
   init() {
-    window.addEventListener('keydown', (e) => Input.handleKey(e, true));
-    window.addEventListener('keyup', (e) => Input.handleKey(e, false));
+    // Prevent double initialization
+    if (window.UI.input._initialized) return;
+    window.UI.input._initialized = true;
+    window.addEventListener('keydown', (e) => window.UI.input.handleKey(e, true));
+    window.addEventListener('keyup', (e) => window.UI.input.handleKey(e, false));
     
     // Handle mouse events on canvas
     const canvas = document.getElementById('gameCanvas');
     if (canvas) {
-      canvas.addEventListener('mousedown', (e) => Input.handleMouse(e, true));
-      canvas.addEventListener('mouseup', (e) => Input.handleMouse(e, false));
+      canvas.addEventListener('mousedown', (e) => window.UI.input.handleMouse(e, true));
+      canvas.addEventListener('mouseup', (e) => window.UI.input.handleMouse(e, false));
     }
     
     // Handle browser focus changes to prevent stuck keys
     window.addEventListener('blur', () => {
-      Input.resetInputState();
+      window.UI.input.resetInputState();
     });
     window.addEventListener('focus', () => {
-      Input.resetInputState();
+      window.UI.input.resetInputState();
     });
     
     // Initialize input state in GameEngine
     if (typeof GameEngine !== 'undefined' && GameEngine.setInputState) {
-      GameEngine.setInputState({ ...Input.state });
+      GameEngine.setInputState({ ...window.UI.input.state });
     }
   }
 };

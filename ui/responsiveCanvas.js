@@ -1,7 +1,10 @@
-// responsiveCanvas.js
-// Responsive full-screen canvas system with aspect ratio management
+// ui/responsiveCanvas.js
+// Responsive canvas system with aspect ratio management
 
-const ResponsiveCanvas = {
+// Ensure UI object exists
+
+// Responsive Canvas System
+window.UI.responsiveCanvas = {
   // Configuration
   config: {
     targetAspectRatio: 16/9, // 16:9 aspect ratio (can be changed to 4/3)
@@ -225,7 +228,4 @@ const ResponsiveCanvas = {
       config: { ...this.config }
     };
   }
-};
-
-// Export for global access
-window.ResponsiveCanvas = ResponsiveCanvas; 
+}; 

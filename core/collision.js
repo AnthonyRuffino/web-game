@@ -125,8 +125,8 @@ const Collision = {
     if (typeof World === 'undefined') return;
 
     // Get canvas dimensions from responsive canvas system
-    const canvasWidth = ResponsiveCanvas ? ResponsiveCanvas.currentWidth : 800;
-    const canvasHeight = ResponsiveCanvas ? ResponsiveCanvas.currentHeight : 600;
+    const canvasWidth = UI.ResponsiveCanvas ? UI.ResponsiveCanvas.currentWidth : 800;
+    const canvasHeight = UI.ResponsiveCanvas ? UI.ResponsiveCanvas.currentHeight : 600;
 
     // Get all visible chunks and their entities
     const visibleChunks = World.getVisibleChunks(

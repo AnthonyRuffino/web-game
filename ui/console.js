@@ -1,7 +1,8 @@
-// console.js
-// Developer console and debugging tools
+// ui/console.js
+// Console system for game commands and debugging
 
-const Console = {
+// Console system
+window.UI.console = {
   commands: {},
   history: [],
   maxHistory: 50,
@@ -637,15 +638,20 @@ const Console = {
           const slotNumber = UI.activeActionSlot2 === 9 ? '0' : (UI.activeActionSlot2 + 1).toString();
           console.log(`  Active Action Bar 2 Slot: Shift+${slotNumber} (index ${UI.activeActionSlot2})`);
         }
-        console.log(`  Macros: ${Object.keys(UI.macros).length} created`);
-        if (Object.keys(UI.macros).length > 0) {
-          console.log('  Macro Bindings:');
-          Object.keys(UI.actionBarBindings.bar1).forEach(slot => {
-            console.log(`    Bar 1 Slot ${slot}: ${UI.actionBarBindings.bar1[slot]}`);
-          });
-          Object.keys(UI.actionBarBindings.bar2).forEach(slot => {
-            console.log(`    Bar 2 Slot ${slot}: ${UI.actionBarBindings.bar2[slot]}`);
-          });
+        if (UI.macroManager) {
+          console.log(`  Macros: ${Object.keys(UI.macroManager.macros).length} created`);
+          if (Object.keys(UI.macroManager.macros).length > 0) {
+            console.log('  Macro Bindings:');
+            const bars = UI.actionBarManager.listActionBars();
+            bars.forEach(barName => {
+              const bar = UI.actionBarManager.getActionBar(barName);
+              if (bar) {
+                Object.keys(bar.macroBindings).forEach(slot => {
+                  console.log(`    ${barName} Slot ${slot}: ${bar.macroBindings[slot]}`);
+                });
+              }
+            });
+          }
         }
       } else {
         console.error('[Console] UI system not available');
@@ -653,31 +659,79 @@ const Console = {
     });
 
     // Action bar commands
-    this.register('setactionbarslots', 'Set action bar slot count', (args) => {
-      if (typeof UI !== 'undefined') {
-        const slots = parseInt(args[0]);
-        if (!isNaN(slots)) {
-          UI.setActionBarSlots(slots);
-        } else {
-          console.error('[Console] Invalid slot count. Usage: setactionbarslots <count>');
-          console.log('[Console] Valid range: 5-20');
-        }
-      } else {
-        console.error('[Console] UI system not available');
+    this.register('actionbar', 'Action bar management commands', (args) => {
+      if (args.length === 0) {
+        console.log('[Console] Action bar commands:');
+        console.log('  actionbar list - List all action bars');
+        console.log('  actionbar create <name> <config> - Create new action bar');
+        console.log('  actionbar remove <name> - Remove action bar');
+        console.log('  actionbar config <name> <property> <value> - Configure action bar');
+        return;
       }
-    });
 
-    this.register('setactionbaropacity', 'Set action bar opacity', (args) => {
-      if (typeof UI !== 'undefined') {
-        const opacity = parseFloat(args[0]);
-        if (!isNaN(opacity)) {
-          UI.setActionBarOpacity(opacity);
-        } else {
-          console.error('[Console] Invalid opacity. Usage: setactionbaropacity <opacity>');
-          console.log('[Console] Valid range: 0.1-1.0');
-        }
-      } else {
-        console.error('[Console] UI system not available');
+      const subCommand = args[0].toLowerCase();
+      
+      switch (subCommand) {
+        case 'list':
+          if (UI.actionBarManager) {
+            const bars = UI.actionBarManager.listActionBars();
+            if (bars.length === 0) {
+              console.log('[Console] No action bars found');
+            } else {
+              console.log('[Console] Action bars:');
+              bars.forEach(name => {
+                const bar = UI.actionBarManager.getActionBar(name);
+                console.log(`  ${name}: ${bar.slots} slots, ${bar.orientation} orientation`);
+              });
+            }
+          } else {
+            console.error('[Console] Action bar manager not available');
+          }
+          break;
+
+        case 'create':
+          if (args.length < 2) {
+            console.error('[Console] Usage: actionbar create <name>');
+            return;
+          }
+          if (UI.actionBarManager) {
+            try {
+              UI.actionBarManager.createActionBar({
+                name: args[1],
+                orientation: 'horizontal',
+                position: { left: 20, bottom: 100 },
+                slots: 10,
+                slotSize: 60,
+                spacing: 4,
+                zIndex: 998,
+                opacity: 0.95
+              });
+              console.log(`[Console] Created action bar '${args[1]}'`);
+            } catch (error) {
+              console.error(`[Console] Failed to create action bar: ${error.message}`);
+            }
+          } else {
+            console.error('[Console] Action bar manager not available');
+          }
+          break;
+
+        case 'remove':
+          if (args.length < 2) {
+            console.error('[Console] Usage: actionbar remove <name>');
+            return;
+          }
+          if (UI.actionBarManager) {
+            UI.actionBarManager.removeActionBar(args[1]);
+            console.log(`[Console] Removed action bar '${args[1]}'`);
+          } else {
+            console.error('[Console] Action bar manager not available');
+          }
+          break;
+
+        default:
+          console.error(`[Console] Unknown action bar command: ${subCommand}`);
+          console.log('[Console] Use "actionbar" for help');
+          break;
       }
     });
 
@@ -686,11 +740,15 @@ const Console = {
       if (args.length === 0) {
         console.log('[Console] Macro system commands:');
         console.log('  macro create <name>=<command> - Create a new macro');
-        console.log('  macro place <bar-slot> <name> - Place macro in action bar slot');
+        console.log('  macro assign <barName-slotIndex> <name> - Assign macro to action bar slot');
+        console.log('  macro remove <barName-slotIndex> - Remove macro from action bar slot');
         console.log('  macro list - List all macros');
         console.log('  macro info <name> - Show macro information');
         console.log('  macro delete <name> - Delete a macro');
         console.log('  macro clear - Clear all macros');
+        console.log('  Examples:');
+        console.log('    macro assign mainBar-0 persistence');
+        console.log('    macro assign secondaryBar-3 teleport');
         return;
       }
 
@@ -707,39 +765,53 @@ const Console = {
             console.error('[Console] Usage: macro create <name>=<command>');
             return;
           }
-          if (typeof UI !== 'undefined') {
-            UI.createMacro(createParts[0], createParts[1]);
+          if (UI.macroManager && UI.macroManager.ensureMacroManager()) {
+            UI.macroManager.createMacro(createParts[0], createParts[1]);
           } else {
-            console.error('[Console] UI system not available');
+            console.error('[Console] Macro manager not available');
           }
           break;
 
-        case 'place':
+        case 'assign':
           if (args.length < 3) {
-            console.error('[Console] Usage: macro place <bar-slot> <name>');
-            console.log('[Console] Example: macro place 2-0 perspective');
+            console.error('[Console] Usage: macro assign <barName-slotIndex> <name>');
+            console.log('[Console] Example: macro assign mainBar-0 persistence');
             return;
           }
-          if (typeof UI !== 'undefined') {
-            UI.placeMacro(args[1], args[2]);
+          if (UI.macroManager && UI.macroManager.ensureMacroManager()) {
+            UI.macroManager.assignMacro(args[1], args[2]);
           } else {
-            console.error('[Console] UI system not available');
+            console.error('[Console] Macro manager not available');
+          }
+          break;
+
+        case 'remove':
+          if (args.length < 2) {
+            console.error('[Console] Usage: macro remove <barName-slotIndex>');
+            console.log('[Console] Example: macro remove mainBar-0');
+            return;
+          }
+          if (UI.macroManager && UI.macroManager.ensureMacroManager()) {
+            UI.macroManager.removeMacro(args[1]);
+          } else {
+            console.error('[Console] Macro manager not available');
           }
           break;
 
         case 'list':
-          if (typeof UI !== 'undefined') {
-            const macroNames = Object.keys(UI.macros);
+          if (UI.macroManager && UI.macroManager.ensureMacroManager()) {
+            const macroNames = UI.macroManager.listMacros();
             if (macroNames.length === 0) {
               console.log('[Console] No macros found');
             } else {
               console.log('[Console] Available macros:');
               macroNames.forEach(name => {
-                console.log(`  ${name}: ${UI.macros[name].command}`);
+                const macro = UI.macroManager.getMacro(name);
+                console.log(`  ${name}: ${macro.command}`);
               });
             }
           } else {
-            console.error('[Console] UI system not available');
+            console.error('[Console] Macro manager not available');
           }
           break;
 
@@ -748,8 +820,8 @@ const Console = {
             console.error('[Console] Usage: macro info <name>');
             return;
           }
-          if (typeof UI !== 'undefined') {
-            const macro = UI.macros[args[1]];
+          if (UI.macroManager && UI.macroManager.ensureMacroManager()) {
+            const macro = UI.macroManager.getMacro(args[1]);
             if (macro) {
               console.log(`[Console] Macro: ${macro.name}`);
               console.log(`  Command: ${macro.command}`);
@@ -758,7 +830,7 @@ const Console = {
               console.error(`[Console] Macro '${args[1]}' not found`);
             }
           } else {
-            console.error('[Console] UI system not available');
+            console.error('[Console] Macro manager not available');
           }
           break;
 
@@ -767,40 +839,18 @@ const Console = {
             console.error('[Console] Usage: macro delete <name>');
             return;
           }
-          if (typeof UI !== 'undefined') {
-            if (UI.macros[args[1]]) {
-              delete UI.macros[args[1]];
-              delete UI.macroIcons[args[1]];
-              // Remove from action bar bindings
-              Object.keys(UI.actionBarBindings.bar1).forEach(slot => {
-                if (UI.actionBarBindings.bar1[slot] === args[1]) {
-                  delete UI.actionBarBindings.bar1[slot];
-                }
-              });
-              Object.keys(UI.actionBarBindings.bar2).forEach(slot => {
-                if (UI.actionBarBindings.bar2[slot] === args[1]) {
-                  delete UI.actionBarBindings.bar2[slot];
-                }
-              });
-              UI.saveMacros();
-              console.log(`[Console] Deleted macro '${args[1]}'`);
-            } else {
-              console.error(`[Console] Macro '${args[1]}' not found`);
-            }
+          if (UI.macroManager && UI.macroManager.ensureMacroManager()) {
+            UI.macroManager.deleteMacro(args[1]);
           } else {
-            console.error('[Console] UI system not available');
+            console.error('[Console] Macro manager not available');
           }
           break;
 
         case 'clear':
-          if (typeof UI !== 'undefined') {
-            UI.macros = {};
-            UI.macroIcons = {};
-            UI.actionBarBindings = { bar1: {}, bar2: {} };
-            UI.saveMacros();
-            console.log('[Console] All macros cleared');
+          if (UI.macroManager && UI.macroManager.ensureMacroManager()) {
+            UI.macroManager.clearAllMacros();
           } else {
-            console.error('[Console] UI system not available');
+            console.error('[Console] Macro manager not available');
           }
           break;
 
@@ -816,14 +866,14 @@ const Console = {
 };
 
 // Initialize console system
-Console.init();
+window.UI.console.init();
 
 // Expose console to global scope for easy access
-window.gameConsole = Console;
+window.gameConsole = window.UI.console;
 
 // Global function to execute commands from browser console
 window.cmd = function(command) {
-  Console.execute(command);
+  window.UI.console.execute(command);
 };
 
 // Show welcome message and available commands

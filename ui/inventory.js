@@ -1,6 +1,4 @@
 // ui/inventory.js
-if (!window.UI) window.UI = {};
-
 // Inventory System
 window.UI.inventory = {
   // Configuration
@@ -261,3 +259,15 @@ window.UI.inventory = {
     }
   }
 };
+
+function initInventoryUI() {
+  if (window.UI && window.UI.inventory && window.UI.inventory.init) {
+    window.UI.inventory.init();
+  }
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initInventoryUI);
+} else {
+  initInventoryUI();
+}

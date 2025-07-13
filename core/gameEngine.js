@@ -65,6 +65,11 @@ const Player = {
   size: 30, // triangle size
 
   update(input, delta) {
+    // Block movement if input bar is open
+    if (typeof UI !== 'undefined' && UI.inputBar && UI.inputBar.inputBarOpen) {
+      return;
+    }
+    
     // Movement vector
     let moveX = 0;
     let moveY = 0;
@@ -161,8 +166,8 @@ const GameEngine = {
   },
   render(ctx) {
     // Get canvas dimensions from responsive canvas system
-    const canvasWidth = ResponsiveCanvas ? ResponsiveCanvas.currentWidth : ctx.canvas.width;
-    const canvasHeight = ResponsiveCanvas ? ResponsiveCanvas.currentHeight : ctx.canvas.height;
+    const canvasWidth = window.UI.responsiveCanvas ? window.UI.responsiveCanvas.currentWidth : ctx.canvas.width;
+    const canvasHeight = window.UI.responsiveCanvas ? window.UI.responsiveCanvas.currentHeight : ctx.canvas.height;
     
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     
@@ -206,5 +211,8 @@ const GameEngine = {
     inputState = newState;
   }
 };
+
+// Export GameEngine for global access
+window.GameEngine = GameEngine;
 
 // TODO: Export GameEngine if using modules

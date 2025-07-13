@@ -1,6 +1,3 @@
-// ui/inputBar.js
-if (!window.UI) window.UI = {};
-
 // Input Bar System
 window.UI.inputBar = {
   // Configuration
@@ -60,8 +57,11 @@ window.UI.inputBar = {
 
   // Show the input bar and focus
   openInputBar() {
+    console.log('[UI] Opening input bar');
     if (this.inputBarOpen) return;
+    
     this.inputBarOpen = true;
+    console.log('[UI] Input bar open:', this.inputBarOpen);
     this.inputValue = '';
     this.inputElement.value = '';
     this.inputElement.style.display = 'block';
@@ -79,6 +79,7 @@ window.UI.inputBar = {
   closeInputBar() {
     if (!this.inputBarOpen) return;
     this.inputBarOpen = false;
+    console.log('[UI] Closing Input bar. open:', this.inputBarOpen);
     this.inputElement.style.display = 'none';
     this.inputElement.value = '';
     this.inputValue = '';
