@@ -30,9 +30,27 @@ if (!window.ActionBar) {
       this.hoveredSlot = null;
       this.activeSlot = null;
       this.scale = 1.0;
+      this._iconCache = {}; // Cache for loaded macro icons
       this._createCanvas();
       this._setupListeners();
       this.render();
+    }
+    preloadIcons() {
+      // Preload all macro icons for current bindings
+      if (!window.UI || !window.UI.macroManager) return;
+      for (let i = 0; i < this.slots; i++) {
+        const macroName = this.macroBindings[i];
+        if (macroName && window.UI.macroManager.macroIcons[macroName]) {
+          const iconUrl = window.UI.macroManager.macroIcons[macroName];
+          let img = this._iconCache[macroName];
+          if (!img) {
+            img = new window.Image();
+            img.src = iconUrl;
+            this._iconCache[macroName] = img;
+            img.onload = () => this.render();
+          }
+        }
+      }
     }
     _createCanvas() {
       const canvas = document.createElement('canvas');
@@ -149,25 +167,44 @@ if (!window.ActionBar) {
         ctx.lineWidth = 1;
         ctx.strokeRect(slotX, slotY, this.slotSize, this.slotSize);
         const macroName = this.macroBindings[i];
+        // --- Macro Icon Drawing ---
         if (macroName && UI.macroManager && UI.macroManager.ensureMacroManager() && UI.macroManager.macroIcons[macroName]) {
-          const img = new Image();
-          img.onload = () => {
+          const iconUrl = UI.macroManager.macroIcons[macroName];
+          let img = this._iconCache[macroName];
+          if (!img) {
+            img = new window.Image();
+            img.src = iconUrl;
+            this._iconCache[macroName] = img;
+            // Redraw when loaded
+            img.onload = () => this.render();
+          }
+          // If loaded, draw immediately
+          if (img.complete && img.naturalWidth > 0) {
             ctx.drawImage(
               img,
               slotX + (this.slotSize - 40) / 2,
               slotY + (this.slotSize - 40) / 2,
               40, 40
             );
-          };
-          img.src = UI.macroManager.macroIcons[macroName];
+          }
         }
+        // --- Key Label Drawing (always on top) ---
         ctx.fillStyle = this.colors.label;
         ctx.font = 'bold 16px sans-serif';
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.lineWidth = 3;
+        // Draw outline for better contrast
+        ctx.strokeText(
+          this._slotLabel(i),
+          slotX + this.slotSize / 2,
+          slotY + this.slotSize / 2
+        );
         ctx.fillText(
           this._slotLabel(i),
           slotX + this.slotSize / 2,
-          slotY + this.slotSize / 2 + 5
+          slotY + this.slotSize / 2
         );
         if (!macroName) {
           ctx.fillStyle = 'rgba(136,136,136,0.4)';
@@ -197,10 +234,12 @@ if (!window.ActionBar) {
     assignMacro(slotIndex, macroName) {
       this.macroBindings[slotIndex] = macroName;
       this.render();
+      if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveBindings();
     }
     removeMacro(slotIndex) {
       delete this.macroBindings[slotIndex];
       this.render();
+      if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveBindings();
     }
     updateConfig(newConfig) {
       Object.assign(this, newConfig);
@@ -239,6 +278,45 @@ if (!window.ActionBar) {
 window.UI.actionBarManager = {
   bars: {},
   keyBindingMap: {}, // Maps key codes to { barName, slotIndex }
+
+  bindingsStorageKey: 'ui_actionBarBindings',
+
+  saveBindings() {
+    const bindings = {};
+    for (const barName in this.bars) {
+      const bar = this.bars[barName];
+      bindings[barName] = { ...bar.macroBindings };
+    }
+    try {
+      localStorage.setItem(this.bindingsStorageKey, JSON.stringify(bindings));
+    } catch (e) {
+      console.warn('[UI] Failed to save action bar bindings:', e);
+    }
+  },
+
+  loadBindings() {
+    try {
+      const raw = localStorage.getItem(this.bindingsStorageKey);
+      if (!raw) return;
+      const bindings = JSON.parse(raw);
+      for (const barName in bindings) {
+        const bar = this.getActionBar(barName);
+        if (bar && bindings[barName]) {
+          bar.macroBindings = { ...bindings[barName] };
+          // bar.preloadIcons(); // <-- Remove this line for Option 1
+          bar.render();
+        }
+      }
+    } catch (e) {
+      console.warn('[UI] Failed to load action bar bindings:', e);
+    }
+  },
+
+  preloadAllIcons() {
+    for (const barName in this.bars) {
+      this.bars[barName].preloadIcons();
+    }
+  },
 
   createActionBar(config) {
     if (!config.name) throw new Error('Action bar must have a unique name');
@@ -359,7 +437,11 @@ function createDefaultActionBars() {
 }
 
 if (document.readyState === 'loading') {
-  window.addEventListener('DOMContentLoaded', createDefaultActionBars);
+  window.addEventListener('DOMContentLoaded', () => {
+    createDefaultActionBars();
+    window.UI.actionBarManager.loadBindings();
+  });
 } else {
   createDefaultActionBars();
+  window.UI.actionBarManager.loadBindings();
 }

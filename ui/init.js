@@ -129,7 +129,12 @@ const UI = {
     } else {
       console.warn('[UI] Action bar manager not found');
     }
-    
+
+    // Preload all action bar icons after all modules are loaded and initialized
+    if (window.UI.actionBarManager && typeof window.UI.actionBarManager.preloadAllIcons === 'function') {
+      window.UI.actionBarManager.preloadAllIcons();
+    }
+
     console.log('[UI] All UI submodules initialized');
   },
 

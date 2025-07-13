@@ -242,6 +242,13 @@ This document outlines the next phase of development, building upon the solid fo
 
 ### 12. Macro Management UI System (NEW)
 
+**Extensibility Note:**
+- The action bar binding system must be designed to support more than just macros in the future.
+- It should allow binding spells, abilities, consumable items, and custom player controls (e.g., auto-run, open inventory, open quests dialog, toggle lock-action bars, etc.).
+- The data model for bindings should be flexible enough to store different types of actions (macros, spells, items, controls, etc.).
+- The invocation system should be extensible: currently it only invokes commands, but in the future it must be able to invoke spells, use items (showing item icons and greying out if unavailable), and trigger custom control actions.
+- The UI should be able to display the correct icon and state for each binding type (e.g., item icons, spell icons, macro icons, greying out if not usable).
+
 **Overview:**
 - Introduce a visual macro management system accessible via the `/macro` command or a UI button.
 - Users can create, edit, delete, and bind macros through a pop-up grid UI similar to the inventory.
@@ -258,7 +265,7 @@ This document outlines the next phase of development, building upon the solid fo
   - PNG icon upload (with preview, not saved until macro is saved).
   - Button to generate a random icon (uses existing random icon logic, previewed but not saved until macro is saved).
   - Save button to create macro and persist to localStorage.
-- Macro edit dialog:
+- Macro edit dialog (acceissible after clicking on an existing macro in the macro gird):
   - Edit name, command, or icon (upload or randomize).
   - Delete macro button.
   - Bind to action bar:

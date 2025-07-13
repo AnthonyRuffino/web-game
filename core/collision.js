@@ -109,9 +109,6 @@ const Collision = {
 
     // Check if destination position collides
     if (this.checkPositionCollision(toX, toY)) {
-      if (this.config.debug) {
-        console.log(`[Collision] Movement blocked from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
-      }
       return { x: fromX, y: fromY, collided: true };
     }
 
