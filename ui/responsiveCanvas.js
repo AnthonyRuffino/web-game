@@ -46,10 +46,32 @@ window.UI.responsiveCanvas = {
     
     // Add event listeners
     this.setupEventListeners();
+
+    // Attach zoom scroll handler (fix for lost handler)
+    this.attachZoomScrollHandler();
     
     console.log('[ResponsiveCanvas] Responsive canvas system initialized');
     console.log(`[ResponsiveCanvas] Target aspect ratio: ${this.config.targetAspectRatio}`);
     console.log(`[ResponsiveCanvas] Initial size: ${this.currentWidth}x${this.currentHeight}`);
+  },
+
+  // Attach mouse wheel handler for zooming
+  attachZoomScrollHandler() {
+    if (!this.canvas) return;
+    // Remove any previous handler to avoid duplicates
+    this.canvas.removeEventListener('wheel', window._zoomScrollHandler, { passive: false });
+    // Define and attach the handler
+    window._zoomScrollHandler = function(e) {
+      e.preventDefault();
+      if (typeof window.setZoom === 'function') {
+        if (e.deltaY < 0) {
+          window.setZoom(window.ZOOM * 1.1);
+        } else if (e.deltaY > 0) {
+          window.setZoom(window.ZOOM / 1.1);
+        }
+      }
+    };
+    this.canvas.addEventListener('wheel', window._zoomScrollHandler, { passive: false });
   },
 
   // Setup event listeners for responsive behavior
@@ -74,6 +96,10 @@ window.UI.responsiveCanvas = {
     // Prevent context menu on canvas
     this.canvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
+    });
+    // Re-attach zoom scroll handler after resize
+    window.addEventListener('resize', () => {
+      this.attachZoomScrollHandler();
     });
 
     console.log('[ResponsiveCanvas] Event listeners configured');

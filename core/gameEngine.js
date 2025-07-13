@@ -23,20 +23,20 @@ window.togglePerspectiveMode = function() {
 };
 
 // --- Zoom support ---
-let ZOOM = 1.0;
-const ZOOM_MIN = 0.5;
-const ZOOM_MAX = 3.0;
+window.ZOOM = 1.0;
+window.ZOOM_MIN = 0.5;
+window.ZOOM_MAX = 3.0;
 
 window.setZoom = function(z) {
-  ZOOM = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+  window.ZOOM = Math.max(window.ZOOM_MIN, Math.min(window.ZOOM_MAX, z));
 };
 
 window.zoomIn = function() { 
-  setZoom(ZOOM * 1.1); 
+  window.setZoom(window.ZOOM * 1.1); 
 };
 
 window.zoomOut = function() { 
-  setZoom(ZOOM / 1.1); 
+  window.setZoom(window.ZOOM / 1.1); 
 };
 
 // Attach wheel event to canvas (after DOM loaded)
@@ -46,9 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       if (e.deltaY < 0) {
-        setZoom(ZOOM * 1.1);
+        window.setZoom(window.ZOOM * 1.1);
       } else if (e.deltaY > 0) {
-        setZoom(ZOOM / 1.1);
+        window.setZoom(window.ZOOM / 1.1);
       }
     }, { passive: false });
   }
@@ -175,7 +175,7 @@ const GameEngine = {
     // Apply camera transforms
     ctx.save();
     ctx.translate(canvasWidth / 2, canvasHeight / 2);
-    ctx.scale(ZOOM, ZOOM); // Apply zoom before rotation/translation
+    ctx.scale(window.ZOOM, window.ZOOM); // Apply zoom before rotation/translation
     
     if (PERSPECTIVE_MODE === 'player-perspective') {
       // Rotate the entire world around the player
@@ -188,15 +188,15 @@ const GameEngine = {
     
     // Render background texture as part of the world
     if (typeof Background !== 'undefined') {
-      const cameraWidth = canvasWidth / ZOOM;
-      const cameraHeight = canvasHeight / ZOOM;
-      Background.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight, ZOOM);
+      const cameraWidth = canvasWidth / window.ZOOM;
+      const cameraHeight = canvasHeight / window.ZOOM;
+      Background.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight, window.ZOOM);
     }
     
     // Render world using chunk system
     if (typeof World !== 'undefined') {
-      const cameraWidth = canvasWidth / ZOOM;
-      const cameraHeight = canvasHeight / ZOOM;
+      const cameraWidth = canvasWidth / window.ZOOM;
+      const cameraHeight = canvasHeight / window.ZOOM;
       World.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight);
     }
     Player.render(ctx);
