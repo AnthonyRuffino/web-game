@@ -151,7 +151,8 @@ const World = {
             foliageColor: '#1B5E20',
             trunkWidth: 12,
             foliageRadius: 12,
-            opacity: 1.0
+            opacity: 1.0,
+            //drawOffsetY: -40
           });
           
           // Merge with world-specific properties

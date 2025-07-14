@@ -313,6 +313,29 @@ window.UI.skinsManager = {
     const openUploadDialog = (cacheKey, isCanvas = false) => {
       if (document.getElementById('skins-upload-dialog')) return;
 
+      // Helper: get target size for tree skins
+      function getTreeTargetSize() {
+        if (window.TreeEntity) {
+          const def = window.TreeEntity.defaultConfig;
+          return { width: def.size, height: def.imageHeight };
+        }
+        return { width: 64, height: 64 };
+      }
+
+      // Helper: resize image to target size
+      function resizeImageToTarget(img, width, height, callback) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => {
+          const resizedImg = new window.Image();
+          resizedImg.onload = () => callback(resizedImg, canvas.toDataURL('image/png'));
+          resizedImg.src = URL.createObjectURL(blob);
+        }, 'image/png');
+      }
+
       // Overlay
       const dialogOverlay = document.createElement('div');
       dialogOverlay.id = 'skins-upload-dialog';
@@ -395,8 +418,21 @@ window.UI.skinsManager = {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = function () {
-          newPreview.src = reader.result;
-          newPreview._pendingDataURL = reader.result;
+          // If this is a tree skin, auto-resize to match procedural art
+          if (cacheKey.startsWith('tree-')) {
+            const img = new window.Image();
+            img.onload = function () {
+              const { width, height } = getTreeTargetSize();
+              resizeImageToTarget(img, width, height, (resizedImg, dataUrl) => {
+                newPreview.src = dataUrl;
+                newPreview._pendingDataURL = dataUrl;
+              });
+            };
+            img.src = reader.result;
+          } else {
+            newPreview.src = reader.result;
+            newPreview._pendingDataURL = reader.result;
+          }
         };
         reader.readAsDataURL(file);
       });
