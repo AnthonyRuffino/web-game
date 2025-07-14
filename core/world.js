@@ -251,43 +251,63 @@ const World = {
     };
   },
 
+  // Common helper for entity placement probability
+  shouldPlaceEntity(tileX, tileY, baseChance, hashSalt, variationMod, variationDiv, minChance, maxChance, hashLabel = '') {
+    // Deterministic hash with salt and label for entity type
+    const hash = this.betterHash(`${this.config.seed + hashSalt}-${hashLabel}-${tileX}-${tileY}`);
+    const variation = (hash % variationMod - Math.floor(variationMod / 2)) / variationDiv;
+    const chance = Math.max(minChance, Math.min(maxChance, baseChance + variation));
+    const normalizedHash = (hash % 1000) / 1000;
+    return normalizedHash < chance;
+  },
+
   // Determine if grass should be placed at a given tile position
   shouldPlaceGrass(tileX, tileY) {
-    // Use better hash for more random distribution
-    const hash = this.betterHash(`${this.config.seed}-grass-${tileX}-${tileY}`);
-    
-    // Place grass on approximately 15% of tiles with some variation
-    const baseChance = 0.05;
-    const variation = (hash % 200 - 100) / 1000; // ±10% variation
-    const grassChance = Math.max(0.05, baseChance + variation);
-    const normalizedHash = (hash % 1000) / 1000;
-    
-    return normalizedHash < grassChance;
-  }
-  ,
+    // All magic numbers are now parameters:
+    // baseChance, hashSalt, variationMod, variationDiv, minChance, maxChance
+    return this.shouldPlaceEntity(
+      tileX,
+      tileY,
+      0.05,         // baseChance
+      0,            // hashSalt (can be 0 for grass)
+      200,          // variationMod (was 200)
+      1000,         // variationDiv (was 1000)
+      0.05,         // minChance
+      1,            // maxChance
+      'grass'       // hashLabel
+    );
+  },
 
   // Determine if a tree should be placed at a given tile position
   shouldPlaceTree(tileX, tileY) {
-    // Use better hash for more random distribution
-    const hash = this.betterHash(`${this.config.seed}-tree-${tileX}-${tileY}`);
-    // Place trees on approximately 2.5% of tiles with some variation (was 5%)
-    const baseChance = 0.025;
-    const variation = (hash % 150 - 75) / 1000; // ±7.5% variation
-    const treeChance = Math.max(0.01, Math.min(0.04, baseChance + variation));
-    const normalizedHash = (hash % 1000) / 1000;
-    return normalizedHash < treeChance;
+    // Use the common helper for entity placement
+    return this.shouldPlaceEntity(
+      tileX,
+      tileY,
+      0.025,        // baseChance (was 0.025)
+      10000,        // hashSalt (unique for trees)
+      150,          // variationMod (was 150)
+      1000,         // variationDiv (was 1000)
+      0.01,         // minChance (was 0.01)
+      0.04,         // maxChance (was 0.04)
+      'tree'        // hashLabel
+    );
   },
 
   // Determine if a rock should be placed at a given tile position
   shouldPlaceRock(tileX, tileY) {
-    // Use better hash for more random distribution
-    const hash = this.betterHash(`${this.config.seed}-rock-${tileX}-${tileY}`);
-    // Place rocks on approximately 1.5% of tiles with some variation (was 3%)
-    const baseChance = 0.015;
-    const variation = (hash % 100 - 50) / 1000; // ±5% variation
-    const rockChance = Math.max(0.005, Math.min(0.025, baseChance + variation));
-    const normalizedHash = (hash % 1000) / 1000;
-    return normalizedHash < rockChance;
+    // Use the common helper for entity placement
+    return this.shouldPlaceEntity(
+      tileX,
+      tileY,
+      0.015,        // baseChance (was 0.015)
+      20000,        // hashSalt (unique for rocks)
+      100,          // variationMod (was 100)
+      1000,         // variationDiv (was 1000)
+      0.005,        // minChance (was 0.005)
+      0.025,        // maxChance (was 0.025)
+      'rock'        // hashLabel
+    );
   },
 
   // Get chunks that need to be rendered based on camera view
