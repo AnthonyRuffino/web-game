@@ -4,8 +4,8 @@
 const Background = {
   // Background texture configuration
   config: {
-    dotSize: 2,
-    dotSpacing: 20,
+    dotSize: 1,
+    dotSpacing: 32,
     dotColor: '#333333',
     dotAlpha: 0.3
   },
