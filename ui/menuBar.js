@@ -66,7 +66,7 @@ window.UI.menuBar = {
 
     // Macro menu
     bar.appendChild(makeButton(
-      '⚡',
+      '\u26a1',
       'Open Macro Menu',
       () => {
         if (window.UI.macroManager && window.UI.macroManager.openMacroUI) {
@@ -74,6 +74,35 @@ window.UI.menuBar = {
         }
       }
     ));
+
+    // --- Grid toggle button ---
+    const gridBtn = makeButton(
+      '\u25A9',
+      'Toggle World Grid Overlay',
+      () => {
+        if (window.cmd) window.cmd('grid');
+        // Update button style immediately for feedback
+        updateGridButton();
+      }
+    );
+    bar.appendChild(gridBtn);
+    function updateGridButton() {
+      if (window.RENDER_GRID) {
+        gridBtn.style.background = '#4ECDC4';
+        gridBtn.style.color = '#222';
+        gridBtn.textContent = '\u25A9'; // Could use a different icon if desired
+        gridBtn.title = 'Grid ON (click to turn off)';
+      } else {
+        gridBtn.style.background = '#222';
+        gridBtn.style.color = '#fff';
+        gridBtn.textContent = '\u25A9';
+        gridBtn.title = 'Grid OFF (click to turn on)';
+      }
+    }
+    // Keep button in sync with grid state
+    updateGridButton();
+    setInterval(updateGridButton, 500); // Poll for state changes (or use an event system if available)
+    // --- END Grid toggle button ---
 
     // Placeholders for future menus
     bar.appendChild(makeButton('📜', 'Quests (coming soon)', null, false));

@@ -257,13 +257,14 @@ const World = {
     const hash = this.betterHash(`${this.config.seed}-grass-${tileX}-${tileY}`);
     
     // Place grass on approximately 15% of tiles with some variation
-    const baseChance = 0.15;
+    const baseChance = 0.05;
     const variation = (hash % 200 - 100) / 1000; // ±10% variation
-    const grassChance = Math.max(0.05, Math.min(0.25, baseChance + variation));
+    const grassChance = Math.max(0.05, baseChance + variation);
     const normalizedHash = (hash % 1000) / 1000;
     
     return normalizedHash < grassChance;
-  },
+  }
+  ,
 
   // Determine if a tree should be placed at a given tile position
   shouldPlaceTree(tileX, tileY) {
@@ -510,6 +511,12 @@ const World = {
     // Clean up distant chunks (silently)
     this.cleanupChunks(cameraX / this.config.tileSize, cameraY / this.config.tileSize);
 
+    // --- Render grid overlay above world entities but below player/trees ---
+    if (window.RENDER_GRID) {
+      this.renderGrid(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle);
+    }
+    // --- END grid overlay ---
+
     // Render player after world entities but before trees
     if (typeof Player !== 'undefined') {
       Player.render(ctx);
@@ -534,6 +541,42 @@ const World = {
     });
     // --- END NEW ---
 
+    ctx.restore();
+  },
+
+  // --- Render a grid overlay (32x32 cells) over the world, rotating with the world if in player-perspective mode ---
+  renderGrid(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle) {
+    ctx.save();
+    // The camera transform (rotation/translation) is already applied in GameEngine.render
+    // so we just draw in world coordinates here
+    const tileSize = this.config.tileSize || 32;
+    const left = cameraX - cameraWidth / 2;
+    const right = cameraX + cameraWidth / 2;
+    const top = cameraY - cameraHeight / 2;
+    const bottom = cameraY + cameraHeight / 2;
+    // Snap to nearest grid line
+    const startX = Math.floor(left / tileSize) * tileSize;
+    const endX = Math.ceil(right / tileSize) * tileSize;
+    const startY = Math.floor(top / tileSize) * tileSize;
+    const endY = Math.ceil(bottom / tileSize) * tileSize;
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.35;
+    // Draw vertical lines
+    for (let x = startX; x <= endX; x += tileSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, bottom);
+      ctx.stroke();
+    }
+    // Draw horizontal lines
+    for (let y = startY; y <= endY; y += tileSize) {
+      ctx.beginPath();
+      ctx.moveTo(left, y);
+      ctx.lineTo(right, y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1.0;
     ctx.restore();
   },
 
@@ -710,4 +753,6 @@ const World = {
 };
 
 // Expose to global scope
-window.World = World; 
+window.World = World;
+// Add global toggle for grid rendering
+window.RENDER_GRID = false; 

@@ -976,6 +976,18 @@ window.UI.console = {
       }
     });
 
+    // Toggle grid overlay command
+    this.register('grid', 'Toggle world grid overlay on/off', (args) => {
+      window.RENDER_GRID = !window.RENDER_GRID;
+      console.log(`[Console] World grid overlay is now ${window.RENDER_GRID ? 'ON' : 'OFF'}`);
+      if (window.GameEngine && window.GameEngine.render && window.UI && window.UI.responsiveCanvas && window.UI.responsiveCanvas.ctx) {
+        window.GameEngine.render(window.UI.responsiveCanvas.ctx);
+      }
+    });
+    this.register('togglegrid', 'Alias for grid command', (args) => {
+      window.cmd('grid');
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
