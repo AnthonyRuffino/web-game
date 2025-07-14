@@ -115,54 +115,26 @@ const World = {
           const grassX = tileX * this.config.tileSize + this.config.tileSize / 2;
           const grassY = tileY * this.config.tileSize + this.config.tileSize / 2;
           
+          // Create grass using EntityRenderer
+          const grassEntity = EntityRenderer.createGrass({
+            isSprite: false,
+            size: 32,
+            bladeColor: '#81C784',
+            bladeWidth: 1.5,
+            clusterCount: 3,
+            bladeCount: 5,
+            bladeLength: 10,
+            bladeAngleVariation: 30,
+            opacity: 1.0
+          });
+          
+          // Merge with world-specific properties
           chunk.entities.push({
-            type: 'grass',
+            ...grassEntity,
             x: grassX,
             y: grassY,
             tileX: tileX,
-            tileY: tileY,
-            renderType: 'shape', // 'shape' or 'sprite'
-            sprite: null, // Image object for sprite rendering
-            draw: function(ctx) {
-              // Generate deterministic cluster positions and directions for this grass
-              const clusterHash = World.betterHash(`${World.config.seed}-grass-cluster-${this.tileX}-${this.tileY}`);
-              const clusterSeed = clusterHash % 1000;
-              
-              // Draw 3 clusters of grass
-              for (let cluster = 0; cluster < 3; cluster++) {
-                // Calculate cluster center within the tile
-                const clusterOffsetX = ((clusterSeed + cluster * 123) % 200 - 100) / 100; // -1 to 1
-                const clusterOffsetY = ((clusterSeed + cluster * 456) % 200 - 100) / 100; // -1 to 1
-                const clusterX = this.x + clusterOffsetX * 12; // Within tile bounds
-                const clusterY = this.y + clusterOffsetY * 12;
-                
-                // Calculate base direction for this cluster
-                const baseAngle = ((clusterSeed + cluster * 789) % 360) * Math.PI / 180;
-                
-                // Draw 4-6 grass blades per cluster
-                const bladeCount = 4 + (clusterSeed + cluster * 321) % 3; // 4-6 blades
-                for (let blade = 0; blade < bladeCount; blade++) {
-                  // Vary the angle slightly for each blade
-                  const angleVariation = ((clusterSeed + cluster * 100 + blade * 50) % 60 - 30) * Math.PI / 180;
-                  const angle = baseAngle + angleVariation;
-                  
-                  // Vary the length slightly
-                  const length = 8 + (clusterSeed + cluster * 200 + blade * 30) % 6; // 8-13 pixels
-                  
-                  // Calculate blade end point
-                  const endX = clusterX + Math.cos(angle) * length;
-                  const endY = clusterY + Math.sin(angle) * length;
-                  
-                  // Draw the grass blade
-                  ctx.strokeStyle = '#81C784';
-                  ctx.lineWidth = 1.5;
-                  ctx.beginPath();
-                  ctx.moveTo(clusterX, clusterY);
-                  ctx.lineTo(endX, endY);
-                  ctx.stroke();
-                }
-              }
-            }
+            tileY: tileY
           });
         }
         

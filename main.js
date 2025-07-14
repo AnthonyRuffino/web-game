@@ -34,6 +34,7 @@ async function startGame() {
     'core/background.js',
     'core/entities/rock.js',
     'core/entities/tree.js',
+    'core/entities/grass.js',
     'core/entityRenderer.js',
     'core/world.js',
     'core/persistence.js',

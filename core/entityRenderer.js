@@ -240,8 +240,15 @@ const EntityRenderer = {
       console.warn('[EntityRenderer] TreeEntity module not found');
     }
     
+    // Grass entity module
+    if (typeof GrassEntity !== 'undefined') {
+      this.entityModules.grass = GrassEntity;
+      console.log('[EntityRenderer] Registered GrassEntity module');
+    } else {
+      console.warn('[EntityRenderer] GrassEntity module not found');
+    }
+    
     // Future entity modules can be registered here
-    // this.entityModules.grass = GrassEntity;
   },
 
   // Get cached image by key
@@ -319,6 +326,15 @@ const EntityRenderer = {
       return null;
     }
     return this.entityModules.tree.create(config, this);
+  },
+
+  // Create a grass entity (delegates to GrassEntity module)
+  createGrass(config = {}) {
+    if (!this.entityModules.grass) {
+      console.error('[EntityRenderer] GrassEntity module not available');
+      return null;
+    }
+    return this.entityModules.grass.create(config, this);
   },
 
   // Generic entity creation method

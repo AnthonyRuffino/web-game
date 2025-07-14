@@ -954,6 +954,28 @@ window.UI.console = {
       }
     });
 
+    // Test grass entity creation command
+    this.register('testgrass', 'Create a test grass entity to verify caching', (args) => {
+      if (typeof EntityRenderer !== 'undefined' && EntityRenderer.createGrass) {
+        const grass = EntityRenderer.createGrass({
+          isSprite: false,
+          size: 32,
+          bladeColor: '#81C784',
+          bladeWidth: 1.5,
+          clusterCount: 3,
+          bladeCount: 5,
+          bladeLength: 10,
+          bladeAngleVariation: 30,
+          opacity: 1.0
+        });
+        console.log('[Console] Test grass created:', grass);
+        console.log('[Console] Grass cache key:', grass.cacheKey);
+        console.log('[Console] Grass render type:', grass.renderType);
+      } else {
+        console.error('[Console] EntityRenderer or createGrass not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
