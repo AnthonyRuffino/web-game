@@ -58,7 +58,7 @@ const Player = {
   y: 0, // Will be set by world system
   angle: 0, // radians, 0 = up
   speed: 400, // pixels per second
-  rotSpeed: Math.PI, // radians per second
+  rotSpeed: Math.PI * 0.8, // radians per second (20% slower)
   size: 30, // triangle size
   renderType: 'shape', // 'shape' or 'sprite'
   sprite: null, // Image object for sprite rendering
@@ -73,8 +73,9 @@ const Player = {
     let moveX = 0;
     let moveY = 0;
     // Rotation
-    if (input.left) Player.angle -= Player.rotSpeed * delta;
-    if (input.right) Player.angle += Player.rotSpeed * delta;
+    const rotationSpeed = (input.backward ? .5 : 1 ) * Player.rotSpeed;
+    if (input.left) Player.angle -= rotationSpeed * delta;
+    if (input.right) Player.angle += rotationSpeed * delta;
     // Forward/backward
     if (input.forward) {
       moveX += Math.sin(Player.angle);

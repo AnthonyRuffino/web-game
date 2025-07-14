@@ -20,7 +20,7 @@ const TreeEntity = {
     // Fixed-angle and offset support
     fixedScreenAngle: 0, // degrees; 0 = always up; null = normal rotation
     drawOffsetX: 0,      // pixels; offset for rendering alignment
-    drawOffsetY: -40 // will be computed
+    drawOffsetY: -20 // will be computed
   },
 
   // Generate a unique cache key for tree parameters (do NOT include angle/offset)
