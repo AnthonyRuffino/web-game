@@ -4,6 +4,7 @@
 const TreeEntity = {
   // Default tree configuration
   defaultConfig: {
+    isSprite: true,
     size: 24,
     trunkColor: '#5C4033',
     foliageColor: '#1B5E20',
@@ -16,14 +17,14 @@ const TreeEntity = {
   getCacheKey(config) {
     const params = {
       type: 'tree',
-      size: config.size || this.defaultConfig.size,
-      trunkColor: config.trunkColor || this.defaultConfig.trunkColor,
-      foliageColor: config.foliageColor || this.defaultConfig.foliageColor,
-      trunkWidth: config.trunkWidth || this.defaultConfig.trunkWidth,
-      foliageRadius: config.foliageRadius || this.defaultConfig.foliageRadius,
-      opacity: config.opacity || this.defaultConfig.opacity
+      size: config.size || '-',
+      trunkColor: config.trunkColor || '-',
+      foliageColor: config.foliageColor || '-',
+      trunkWidth: config.trunkWidth || '-',
+      foliageRadius: config.foliageRadius || '-',
+      opacity: config.opacity || '-'
     };
-    return EntityRenderer.hashConfig(params);
+    return 'tree-' + EntityRenderer.hashConfig(params);
   },
 
   // Generate SVG for a tree based on configuration
@@ -40,14 +41,38 @@ const TreeEntity = {
     const trunkY = center - trunkWidth / 2;
     const foliageY = center - foliageRadius - trunkWidth / 2;
 
+    // Generate foliage texture with multiple overlapping circles for more natural look
+    let foliageElements = '';
+    const foliageSpots = 5; // Number of overlapping foliage circles
+    
+    for (let i = 0; i < foliageSpots; i++) {
+      const angle = (i * 72) * (Math.PI / 180); // Distribute evenly around the main foliage
+      const distance = foliageRadius * (0.3 + (i * 0.15) % 0.4); // Varying distances
+      const spotX = center + Math.cos(angle) * distance;
+      const spotY = foliageY + Math.sin(angle) * distance;
+      const spotRadius = foliageRadius * (0.4 + (i * 0.1) % 0.3); // Varying sizes
+      
+      foliageElements += `<circle cx="${spotX.toFixed(1)}" cy="${spotY.toFixed(1)}" r="${spotRadius.toFixed(1)}" fill="${foliageColor}"/>`;
+    }
+
+    // Add trunk texture with a darker outline
+    const trunkOutline = `
+      <rect x="${trunkX - 1}" y="${trunkY - 1}" width="${trunkWidth + 2}" height="${trunkWidth + 2}" 
+            fill="#3E2723" opacity="${opacity * 0.8}"/>
+    `;
+
     const svg = `
       <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <!-- Tree trunk outline -->
+        ${trunkOutline}
         <!-- Tree trunk -->
         <rect x="${trunkX}" y="${trunkY}" width="${trunkWidth}" height="${trunkWidth}" 
               fill="${trunkColor}" opacity="${opacity}"/>
         <!-- Tree foliage -->
         <circle cx="${center}" cy="${foliageY}" r="${foliageRadius}" 
                 fill="${foliageColor}" opacity="${opacity}"/>
+        <!-- Foliage texture -->
+        ${foliageElements}
       </svg>
     `;
 
@@ -72,15 +97,35 @@ const TreeEntity = {
       ctx.save();
       ctx.globalAlpha = opacity;
       
+      // Draw tree trunk outline
+      ctx.fillStyle = '#3E2723';
+      ctx.globalAlpha = opacity * 0.8;
+      ctx.fillRect(trunkX - 1, trunkY - 1, trunkWidth + 2, trunkWidth + 2);
+      
       // Draw tree trunk
       ctx.fillStyle = trunkColor;
+      ctx.globalAlpha = opacity;
       ctx.fillRect(trunkX, trunkY, trunkWidth, trunkWidth);
       
-      // Draw tree foliage
+      // Draw main tree foliage
       ctx.fillStyle = foliageColor;
       ctx.beginPath();
       ctx.arc(x, foliageY, foliageRadius, 0, Math.PI * 2);
       ctx.fill();
+      
+      // Draw foliage texture (matching SVG)
+      const foliageSpots = 5;
+      for (let i = 0; i < foliageSpots; i++) {
+        const angle = (i * 72) * (Math.PI / 180);
+        const distance = foliageRadius * (0.3 + (i * 0.15) % 0.4);
+        const spotX = x + Math.cos(angle) * distance;
+        const spotY = foliageY + Math.sin(angle) * distance;
+        const spotRadius = foliageRadius * (0.4 + (i * 0.1) % 0.3);
+        
+        ctx.beginPath();
+        ctx.arc(spotX, spotY, spotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
       
       ctx.restore();
     };
@@ -88,95 +133,7 @@ const TreeEntity = {
 
   // Create a tree entity with unified rendering
   create(config = {}, entityRenderer) {
-    const finalConfig = { ...this.defaultConfig, ...config };
-    const cacheKey = this.getCacheKey(finalConfig);
-    
-    // Determine initial render type (default to sprite)
-    const initialRenderType = finalConfig.renderType || 'sprite';
-    
-    // Lazy load: only cache what we need based on render type
-    let sprite = null;
-    let canvasImage = null;
-    
-    if (initialRenderType === 'sprite') {
-      // Only load SVG sprite if we're using sprite mode
-      sprite = entityRenderer.getCachedImage(cacheKey);
-      if (!sprite) {
-        const svg = this.generateSVG(finalConfig);
-        sprite = entityRenderer.createAndCacheImage(cacheKey, svg);
-      }
-    } else if (initialRenderType === 'shape') {
-      // Only load canvas image if we're using shape mode
-      canvasImage = entityRenderer.getCachedCanvas(cacheKey);
-      if (!canvasImage) {
-        const drawFunction = this.generateCanvasDraw(finalConfig);
-        canvasImage = entityRenderer.createAndCacheCanvas(cacheKey, drawFunction, finalConfig.size);
-      }
-    }
-    
-    return {
-      type: 'tree',
-      config: finalConfig,
-      renderType: initialRenderType,
-      sprite: sprite,
-      canvasImage: canvasImage,
-      drawShape: this.generateCanvasDraw(finalConfig), // Fallback draw function
-      cacheKey: cacheKey, // Store cache key for lazy loading
-      entityRenderer: entityRenderer, // Store reference for lazy loading
-      
-      // Method to switch render types with lazy loading
-      setRenderType(newRenderType) {
-        if (this.renderType === newRenderType) return; // No change needed
-        
-        this.renderType = newRenderType;
-        
-        if (newRenderType === 'sprite' && !this.sprite) {
-          // Lazy load SVG sprite
-          this.sprite = this.entityRenderer.getCachedImage(this.cacheKey);
-          if (!this.sprite) {
-            const svg = TreeEntity.generateSVG(this.config);
-            this.sprite = this.entityRenderer.createAndCacheImage(this.cacheKey, svg);
-          }
-        } else if (newRenderType === 'shape' && !this.canvasImage) {
-          // Lazy load canvas image
-          this.canvasImage = this.entityRenderer.getCachedCanvas(this.cacheKey);
-          if (!this.canvasImage) {
-            const drawFunction = TreeEntity.generateCanvasDraw(this.config);
-            this.canvasImage = this.entityRenderer.createAndCacheCanvas(this.cacheKey, drawFunction, this.config.size);
-          }
-        }
-      },
-      
-      // Unified draw method
-      draw(ctx) {
-        if (this.renderType === 'sprite' && this.sprite && this.sprite.complete && this.sprite.naturalWidth > 0) {
-          // Draw sprite
-          const spriteWidth = this.sprite.width || this.config.size;
-          const spriteHeight = this.sprite.height || this.config.size;
-          ctx.drawImage(
-            this.sprite,
-            this.x - spriteWidth / 2,
-            this.y - spriteHeight / 2,
-            spriteWidth,
-            spriteHeight
-          );
-        } else if (this.renderType === 'shape' && this.canvasImage && this.canvasImage.complete && this.canvasImage.naturalWidth > 0) {
-          // Draw cached canvas image
-          const imageWidth = this.canvasImage.width || this.config.size;
-          const imageHeight = this.canvasImage.height || this.config.size;
-          ctx.drawImage(
-            this.canvasImage,
-            this.x - imageWidth / 2,
-            this.y - imageHeight / 2,
-            imageWidth,
-            imageHeight
-          );
-        } else {
-          // Draw shape using canvas method (fallback)
-          this.drawShape(ctx, this.x, this.y);
-        }
-      }
-    };
+    return EntityRenderer.createEntityWithBoilerplate('tree', config, entityRenderer, TreeEntity);
   }
 };
 

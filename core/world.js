@@ -171,40 +171,26 @@ const World = {
           const treeX = tileX * this.config.tileSize + this.config.tileSize / 2;
           const treeY = tileY * this.config.tileSize + this.config.tileSize / 2;
           
+          // Create tree using EntityRenderer
+          const treeEntity = EntityRenderer.createTree({
+            isSprite: false,
+            size: 24,
+            trunkColor: '#5C4033',
+            foliageColor: '#1B5E20',
+            trunkWidth: 12,
+            foliageRadius: 12,
+            opacity: 1.0
+          });
+          
+          // Merge with world-specific properties
           chunk.entities.push({
-            type: 'tree',
+            ...treeEntity,
             x: treeX,
             y: treeY,
             tileX: tileX,
             tileY: tileY,
             collision: true,
-            collisionRadius: 18, // Tree collision radius
-            renderType: 'shape', // 'shape' or 'sprite'
-            sprite: null, // Image object for sprite rendering
-            draw: function(ctx) {
-              if (this.renderType === 'sprite' && this.sprite) {
-                // Draw sprite
-                const spriteWidth = this.sprite.width || 24;
-                const spriteHeight = this.sprite.height || 24;
-                ctx.drawImage(
-                  this.sprite,
-                  this.x - spriteWidth / 2,
-                  this.y - spriteHeight / 2,
-                  spriteWidth,
-                  spriteHeight
-                );
-              } else {
-                // Draw shape (tree trunk and foliage)
-                // Tree trunk
-                ctx.fillStyle = '#5C4033';
-                ctx.fillRect(this.x - 6, this.y - 6, 12, 12);
-                // Tree foliage
-                ctx.fillStyle = '#1B5E20';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y - 8, 12, 0, Math.PI * 2);
-                ctx.fill();
-              }
-            }
+            collisionRadius: 18 // Tree collision radius
           });
         }
         

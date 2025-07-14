@@ -934,6 +934,26 @@ window.UI.console = {
       }
     });
 
+    // Test entity creation command
+    this.register('testtree', 'Create a test tree entity to verify caching', (args) => {
+      if (typeof EntityRenderer !== 'undefined' && EntityRenderer.createTree) {
+        const tree = EntityRenderer.createTree({
+          isSprite: false,
+          size: 24,
+          trunkColor: '#5C4033',
+          foliageColor: '#1B5E20',
+          trunkWidth: 12,
+          foliageRadius: 12,
+          opacity: 1.0
+        });
+        console.log('[Console] Test tree created:', tree);
+        console.log('[Console] Tree cache key:', tree.cacheKey);
+        console.log('[Console] Tree render type:', tree.renderType);
+      } else {
+        console.error('[Console] EntityRenderer or createTree not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
