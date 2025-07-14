@@ -483,7 +483,7 @@ const World = {
   },
 
   // Render world using chunk system
-  render(ctx, cameraX, cameraY, cameraWidth, cameraHeight) {
+  render(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle) {
     ctx.save();
     
     // Draw world boundary
@@ -497,14 +497,14 @@ const World = {
     // Render each visible chunk at its correct world position
     visibleChunks.forEach(chunkInfo => {
       const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
-      this.renderChunk(ctx, chunk);
+      this.renderChunk(ctx, chunk, playerAngle);
     });
     
     // Handle wrapping by rendering chunks that should be visible on the opposite side
-    //this.renderWrappedChunks(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
+    //this.renderWrappedChunks(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle);
     
     // Directly render world objects with wrapping
-    this.renderWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
+    this.renderWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle);
     
     // Clean up distant chunks (silently)
     this.cleanupChunks(cameraX / this.config.tileSize, cameraY / this.config.tileSize);
@@ -513,7 +513,7 @@ const World = {
   },
 
   // Render chunks that appear on the opposite side due to wrapping
-  renderWrappedChunks(ctx, cameraX, cameraY, cameraWidth, cameraHeight) {
+  renderWrappedChunks(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle) {
     const worldWidth = this.width;
     const worldHeight = this.height;
     
@@ -579,7 +579,7 @@ const World = {
           // Save context, apply offset, render chunk, restore context
           ctx.save();
           ctx.translate(offset.x, offset.y);
-          this.renderChunk(ctx, chunk);
+          this.renderChunk(ctx, chunk, playerAngle);
           ctx.restore();
         });
       });
@@ -587,7 +587,7 @@ const World = {
   },
 
   // Directly render world objects with proper wrapping
-  renderWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight) {
+  renderWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle) {
     const worldWidth = this.width;
     const worldHeight = this.height;
     
@@ -610,7 +610,7 @@ const World = {
     // Render regular chunk entities for visible chunks
     const visibleChunks = this.getVisibleChunks(cameraX, cameraY, cameraWidth, cameraHeight);
     visibleChunks.forEach(chunk => {
-      this.renderChunk(ctx, chunk);
+      this.renderChunk(ctx, chunk, playerAngle);
     });
     
 
@@ -644,11 +644,11 @@ const World = {
   },
 
   // Render a single chunk
-  renderChunk(ctx, chunk) {
+  renderChunk(ctx, chunk, playerAngle) {
     // Render chunk objects only (no X marker here anymore)
     if (chunk.entities && Array.isArray(chunk.entities)) {
       chunk.entities.forEach(entity => {
-        entity.draw(ctx);
+        entity.draw(ctx, playerAngle);
       });
     }
   },

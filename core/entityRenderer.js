@@ -118,87 +118,91 @@ const EntityRenderer = {
       cacheKey: cacheKey,
       entityRenderer: entityRenderer,
       entityModule: entityModule,
+      fixedScreenAngle: finalConfig.fixedScreenAngle,
       
       // Generic draw method that handles dynamic render mode switching
-      draw(ctx) {
+      draw(ctx, playerAngle = 0) {
         // Get current effective render type (may have changed since creation)
         const currentEffectiveType = EntityRenderer.getEffectiveRenderType(this.type, this.originalRenderType);
-        
+
+        // Determine angle and offsets for rendering
+        let angle;
+        if (PERSPECTIVE_MODE === "player-perspective" && this.fixedScreenAngle !== null && this.fixedScreenAngle !== undefined) {
+          // Undo world rotation, then apply fixed angle (in radians)
+          angle = playerAngle + (typeof this.fixedScreenAngle === 'number' ? this.fixedScreenAngle * Math.PI / 180 : 0);
+        }
+        const offsetX = this.drawOffsetX || 0;
+        const offsetY = this.drawOffsetY || 0;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(angle);
+        ctx.translate(offsetX, offsetY);
+
         if (currentEffectiveType === 'sprite') {
-          // Check if we have a loaded sprite
           if (this.sprite && this.sprite.complete && this.sprite.naturalWidth > 0) {
-            // Draw cached sprite
             const spriteWidth = this.sprite.width || this.config.size;
             const spriteHeight = this.sprite.height || this.config.size;
             ctx.drawImage(
               this.sprite,
-              this.x - spriteWidth / 2,
-              this.y - spriteHeight / 2,
+              -spriteWidth / 2,
+              -spriteHeight / 2,
               spriteWidth,
               spriteHeight
             );
           } else {
-            // Lazy load sprite if not available
             this.sprite = this.entityRenderer.getCachedImage(this.cacheKey);
             if (!this.sprite) {
               const svg = this.entityModule.generateSVG(this.config);
               this.sprite = this.entityRenderer.createAndCacheImage(this.cacheKey, svg);
             }
-            
-            // If sprite is now available, draw it immediately
             if (this.sprite && this.sprite.complete && this.sprite.naturalWidth > 0) {
               const spriteWidth = this.sprite.width || this.config.size;
               const spriteHeight = this.sprite.height || this.config.size;
               ctx.drawImage(
                 this.sprite,
-                this.x - spriteWidth / 2,
-                this.y - spriteHeight / 2,
+                -spriteWidth / 2,
+                -spriteHeight / 2,
                 spriteWidth,
                 spriteHeight
               );
             } else {
-              // Draw fallback until sprite loads
-              this.drawShape(ctx, this.x, this.y);
+              this.drawShape(ctx, 0, 0);
             }
           }
         } else if (currentEffectiveType === 'shape') {
-          // Check if we have a loaded canvas image
           if (this.canvasImage && this.canvasImage.complete && this.canvasImage.naturalWidth > 0) {
-            // Draw cached canvas image
             const imageWidth = this.canvasImage.width || this.config.size;
             const imageHeight = this.canvasImage.height || this.config.size;
             ctx.drawImage(
               this.canvasImage,
-              this.x - imageWidth / 2,
-              this.y - imageHeight / 2,
+              -imageWidth / 2,
+              -imageHeight / 2,
               imageWidth,
               imageHeight
             );
           } else {
-            // Lazy load canvas image if not available
             this.canvasImage = this.entityRenderer.getCachedCanvas(this.cacheKey);
             if (!this.canvasImage) {
               const drawFunction = this.entityModule.generateCanvasDraw(this.config);
               this.canvasImage = this.entityRenderer.createAndCacheCanvas(this.cacheKey, drawFunction, this.config.size);
             }
-            
-            // If canvas image is now available, draw it immediately
             if (this.canvasImage && this.canvasImage.complete && this.canvasImage.naturalWidth > 0) {
               const imageWidth = this.canvasImage.width || this.config.size;
               const imageHeight = this.canvasImage.height || this.config.size;
               ctx.drawImage(
                 this.canvasImage,
-                this.x - imageWidth / 2,
-                this.y - imageHeight / 2,
+                -imageWidth / 2,
+                -imageHeight / 2,
                 imageWidth,
                 imageHeight
               );
             } else {
-              // Draw fallback until canvas image loads
-              this.drawShape(ctx, this.x, this.y);
+              this.drawShape(ctx, 0, 0);
             }
           }
         }
+        ctx.restore();
       }
     };
   },

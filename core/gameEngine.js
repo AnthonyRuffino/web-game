@@ -212,7 +212,7 @@ const GameEngine = {
     if (typeof World !== 'undefined') {
       const cameraWidth = canvasWidth / window.ZOOM;
       const cameraHeight = canvasHeight / window.ZOOM;
-      World.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight);
+      World.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight, Player.angle);
     }
     Player.render(ctx);
     

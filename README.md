@@ -86,3 +86,25 @@ This is an active development project. Features are implemented iteratively with
 ---
 
 *Built with ❤️ using modern web technologies*
+
+# Entity Rendering System: Current State
+
+## Features
+- Per-entity render mode (shape or sprite)
+- Pre-rendering and caching for shapes and sprites
+- Skins UI for managing entity images and preferences
+- Dynamic switching of render mode and skin at runtime
+- Cache key hashing for efficient storage
+- Async initialization of caches and preferences
+- Tab-based UI for skin management
+
+## New/Planned Features
+- **Skin image auto-resize**: Uploaded images are automatically resized to match the intended entity size; cache stores size metadata.
+- **Fixed-angle (screen-relative) rendering**: Entities can be rendered at a fixed angle relative to the screen, with support for draw offsets.
+- **Cache metadata**: All cached images include metadata (size, angle, offsets, etc.) for correct rendering and alignment.
+
+## Status
+- Most core features are complete.
+- Hitbox decoupling is partial; a full hitbox/interaction system is planned.
+- Player PNG upload and clickable areas for grass are not yet started.
+- See `requirements/step-3-entity-rendering.md` for a detailed checklist and implementation plan.

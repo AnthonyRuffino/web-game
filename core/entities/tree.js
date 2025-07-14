@@ -10,10 +10,14 @@ const TreeEntity = {
     foliageColor: '#1B5E20',
     trunkWidth: 12,
     foliageRadius: 12,
-    opacity: 1.0
+    opacity: 1.0,
+    // Fixed-angle and offset support
+    fixedScreenAngle: 0, // degrees; 0 = always up; null = normal rotation
+    drawOffsetX: 0,      // pixels; offset for rendering alignment
+    drawOffsetY: 0       // pixels; offset for rendering alignment
   },
 
-  // Generate a unique cache key for tree parameters
+  // Generate a unique cache key for tree parameters (do NOT include angle/offset)
   getCacheKey(config) {
     const params = {
       type: 'tree',
@@ -133,7 +137,12 @@ const TreeEntity = {
 
   // Create a tree entity with unified rendering
   create(config = {}, entityRenderer) {
-    return EntityRenderer.createEntityWithBoilerplate('tree', config, entityRenderer, TreeEntity);
+    // Merge config and attach fixedScreenAngle/offsets to the entity
+    const entity = EntityRenderer.createEntityWithBoilerplate('tree', config, entityRenderer, TreeEntity);
+    entity.fixedScreenAngle = (config.fixedScreenAngle !== undefined) ? config.fixedScreenAngle : TreeEntity.defaultConfig.fixedScreenAngle;
+    entity.drawOffsetX = (config.drawOffsetX !== undefined) ? config.drawOffsetX : TreeEntity.defaultConfig.drawOffsetX;
+    entity.drawOffsetY = (config.drawOffsetY !== undefined) ? config.drawOffsetY : TreeEntity.defaultConfig.drawOffsetY;
+    return entity;
   }
 };
 
