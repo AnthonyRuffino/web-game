@@ -325,7 +325,7 @@ const EntityRenderer = {
     const cacheObj = {
       image: img,
       size: size,
-      fixedScreenAngle: meta.fixedScreenAngle || null,
+      fixedScreenAngle: meta.fixedScreenAngle !== undefined ? meta.fixedScreenAngle : null,
       drawOffsetX: meta.drawOffsetX || 0,
       drawOffsetY: meta.drawOffsetY || 0
     };
