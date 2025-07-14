@@ -215,6 +215,62 @@ window.UI.input = {
         window.UI.hoveredGridCell = { tileX, tileY };
 
       });
+      // Log world and cell coordinates on click
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        let x = (e.clientX - rect.left);
+        let y = (e.clientY - rect.top);
+        // Adjust for responsive canvas scaling
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        x *= scaleX;
+        y *= scaleY;
+        // Undo camera transforms (center, zoom, perspective)
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        // Centered
+        x -= canvasWidth / 2;
+        y -= canvasHeight / 2;
+        // Undo zoom
+        x /= window.ZOOM;
+        y /= window.ZOOM;
+        // Undo world rotation/translation
+        let worldX, worldY;
+        if (PERSPECTIVE_MODE === 'player-perspective') {
+          const angle = Player ? Player.angle : 0;
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          const rx = x * cos - y * sin;
+          const ry = x * sin + y * cos;
+          worldX = rx + (Player ? Player.x : 0);
+          worldY = ry + (Player ? Player.y : 0);
+        } else {
+          worldX = x + (Player ? Player.x : 0);
+          worldY = y + (Player ? Player.y : 0);
+        }
+        // Convert to grid cell
+        const tileSize = window.World ? window.World.config.tileSize : 32;
+        const tileX = Math.floor(worldX / tileSize);
+        const tileY = Math.floor(worldY / tileSize);
+        console.log('[Canvas Click]', {
+          canvas: { x: Math.round(x), y: Math.round(y) },
+          world: { x: worldX, y: worldY },
+          cell: { tileX, tileY }
+        });
+        // Entity lookup at clicked cell
+        if (window.World && typeof window.World.loadChunk === 'function') {
+          const chunkSize = window.World.config.chunkSize;
+          const chunkX = Math.floor(tileX / chunkSize);
+          const chunkY = Math.floor(tileY / chunkSize);
+          const chunk = window.World.loadChunk(chunkX, chunkY);
+          if (chunk && Array.isArray(chunk.entities)) {
+            const entitiesAtCell = chunk.entities.filter(e => e.tileX === tileX && e.tileY === tileY);
+            if (entitiesAtCell.length > 0) {
+              console.log('[Entity Click]', entitiesAtCell);
+            }
+          }
+        }
+      });
     }
     
     // Handle browser focus changes to prevent stuck keys
