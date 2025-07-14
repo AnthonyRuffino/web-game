@@ -64,18 +64,6 @@ const EntityRenderer = {
     // Save preferences to localStorage
     this.savePreferencesToStorage();
     
-    // Force refresh of all entities of this type in the world
-    this.refreshEntitiesOfType(entityType);
-  },
-
-  // Force refresh all entities of a specific type
-  refreshEntitiesOfType(entityType) {
-    // This will be called by the world system to refresh entities
-    // For now, just log that entities should be refreshed
-    console.log(`[EntityRenderer] Entities of type '${entityType}' should be refreshed for render mode change`);
-    
-    // In the future, this could trigger a world refresh or entity recreation
-    // For now, the draw method will handle the switch automatically
   },
 
   // Get preferred render mode for an entity type

@@ -26,7 +26,7 @@ const RockEntity = {
       textureSpots: config.textureSpots || '-',
       strokeWidth: config.strokeWidth || '-'
     };
-    return EntityRenderer.hashConfig(params);
+    return 'rock-' + EntityRenderer.hashConfig(params);
   },
 
   // Generate SVG for a rock based on configuration
