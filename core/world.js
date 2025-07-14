@@ -508,7 +508,31 @@ const World = {
     
     // Clean up distant chunks (silently)
     this.cleanupChunks(cameraX / this.config.tileSize, cameraY / this.config.tileSize);
-    
+
+    // Render player after world entities but before trees
+    if (typeof Player !== 'undefined') {
+      Player.render(ctx);
+    }
+
+    // --- NEW: Render all fixedScreenAngle entities last, sorted by y (descending) ---
+    // Gather all fixedScreenAngle entities from all visible chunks
+    let allFixedAngleEntities = [];
+    visibleChunks.forEach(chunkInfo => {
+      const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
+      if (chunk.entities && Array.isArray(chunk.entities)) {
+        allFixedAngleEntities = allFixedAngleEntities.concat(
+          chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined)
+        );
+      }
+    });
+    // Sort by y (descending)
+    allFixedAngleEntities.sort((a, b) => b.y - a.y);
+    // Render all fixedScreenAngle entities on top of everything else
+    allFixedAngleEntities.forEach(entity => {
+      entity.draw(ctx, playerAngle);
+    });
+    // --- END NEW ---
+
     ctx.restore();
   },
 
@@ -647,7 +671,19 @@ const World = {
   renderChunk(ctx, chunk, playerAngle) {
     // Render chunk objects only (no X marker here anymore)
     if (chunk.entities && Array.isArray(chunk.entities)) {
-      chunk.entities.forEach(entity => {
+      // Sort entities for correct render order:
+      // 1. Grass
+      // 2. Non-fixedScreenAngle entities
+      // 3. fixedScreenAngle entities (e.g., trees) sorted by Y position (higher Y = on top)
+      const grassEntities = chunk.entities.filter(e => e.type === 'grass');
+      const fixedAngleEntities = chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined);
+      const otherEntities = chunk.entities.filter(e => e.type !== 'grass' && (e.fixedScreenAngle === null || e.fixedScreenAngle === undefined));
+      
+      // Sort fixedAngleEntities by Y position (descending - higher Y renders on top)
+      fixedAngleEntities.sort((a, b) => b.y - a.y);
+      
+      const renderOrder = grassEntities.concat(otherEntities, fixedAngleEntities);
+      renderOrder.forEach(entity => {
         entity.draw(ctx, playerAngle);
       });
     }

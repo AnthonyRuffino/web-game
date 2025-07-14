@@ -208,13 +208,12 @@ const GameEngine = {
       Background.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight, window.ZOOM);
     }
     
-    // Render world using chunk system
+    // Render world using chunk system (includes player and trees in correct order)
     if (typeof World !== 'undefined') {
       const cameraWidth = canvasWidth / window.ZOOM;
       const cameraHeight = canvasHeight / window.ZOOM;
       World.render(ctx, Player.x, Player.y, cameraWidth, cameraHeight, Player.angle);
     }
-    Player.render(ctx);
     
     // Render collision debug information
     if (typeof Collision !== 'undefined') {
