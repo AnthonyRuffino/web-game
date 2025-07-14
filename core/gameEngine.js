@@ -219,7 +219,22 @@ const GameEngine = {
     if (typeof Collision !== 'undefined') {
       Collision.renderDebug(ctx);
     }
-    
+
+    // --- Highlight hovered grid cell (always, even if grid is not rendered) ---
+    if (window.UI && window.UI.hoveredGridCell && window.World) {
+      const tileSize = window.World.config.tileSize;
+      const { tileX, tileY } = window.UI.hoveredGridCell;
+      const cellX = tileX * tileSize;
+      const cellY = tileY * tileSize;
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = 'yellow';
+      ctx.fillRect(cellX, cellY, tileSize, tileSize);
+      ctx.globalAlpha = 1.0;
+      ctx.restore();
+    }
+    // --- END grid cell highlight ---
+
     ctx.restore();
   },
   setInputState(newState) {

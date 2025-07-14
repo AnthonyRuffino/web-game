@@ -4,6 +4,10 @@
 // Ensure UI object exists
 if (!window.UI) window.UI = {};
 
+// Track hovered grid cell in world coordinates
+window.UI = window.UI || {};
+window.UI.hoveredGridCell = null;
+
 // Input system
 window.UI.input = {
   state: {
@@ -169,6 +173,48 @@ window.UI.input = {
     if (canvas) {
       canvas.addEventListener('mousedown', (e) => window.UI.input.handleMouse(e, true));
       canvas.addEventListener('mouseup', (e) => window.UI.input.handleMouse(e, false));
+      // Track mousemove for grid cell highlighting
+      canvas.addEventListener('mousemove', (e) => {
+        // Get canvas bounding rect and mouse position
+        const rect = canvas.getBoundingClientRect();
+        let x = (e.clientX - rect.left);
+        let y = (e.clientY - rect.top);
+        // Adjust for responsive canvas scaling
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        x *= scaleX;
+        y *= scaleY;
+        // Undo camera transforms (center, zoom, perspective)
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        // Centered
+        x -= canvasWidth / 2;
+        y -= canvasHeight / 2;
+        // Undo zoom
+        x /= window.ZOOM;
+        y /= window.ZOOM;
+        // Undo world rotation/translation
+        let worldX, worldY;
+        if (PERSPECTIVE_MODE === 'player-perspective') {
+          // Rotate by +player angle to undo world rotation
+          const angle = Player ? Player.angle : 0;
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          const rx = x * cos - y * sin;
+          const ry = x * sin + y * cos;
+          worldX = rx + (Player ? Player.x : 0);
+          worldY = ry + (Player ? Player.y : 0);
+        } else {
+          worldX = x + (Player ? Player.x : 0);
+          worldY = y + (Player ? Player.y : 0);
+        }
+        // Convert to grid cell
+        const tileSize = window.World ? window.World.config.tileSize : 32;
+        const tileX = Math.floor(worldX / tileSize);
+        const tileY = Math.floor(worldY / tileSize);
+        window.UI.hoveredGridCell = { tileX, tileY };
+
+      });
     }
     
     // Handle browser focus changes to prevent stuck keys
