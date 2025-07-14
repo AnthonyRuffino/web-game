@@ -11,6 +11,7 @@ const EntityRenderer = {
   // Cache key for localStorage
   cacheStorageKey: 'entityRenderer_cache',
   canvasCacheStorageKey: 'entityRenderer_canvas_cache',
+  preferencesStorageKey: 'entityRenderer_preferences',
   
   // Registry of entity modules
   entityModules: {},
@@ -59,6 +60,9 @@ const EntityRenderer = {
       this.renderModePreferences[entityType] = mode;
     }
     console.log(`[EntityRenderer] Set ${entityType} preferred render mode to: ${mode}`);
+    
+    // Save preferences to localStorage
+    this.savePreferencesToStorage();
     
     // Force refresh of all entities of this type in the world
     this.refreshEntitiesOfType(entityType);
@@ -215,10 +219,11 @@ const EntityRenderer = {
   async init() {
     console.log('[EntityRenderer] Initializing entity renderer system...');
     
-    // Wait for both caches to load completely
+    // Wait for all caches and preferences to load completely
     await Promise.all([
       this.loadCacheFromStorage(),
-      this.loadCanvasCacheFromStorage()
+      this.loadCanvasCacheFromStorage(),
+      this.loadPreferencesFromStorage()
     ]);
     
     this.registerEntityModules();
@@ -375,6 +380,37 @@ const EntityRenderer = {
     }
   },
 
+  // Save preferences to localStorage
+  savePreferencesToStorage() {
+    try {
+      localStorage.setItem(this.preferencesStorageKey, JSON.stringify(this.renderModePreferences));
+      console.log('[EntityRenderer] Saved render mode preferences to storage');
+    } catch (e) {
+      console.warn('[EntityRenderer] Failed to save preferences to storage:', e);
+    }
+  },
+
+  // Load preferences from localStorage
+  loadPreferencesFromStorage() {
+    return new Promise((resolve) => {
+      try {
+        const preferencesData = localStorage.getItem(this.preferencesStorageKey);
+        if (!preferencesData) {
+          resolve();
+          return;
+        }
+        
+        const parsed = JSON.parse(preferencesData);
+        this.renderModePreferences = { ...parsed };
+        console.log(`[EntityRenderer] Loaded render mode preferences:`, this.renderModePreferences);
+        resolve();
+      } catch (e) {
+        console.warn('[EntityRenderer] Failed to load preferences from storage:', e);
+        resolve();
+      }
+    });
+  },
+
   // Load cache from localStorage
   loadCacheFromStorage() {
     return new Promise((resolve) => {
@@ -461,9 +497,11 @@ const EntityRenderer = {
   clearCache() {
     this.imageCache.clear();
     this.canvasCache.clear();
+    this.renderModePreferences = {};
     localStorage.removeItem(this.cacheStorageKey);
     localStorage.removeItem(this.canvasCacheStorageKey);
-    console.log('[EntityRenderer] All caches cleared');
+    localStorage.removeItem(this.preferencesStorageKey);
+    console.log('[EntityRenderer] All caches and preferences cleared');
   },
 
   // Get cache info
@@ -474,7 +512,8 @@ const EntityRenderer = {
       totalCacheSize: this.imageCache.size + this.canvasCache.size,
       imageKeys: Array.from(this.imageCache.keys()),
       canvasKeys: Array.from(this.canvasCache.keys()),
-      entityModules: Object.keys(this.entityModules)
+      entityModules: Object.keys(this.entityModules),
+      renderModePreferences: { ...this.renderModePreferences }
     };
   },
 
