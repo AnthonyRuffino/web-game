@@ -7,7 +7,6 @@ window.UI.inputBar = {
   },
 
   // State
-  inputBarOpen: false,
   inputValue: '',
   inputElement: null,
   lastFocus: null,
@@ -57,10 +56,6 @@ window.UI.inputBar = {
 
   // Show the input bar and focus
   openInputBar() {
-    if (this.inputBarOpen) return;
-    
-    this.inputBarOpen = true;
-    this.inputValue = '';
     this.inputElement.value = '';
     this.inputElement.style.display = 'block';
     this.inputElement.focus();
@@ -75,8 +70,6 @@ window.UI.inputBar = {
 
   // Hide the input bar and return focus
   closeInputBar() {
-    if (!this.inputBarOpen) return;
-    this.inputBarOpen = false;
     this.inputElement.style.display = 'none';
     this.inputElement.value = '';
     this.inputValue = '';
@@ -228,7 +221,7 @@ window.UI.inputBar = {
   setupGlobalListeners() {
     window.addEventListener('keydown', (e) => {
       // If input bar is open, handle input events and block only special keys
-      if (this.inputBarOpen) {
+      if (this.inputElement.style.display === 'block') {
         if (e.code === 'Escape') {
           this.closeInputBar();
           e.preventDefault();
@@ -261,7 +254,7 @@ window.UI.inputBar = {
       }
       
       // Handle inventory toggle (B key) - toggle when input bar is not open
-      if (e.code === 'KeyB' && !this.inputBarOpen) {
+      if (e.code === 'KeyB' && this.inputElement.style.display !== 'block') {
         if (window.UI.inventory) {
           window.UI.inventory.toggleInventory();
         }
@@ -270,7 +263,7 @@ window.UI.inputBar = {
       }
       
       // If input bar is not open, open it on Enter (but not if focused on an input/textarea)
-      if (e.code === 'Enter' && !this.inputBarOpen) {
+      if (e.code === 'Enter' && this.inputElement.style.display !== 'block') {
         const tag = document.activeElement.tagName.toLowerCase();
         if (tag !== 'input' && tag !== 'textarea') {
           this.openInputBar();

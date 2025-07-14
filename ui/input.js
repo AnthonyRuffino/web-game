@@ -232,4 +232,41 @@ window.UI.input = {
   }
 };
 
+// --- Input blocking for text fields and number spinners ---
+(function setupTextInputBlocker() {
+  function blockInput() {
+    window.UI._textInputBlocked = true;
+  }
+  function unblockInput() {
+    window.UI._textInputBlocked = false;
+  }
+  function isBlockingInputElement(el) {
+    return (
+      (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) ||
+      el.tagName === 'TEXTAREA'
+    );
+  }
+  document.addEventListener('focusin', (e) => {
+    if (isBlockingInputElement(e.target)) {
+      blockInput();
+    }
+  });
+  document.addEventListener('focusout', (e) => {
+    if (isBlockingInputElement(e.target)) {
+      // Delay to allow focus to move to another input
+      setTimeout(() => {
+        const el = document.activeElement;
+        if (!isBlockingInputElement(el)) {
+          unblockInput();
+        }
+      }, 0);
+    }
+  });
+})();
+
+// Patch isInputBlocked to check text input blocker
+window.UI.isInputBlocked = function() {
+  return !!window.UI._textInputBlocked;
+};
+
 // TODO: Export Input if using modules 

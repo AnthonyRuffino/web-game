@@ -289,11 +289,6 @@ window.UI.macroManager = {
     };
     document.addEventListener('keydown', handleEscape);
 
-    // Helper to block/unblock input
-    function setMacroDialogInputBlock(block) {
-      window.UI._macroDialogInputBlocked = !!block;
-    }
-
     // Helper to refresh the macro grid
     const refreshGrid = () => {
       // Remove and re-open the modal
@@ -305,7 +300,6 @@ window.UI.macroManager = {
     // --- Macro Creation Dialog ---
     const openCreateDialog = (slotIndex) => {
       if (document.getElementById('macro-create-dialog')) return;
-      setMacroDialogInputBlock(true);
 
       // Overlay
       const dialogOverlay = document.createElement('div');
@@ -347,8 +341,12 @@ window.UI.macroManager = {
       nameInput.style.padding = '6px';
       nameInput.style.borderRadius = '4px';
       nameInput.style.border = '1px solid #444';
-      nameInput.onfocus = () => setMacroDialogInputBlock(true);
-      nameInput.onblur = () => setMacroDialogInputBlock(false);
+      nameInput.onfocus = () => {
+        // Input is blocked by focus-based logic in ui/input.js
+      };
+      nameInput.onblur = () => {
+        // Input is blocked by focus-based logic in ui/input.js
+      };
       dialog.appendChild(nameLabel);
       dialog.appendChild(nameInput);
 
@@ -364,8 +362,12 @@ window.UI.macroManager = {
       cmdInput.style.padding = '6px';
       cmdInput.style.borderRadius = '4px';
       cmdInput.style.border = '1px solid #444';
-      cmdInput.onfocus = () => setMacroDialogInputBlock(true);
-      cmdInput.onblur = () => setMacroDialogInputBlock(false);
+      cmdInput.onfocus = () => {
+        // Input is blocked by focus-based logic in ui/input.js
+      };
+      cmdInput.onblur = () => {
+        // Input is blocked by focus-based logic in ui/input.js
+      };
       dialog.appendChild(cmdLabel);
       dialog.appendChild(cmdInput);
 
@@ -474,13 +476,11 @@ window.UI.macroManager = {
         }
         this.saveMacros();
         document.body.removeChild(dialogOverlay);
-        setMacroDialogInputBlock(false);
         refreshGrid();
       };
       // Cancel handler
       cancelBtn.onclick = () => {
         document.body.removeChild(dialogOverlay);
-        setMacroDialogInputBlock(false);
       };
 
       dialogOverlay.appendChild(dialog);
@@ -491,7 +491,6 @@ window.UI.macroManager = {
     // --- Macro Edit Dialog ---
     const openEditDialog = (macroName) => {
       if (document.getElementById('macro-edit-dialog')) return;
-      setMacroDialogInputBlock(true);
       const macro = this.macros[macroName];
       if (!macro) return;
 
@@ -535,8 +534,12 @@ window.UI.macroManager = {
       nameInput.style.padding = '6px';
       nameInput.style.borderRadius = '4px';
       nameInput.style.border = '1px solid #444';
-      nameInput.onfocus = () => setMacroDialogInputBlock(true);
-      nameInput.onblur = () => setMacroDialogInputBlock(false);
+      nameInput.onfocus = () => {
+        // Input is blocked by focus-based logic in ui/input.js
+      };
+      nameInput.onblur = () => {
+        // Input is blocked by focus-based logic in ui/input.js
+      };
       dialog.appendChild(nameLabel);
       dialog.appendChild(nameInput);
 
@@ -553,8 +556,12 @@ window.UI.macroManager = {
       cmdInput.style.padding = '6px';
       cmdInput.style.borderRadius = '4px';
       cmdInput.style.border = '1px solid #444';
-      cmdInput.onfocus = () => setMacroDialogInputBlock(true);
-      cmdInput.onblur = () => setMacroDialogInputBlock(false);
+      cmdInput.onfocus = () => {
+        // Input is blocked by focus-based logic in ui/input.js
+      };
+      cmdInput.onblur = () => {
+        // Input is blocked by focus-based logic in ui/input.js
+      };
       dialog.appendChild(cmdLabel);
       dialog.appendChild(cmdInput);
 
@@ -734,7 +741,6 @@ window.UI.macroManager = {
         }
         this.saveMacros();
         document.body.removeChild(dialogOverlay);
-        setMacroDialogInputBlock(false);
         refreshGrid();
       };
       // Bind handler
@@ -753,7 +759,6 @@ window.UI.macroManager = {
         window.UI.macroManager.assignMacro(`${barName}-${slotIdx}`, currentName);
         this.saveMacros();
         document.body.removeChild(dialogOverlay);
-        setMacroDialogInputBlock(false);
         refreshGrid();
       };
       // Delete handler
@@ -763,13 +768,11 @@ window.UI.macroManager = {
         if (this.macroIcons[macroName]) delete this.macroIcons[macroName];
         this.saveMacros();
         document.body.removeChild(dialogOverlay);
-        setMacroDialogInputBlock(false);
         refreshGrid();
       };
       // Cancel handler
       cancelBtn.onclick = () => {
         document.body.removeChild(dialogOverlay);
-        setMacroDialogInputBlock(false);
       };
 
       dialogOverlay.appendChild(dialog);

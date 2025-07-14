@@ -389,7 +389,7 @@ window.UI.skinsManager = {
       dialog.style.maxWidth = '95vw';
       dialog.style.color = '#fff';
       dialog.style.position = 'relative';
-      dialog.innerHTML = `<h3 style='margin-top:0'>Upload New Image</h3>
+      dialog.innerHTML = `<h3 style='margin-top:0'>Edit Skin: ${cacheKey}</h3>
         <p style='color:#aaa;margin-bottom:20px'>Replace image for: ${cacheKey}</p>`;
       // Current image preview
       const currentPreview = document.createElement('img');
@@ -404,19 +404,55 @@ window.UI.skinsManager = {
       const currentCache = isCanvas ? this.canvasCache : this.imageCache;
       if (currentCache[cacheKey] && currentCache[cacheKey].dataUrl) {
         currentPreview.src = currentCache[cacheKey].dataUrl;
+      } else {
+        currentPreview.style.display = 'none';
       }
       dialog.appendChild(currentPreview);
-      // New image preview
+      // New image preview (hidden until file is uploaded)
       const newPreview = document.createElement('img');
       newPreview.style.width = '64px';
       newPreview.style.height = '64px';
       newPreview.style.borderRadius = '6px';
       newPreview.style.background = '#444';
-      newPreview.style.display = 'block';
+      newPreview.style.display = 'none';
       newPreview.style.margin = '8px auto 16px auto';
       newPreview.style.objectFit = 'cover';
       newPreview.alt = 'New Image';
       dialog.appendChild(newPreview);
+      // Offset and angle controls
+      const metaControls = document.createElement('div');
+      metaControls.style.display = 'flex';
+      metaControls.style.justifyContent = 'center';
+      metaControls.style.gap = '10px';
+      metaControls.style.margin = '8px 0 12px 0';
+      // Offset X
+      const offsetXInput = document.createElement('input');
+      offsetXInput.type = 'number';
+      offsetXInput.placeholder = 'Offset X';
+      offsetXInput.style.width = '60px';
+      offsetXInput.title = 'drawOffsetX';
+      // Offset Y
+      const offsetYInput = document.createElement('input');
+      offsetYInput.type = 'number';
+      offsetYInput.placeholder = 'Offset Y';
+      offsetYInput.style.width = '60px';
+      offsetYInput.title = 'drawOffsetY';
+      // Fixed Angle
+      const angleInput = document.createElement('input');
+      angleInput.type = 'number';
+      angleInput.placeholder = 'Angle (deg)';
+      angleInput.style.width = '80px';
+      angleInput.title = 'fixedScreenAngle';
+      // Pre-fill with current values if present
+      if (currentCache[cacheKey]) {
+        if (typeof currentCache[cacheKey].drawOffsetX === 'number') offsetXInput.value = currentCache[cacheKey].drawOffsetX;
+        if (typeof currentCache[cacheKey].drawOffsetY === 'number') offsetYInput.value = currentCache[cacheKey].drawOffsetY;
+        if (typeof currentCache[cacheKey].fixedScreenAngle === 'number') angleInput.value = currentCache[cacheKey].fixedScreenAngle;
+      }
+      metaControls.appendChild(offsetXInput);
+      metaControls.appendChild(offsetYInput);
+      metaControls.appendChild(angleInput);
+      dialog.appendChild(metaControls);
       // File input
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
@@ -447,12 +483,14 @@ window.UI.skinsManager = {
               resizeImageToTarget(img, width, height, (resizedImg, dataUrl) => {
                 newPreview.src = dataUrl;
                 newPreview._pendingDataURL = dataUrl;
+                newPreview.style.display = 'block';
               });
             };
             img.src = reader.result;
           } else {
             newPreview.src = reader.result;
             newPreview._pendingDataURL = reader.result;
+            newPreview.style.display = 'block';
           }
         };
         reader.readAsDataURL(file);
@@ -485,8 +523,18 @@ window.UI.skinsManager = {
       btnRow.appendChild(cancelBtn);
       dialog.appendChild(btnRow);
       saveBtn.onclick = () => {
-        if (newPreview._pendingDataURL) {
-          this.updateCacheEntry(cacheKey, newPreview._pendingDataURL, isCanvas);
+        // Allow saving metadata even if no new image is uploaded
+        if (newPreview._pendingDataURL || currentCache[cacheKey]) {
+          this.updateCacheEntry(
+            cacheKey,
+            newPreview._pendingDataURL || (currentCache[cacheKey] && currentCache[cacheKey].dataUrl),
+            isCanvas,
+            {
+              drawOffsetX: parseFloat(offsetXInput.value) || 0,
+              drawOffsetY: parseFloat(offsetYInput.value) || 0,
+              fixedScreenAngle: angleInput.value !== '' ? parseFloat(angleInput.value) : 0
+            }
+          );
           document.body.removeChild(dialogOverlay);
           refreshUI();
         } else {
@@ -780,6 +828,7 @@ window.UI.skinsManager = {
       grid.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
       grid.style.gap = '12px';
       grid.style.margin = '16px 0';
+      // Render sprite entries
       spriteEntries.forEach(([key, entry]) => {
         const cell = document.createElement('div');
         cell.style.background = '#333';
@@ -825,6 +874,25 @@ window.UI.skinsManager = {
         keyLabel.style.wordBreak = 'break-all';
         keyLabel.style.color = '#aaa';
         cell.appendChild(keyLabel);
+        // Edit button
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.style.position = 'absolute';
+        editBtn.style.bottom = '2px';
+        editBtn.style.right = '2px';
+        editBtn.style.background = '#4ECDC4';
+        editBtn.style.color = '#222';
+        editBtn.style.border = 'none';
+        editBtn.style.borderRadius = '4px';
+        editBtn.style.width = '36px';
+        editBtn.style.height = '20px';
+        editBtn.style.fontSize = '10px';
+        editBtn.style.cursor = 'pointer';
+        editBtn.onclick = (e) => {
+          e.stopPropagation();
+          openEditMetaDialog(key, false);
+        };
+        cell.appendChild(editBtn);
         // Delete button (small X)
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = '×';
@@ -857,6 +925,166 @@ window.UI.skinsManager = {
         grid.appendChild(cell);
       });
       contentArea.appendChild(grid);
+
+      // --- Edit Metadata Dialog ---
+      function openEditMetaDialog(cacheKey, isCanvas = false) {
+        if (document.getElementById('skins-meta-dialog')) return;
+        const dialogOverlay = document.createElement('div');
+        dialogOverlay.id = 'skins-meta-dialog';
+        dialogOverlay.style.position = 'fixed';
+        dialogOverlay.style.top = '0';
+        dialogOverlay.style.left = '0';
+        dialogOverlay.style.width = '100vw';
+        dialogOverlay.style.height = '100vh';
+        dialogOverlay.style.background = 'rgba(0,0,0,0.6)';
+        dialogOverlay.style.zIndex = '2100';
+        dialogOverlay.style.display = 'flex';
+        dialogOverlay.style.alignItems = 'center';
+        dialogOverlay.style.justifyContent = 'center';
+        // Dialog
+        const dialog = document.createElement('div');
+        dialog.style.background = '#23232b';
+        dialog.style.borderRadius = '10px';
+        dialog.style.boxShadow = '0 4px 32px rgba(0,0,0,0.8)';
+        dialog.style.padding = '32px 32px 24px 32px';
+        dialog.style.minWidth = '400px';
+        dialog.style.maxWidth = '95vw';
+        dialog.style.color = '#fff';
+        dialog.style.position = 'relative';
+        dialog.innerHTML = `<h3 style='margin-top:0'>Edit Skin Metadata</h3>
+          <p style='color:#aaa;margin-bottom:20px'>Edit offset and angle for: ${cacheKey}</p>`;
+        // Current image preview
+        const currentCache = isCanvas ? this.canvasCache : this.imageCache;
+        const entry = currentCache[cacheKey] || {};
+        const img = document.createElement('img');
+        img.style.width = '64px';
+        img.style.height = '64px';
+        img.style.borderRadius = '6px';
+        img.style.background = '#444';
+        img.style.display = entry.dataUrl ? 'block' : 'none';
+        img.style.margin = '8px auto 16px auto';
+        img.style.objectFit = 'cover';
+        img.alt = 'Current Image';
+        if (entry.dataUrl) img.src = entry.dataUrl;
+        dialog.appendChild(img);
+        // Offset and angle controls
+        const metaControls = document.createElement('div');
+        metaControls.style.display = 'flex';
+        metaControls.style.justifyContent = 'center';
+        metaControls.style.gap = '10px';
+        metaControls.style.margin = '8px 0 12px 0';
+        // Offset X
+        const offsetXInput = document.createElement('input');
+        offsetXInput.type = 'number';
+        offsetXInput.placeholder = 'Offset X';
+        offsetXInput.style.width = '60px';
+        offsetXInput.title = 'drawOffsetX';
+        offsetXInput.value = typeof entry.drawOffsetX === 'number' ? entry.drawOffsetX : 0;
+        // Offset Y
+        const offsetYInput = document.createElement('input');
+        offsetYInput.type = 'number';
+        offsetYInput.placeholder = 'Offset Y';
+        offsetYInput.style.width = '60px';
+        offsetYInput.title = 'drawOffsetY';
+        offsetYInput.value = typeof entry.drawOffsetY === 'number' ? entry.drawOffsetY : 0;
+        // Fixed Angle
+        const angleInput = document.createElement('input');
+        angleInput.type = 'number';
+        angleInput.placeholder = 'Angle (deg)';
+        angleInput.style.width = '80px';
+        angleInput.title = 'fixedScreenAngle';
+        angleInput.value = typeof entry.fixedScreenAngle === 'number' ? entry.fixedScreenAngle : 0;
+        metaControls.appendChild(offsetXInput);
+        metaControls.appendChild(offsetYInput);
+        metaControls.appendChild(angleInput);
+        dialog.appendChild(metaControls);
+        // Save/Cancel buttons
+        const btnRow = document.createElement('div');
+        btnRow.style.marginTop = '18px';
+        btnRow.style.textAlign = 'right';
+        btnRow.style.display = 'flex';
+        btnRow.style.justifyContent = 'flex-end';
+        btnRow.style.gap = '12px';
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.style.background = '#4ECDC4';
+        saveBtn.style.color = '#222';
+        saveBtn.style.border = 'none';
+        saveBtn.style.borderRadius = '5px';
+        saveBtn.style.padding = '7px 18px';
+        saveBtn.style.fontWeight = 'bold';
+        saveBtn.style.cursor = 'pointer';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.background = '#444';
+        cancelBtn.style.color = '#fff';
+        cancelBtn.style.border = 'none';
+        cancelBtn.style.borderRadius = '5px';
+        cancelBtn.style.padding = '7px 18px';
+        cancelBtn.style.cursor = 'pointer';
+        btnRow.appendChild(saveBtn);
+        btnRow.appendChild(cancelBtn);
+        dialog.appendChild(btnRow);
+        // Save handler
+        saveBtn.onclick = () => {
+          // Update metadata only, keep existing image
+          const updated = {
+            ...entry,
+            drawOffsetX: parseFloat(offsetXInput.value) || 0,
+            drawOffsetY: parseFloat(offsetYInput.value) || 0,
+            fixedScreenAngle: angleInput.value !== '' ? parseFloat(angleInput.value) : 0
+          };
+          if (isCanvas) {
+            this.canvasCache[cacheKey] = updated;
+            this.saveCanvasCache();
+            if (window.EntityRenderer) {
+              const img = new Image();
+              img.onload = () => {
+                window.EntityRenderer.canvasCache.set(cacheKey, {
+                  image: img,
+                  size: updated.size,
+                  fixedScreenAngle: updated.fixedScreenAngle,
+                  drawOffsetX: updated.drawOffsetX,
+                  drawOffsetY: updated.drawOffsetY
+                });
+              };
+              img.src = updated.dataUrl;
+            }
+          } else {
+            this.imageCache[cacheKey] = updated;
+            this.saveImageCache();
+            if (window.EntityRenderer) {
+              const img = new Image();
+              img.onload = () => {
+                window.EntityRenderer.imageCache.set(cacheKey, {
+                  image: img,
+                  size: updated.size,
+                  fixedScreenAngle: updated.fixedScreenAngle,
+                  drawOffsetX: updated.drawOffsetX,
+                  drawOffsetY: updated.drawOffsetY
+                });
+              };
+              img.src = updated.dataUrl;
+            }
+          }
+          document.body.removeChild(dialogOverlay);
+          refreshUI();
+        };
+        // Cancel handler
+        cancelBtn.onclick = () => {
+          document.body.removeChild(dialogOverlay);
+        };
+        // Escape key closes dialog
+        const handleEscape = (e) => {
+          if (e.key === 'Escape') {
+            dialogOverlay.remove();
+            document.removeEventListener('keydown', handleEscape);
+          }
+        };
+        document.addEventListener('keydown', handleEscape);
+        dialogOverlay.appendChild(dialog);
+        document.body.appendChild(dialogOverlay);
+      }
     };
     // Load shapes content (EntityRenderer format)
     const loadShapesContent = () => {

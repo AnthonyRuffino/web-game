@@ -152,7 +152,7 @@ const World = {
             trunkWidth: 12,
             foliageRadius: 12,
             opacity: 1.0,
-            //drawOffsetY: -40
+            drawOffsetY: -21
           });
           
           // Merge with world-specific properties

@@ -285,6 +285,7 @@ const EntityRenderer = {
     };
     img.onload = () => {
       this.imageCache.set(cacheKey, cacheObj);
+      console.log(`[EntityRenderer] Cached image for key: ${cacheKey}`);
       this.saveCacheToStorage();
     };
     img.onerror = () => {
@@ -311,6 +312,7 @@ const EntityRenderer = {
     };
     img.onload = () => {
       this.canvasCache.set(cacheKey, cacheObj);
+      console.log(`[EntityRenderer] Cached canvas for key: ${cacheKey}`);
       this.saveCanvasCacheToStorage();
     };
     img.onerror = () => {
@@ -378,6 +380,7 @@ const EntityRenderer = {
         }
       }
       localStorage.setItem(this.cacheStorageKey, JSON.stringify(cacheData));
+      console.log(`[EntityRenderer] Wrote image cache to localStorage (${Object.keys(cacheData).length} entries)`);
     } catch (e) {
       console.warn('[EntityRenderer] Failed to save cache to storage:', e);
     }
@@ -405,6 +408,7 @@ const EntityRenderer = {
         }
       }
       localStorage.setItem(this.canvasCacheStorageKey, JSON.stringify(cacheData));
+      console.log(`[EntityRenderer] Wrote canvas cache to localStorage (${Object.keys(cacheData).length} entries)`);
     } catch (e) {
       console.warn('[EntityRenderer] Failed to save canvas cache to storage:', e);
     }
