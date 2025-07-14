@@ -317,7 +317,7 @@ window.UI.skinsManager = {
       function getTreeTargetSize() {
         if (window.TreeEntity) {
           const def = window.TreeEntity.defaultConfig;
-          return { width: def.size, height: def.imageHeight };
+          return { width: def.size * 2, height: def.imageHeight * 2 };
         }
         return { width: 64, height: 64 };
       }
