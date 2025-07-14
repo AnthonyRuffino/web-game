@@ -57,7 +57,12 @@ if (!window.ActionBar) {
       canvas.id = `ui-action-bar-${this.name}`;
       canvas.style.position = 'fixed';
       for (const [k, v] of Object.entries(this.position)) {
-        canvas.style[k] = typeof v === 'number' ? `${v}px` : v;
+        // If this is a horizontal bar and positioned at the bottom, shift up by 32px for the menu bar
+        if (k === 'bottom' && this.orientation === 'horizontal') {
+          canvas.style[k] = typeof v === 'number' ? `${v + 32}px` : `calc(${v} + 32px)`;
+        } else {
+          canvas.style[k] = typeof v === 'number' ? `${v}px` : v;
+        }
       }
       canvas.style.zIndex = this.zIndex;
       canvas.style.border = `2px solid ${this.colors.border}`;
