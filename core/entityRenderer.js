@@ -215,6 +215,10 @@ const EntityRenderer = {
     ]);
     
     this.registerEntityModules();
+    
+    // Ensure all entity types have default preferences
+    this.ensureDefaultPreferences();
+    
     console.log('[EntityRenderer] Initialization complete');
   },
 
@@ -397,6 +401,24 @@ const EntityRenderer = {
         resolve();
       }
     });
+  },
+
+  // Ensure all entity types have default preferences
+  ensureDefaultPreferences() {
+    const entityTypes = Object.keys(this.entityModules);
+    let updated = false;
+    
+    for (const entityType of entityTypes) {
+      if (!(entityType in this.renderModePreferences)) {
+        this.renderModePreferences[entityType] = 'default';
+        updated = true;
+        console.log(`[EntityRenderer] Added default preference for ${entityType}`);
+      }
+    }
+    
+    if (updated) {
+      this.savePreferencesToStorage();
+    }
   },
 
   // Load cache from localStorage

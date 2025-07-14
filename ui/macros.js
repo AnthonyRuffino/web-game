@@ -280,6 +280,15 @@ window.UI.macroManager = {
     overlay.style.alignItems = 'center';
     overlay.style.justifyContent = 'center';
 
+    // Handle escape key to close modal
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        overlay.remove();
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+
     // Helper to block/unblock input
     function setMacroDialogInputBlock(block) {
       window.UI._macroDialogInputBlocked = !!block;
@@ -860,7 +869,10 @@ window.UI.macroManager = {
     closeBtn.style.borderRadius = '6px';
     closeBtn.style.padding = '6px 14px';
     closeBtn.style.cursor = 'pointer';
-    closeBtn.onclick = () => overlay.remove();
+    closeBtn.onclick = () => {
+      overlay.remove();
+      document.removeEventListener('keydown', handleEscape);
+    };
     modal.appendChild(closeBtn);
 
     overlay.appendChild(modal);

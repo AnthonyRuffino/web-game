@@ -14,7 +14,8 @@ const UI = {
     { name: 'actionBars', file: 'ui/actionBars.js', dependencies: [] },
     { name: 'macros', file: 'ui/macros.js', dependencies: ['actionBars'] },
     { name: 'inventory', file: 'ui/inventory.js', dependencies: [] },
-    { name: 'inputBar', file: 'ui/inputBar.js', dependencies: [] }
+    { name: 'inputBar', file: 'ui/inputBar.js', dependencies: [] },
+    { name: 'skins', file: 'ui/skins.js', dependencies: [] }
   ],
   
   // Load a single module
@@ -130,6 +131,13 @@ const UI = {
       console.warn('[UI] Action bar manager not found');
     }
 
+    if (window.UI.skinsManager && window.UI.skinsManager.init) {
+      console.log('[UI] Initializing skins manager...');
+      window.UI.skinsManager.init();
+    } else {
+      console.warn('[UI] Skins manager not found');
+    }
+
     // Preload all action bar icons after all modules are loaded and initialized
     if (window.UI.actionBarManager && typeof window.UI.actionBarManager.preloadAllIcons === 'function') {
       window.UI.actionBarManager.preloadAllIcons();
@@ -153,6 +161,10 @@ const UI = {
   
   get macroManager() {
     return window.UI.macroManager;
+  },
+  
+  get skinsManager() {
+    return window.UI.skinsManager;
   },
   
   get console() {

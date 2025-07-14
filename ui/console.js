@@ -925,6 +925,15 @@ window.UI.console = {
       }
     });
 
+    // Skins management command
+    this.register('skins', 'Open the skins management UI to manage entity images and preferences', (args) => {
+      if (window.UI.skinsManager && typeof window.UI.skinsManager.openSkinsUI === 'function') {
+        window.UI.skinsManager.openSkinsUI();
+      } else {
+        console.error('[Console] Skins manager not available');
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };
