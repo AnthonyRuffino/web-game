@@ -15,6 +15,15 @@ const EntityRenderer = {
   // Registry of entity modules
   entityModules: {},
 
+  // Render mode preferences per entity type
+  renderModePreferences: {
+    // 'rock': 'sprite' | 'shape' | 'default'
+    // 'tree': 'sprite' | 'shape' | 'default'
+  },
+
+  // Default render mode preference
+  defaultRenderMode: 'default',
+
   // Hash function for creating compact cache keys
   hashString(str) {
     let hash = 0;
@@ -40,6 +49,166 @@ const EntityRenderer = {
   hashConfig(config) {
     const jsonString = JSON.stringify(config);
     return this.hashString(jsonString);
+  },
+
+  // Set preferred render mode for an entity type
+  setPreferredRenderMode(entityType, mode) {
+    if (mode === 'default') {
+      delete this.renderModePreferences[entityType];
+    } else {
+      this.renderModePreferences[entityType] = mode;
+    }
+    console.log(`[EntityRenderer] Set ${entityType} preferred render mode to: ${mode}`);
+    
+    // Force refresh of all entities of this type in the world
+    this.refreshEntitiesOfType(entityType);
+  },
+
+  // Force refresh all entities of a specific type
+  refreshEntitiesOfType(entityType) {
+    // This will be called by the world system to refresh entities
+    // For now, just log that entities should be refreshed
+    console.log(`[EntityRenderer] Entities of type '${entityType}' should be refreshed for render mode change`);
+    
+    // In the future, this could trigger a world refresh or entity recreation
+    // For now, the draw method will handle the switch automatically
+  },
+
+  // Get preferred render mode for an entity type
+  getPreferredRenderMode(entityType) {
+    return this.renderModePreferences[entityType] || this.defaultRenderMode;
+  },
+
+  // Get effective render type for an entity (considers preferences)
+  getEffectiveRenderType(entityType, originalRenderType) {
+    const preference = this.getPreferredRenderMode(entityType);
+    if (preference === 'default') {
+      return originalRenderType;
+    }
+    return preference;
+  },
+
+  // Generic entity creation method that handles boilerplate
+  createEntityWithBoilerplate(entityType, config, entityRenderer, entityModule) {
+    const finalConfig = { ...entityModule.defaultConfig, ...config };
+    const cacheKey = entityModule.getCacheKey(finalConfig);
+    
+    // Determine effective render type based on preferences
+    const originalRenderType = finalConfig.isSprite ? 'sprite' : 'shape';
+    const effectiveRenderType = this.getEffectiveRenderType(entityType, originalRenderType);
+    
+    // Lazy load: only cache what we need based on effective render type
+    let sprite = null;
+    let canvasImage = null;
+    
+    if (effectiveRenderType === 'sprite') {
+      sprite = entityRenderer.getCachedImage(cacheKey);
+      if (!sprite) {
+        const svg = entityModule.generateSVG(finalConfig);
+        sprite = entityRenderer.createAndCacheImage(cacheKey, svg);
+      }
+    } else if (effectiveRenderType === 'shape') {
+      canvasImage = entityRenderer.getCachedCanvas(cacheKey);
+      if (!canvasImage) {
+        const drawFunction = entityModule.generateCanvasDraw(finalConfig);
+        canvasImage = entityRenderer.createAndCacheCanvas(cacheKey, drawFunction, finalConfig.size);
+      }
+    }
+    
+    return {
+      type: entityType,
+      config: finalConfig,
+      renderType: effectiveRenderType,
+      originalRenderType: originalRenderType,
+      sprite: sprite,
+      canvasImage: canvasImage,
+      drawShape: entityModule.generateCanvasDraw(finalConfig),
+      cacheKey: cacheKey,
+      entityRenderer: entityRenderer,
+      entityModule: entityModule,
+      
+      // Generic draw method that handles dynamic render mode switching
+      draw(ctx) {
+        // Get current effective render type (may have changed since creation)
+        const currentEffectiveType = EntityRenderer.getEffectiveRenderType(this.type, this.originalRenderType);
+        
+        if (currentEffectiveType === 'sprite') {
+          // Check if we have a loaded sprite
+          if (this.sprite && this.sprite.complete && this.sprite.naturalWidth > 0) {
+            // Draw cached sprite
+            const spriteWidth = this.sprite.width || this.config.size;
+            const spriteHeight = this.sprite.height || this.config.size;
+            ctx.drawImage(
+              this.sprite,
+              this.x - spriteWidth / 2,
+              this.y - spriteHeight / 2,
+              spriteWidth,
+              spriteHeight
+            );
+          } else {
+            // Lazy load sprite if not available
+            this.sprite = this.entityRenderer.getCachedImage(this.cacheKey);
+            if (!this.sprite) {
+              const svg = this.entityModule.generateSVG(this.config);
+              this.sprite = this.entityRenderer.createAndCacheImage(this.cacheKey, svg);
+            }
+            
+            // If sprite is now available, draw it immediately
+            if (this.sprite && this.sprite.complete && this.sprite.naturalWidth > 0) {
+              const spriteWidth = this.sprite.width || this.config.size;
+              const spriteHeight = this.sprite.height || this.config.size;
+              ctx.drawImage(
+                this.sprite,
+                this.x - spriteWidth / 2,
+                this.y - spriteHeight / 2,
+                spriteWidth,
+                spriteHeight
+              );
+            } else {
+              // Draw fallback until sprite loads
+              this.drawShape(ctx, this.x, this.y);
+            }
+          }
+        } else if (currentEffectiveType === 'shape') {
+          // Check if we have a loaded canvas image
+          if (this.canvasImage && this.canvasImage.complete && this.canvasImage.naturalWidth > 0) {
+            // Draw cached canvas image
+            const imageWidth = this.canvasImage.width || this.config.size;
+            const imageHeight = this.canvasImage.height || this.config.size;
+            ctx.drawImage(
+              this.canvasImage,
+              this.x - imageWidth / 2,
+              this.y - imageHeight / 2,
+              imageWidth,
+              imageHeight
+            );
+          } else {
+            // Lazy load canvas image if not available
+            this.canvasImage = this.entityRenderer.getCachedCanvas(this.cacheKey);
+            if (!this.canvasImage) {
+              const drawFunction = this.entityModule.generateCanvasDraw(this.config);
+              this.canvasImage = this.entityRenderer.createAndCacheCanvas(this.cacheKey, drawFunction, this.config.size);
+            }
+            
+            // If canvas image is now available, draw it immediately
+            if (this.canvasImage && this.canvasImage.complete && this.canvasImage.naturalWidth > 0) {
+              const imageWidth = this.canvasImage.width || this.config.size;
+              const imageHeight = this.canvasImage.height || this.config.size;
+              ctx.drawImage(
+                this.canvasImage,
+                this.x - imageWidth / 2,
+                this.y - imageHeight / 2,
+                imageWidth,
+                imageHeight
+              );
+            } else {
+              // Draw fallback until canvas image loads
+              this.drawShape(ctx, this.x, this.y);
+            }
+          }
+        }
+      }
+    };
   },
 
   // Initialize the renderer system
@@ -317,3 +486,60 @@ const EntityRenderer = {
 
 // Make globally available
 window.EntityRenderer = EntityRenderer;
+
+// Console commands for testing render mode preferences
+window.setRenderMode = function(entityType, mode) {
+  EntityRenderer.setPreferredRenderMode(entityType, mode);
+};
+
+window.getRenderMode = function(entityType) {
+  return EntityRenderer.getPreferredRenderMode(entityType);
+};
+
+window.clearRenderMode = function(entityType) {
+  EntityRenderer.setPreferredRenderMode(entityType, 'default');
+};
+
+// Test render mode switching
+window.testRenderModeSwitching = function() {
+  console.log('Testing render mode switching...');
+  
+  // Create a rock (should use sprite by default)
+  const rock = EntityRenderer.createRock({
+    size: 25,
+    baseColor: '#FF0000',
+    textureSpots: 4
+  });
+  
+  console.log('Rock created with default render mode');
+  console.log('Current render mode for rock:', EntityRenderer.getPreferredRenderMode('rock'));
+  
+  // Switch to shape mode
+  EntityRenderer.setPreferredRenderMode('rock', 'shape');
+  console.log('Switched rock to shape mode');
+  
+  // Switch to sprite mode
+  EntityRenderer.setPreferredRenderMode('rock', 'sprite');
+  console.log('Switched rock to sprite mode');
+  
+  // Clear preference (back to default)
+  EntityRenderer.setPreferredRenderMode('rock', 'default');
+  console.log('Cleared rock render mode preference');
+  
+  return rock;
+};
+
+// Simulate the "/render prefer-mode" command
+window.renderPreferMode = function(entityType, mode) {
+  if (!entityType || !mode) {
+    console.log('Usage: renderPreferMode(entityType, mode)');
+    console.log('Examples:');
+    console.log('  renderPreferMode("rock", "shape")');
+    console.log('  renderPreferMode("rock", "sprite")');
+    console.log('  renderPreferMode("rock", "default")');
+    return;
+  }
+  
+  EntityRenderer.setPreferredRenderMode(entityType, mode);
+  console.log(`Set ${entityType} preferred render mode to: ${mode}`);
+};
