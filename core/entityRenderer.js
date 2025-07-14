@@ -80,122 +80,149 @@ const EntityRenderer = {
     return preference;
   },
 
+  drawAndRotate(_ctx, _image, _x, _y, _playerAngle, _fixedScreenAngle, _w, _h, _offsetX, _offsetY) {
+    
+    let angle = 0;
+    if (PERSPECTIVE_MODE === "player-perspective" && _fixedScreenAngle !== null && _fixedScreenAngle !== undefined) {
+      // Undo world rotation, then apply fixed angle (in radians)
+      angle = _playerAngle + (typeof _fixedScreenAngle === 'number' ? _fixedScreenAngle * Math.PI / 180 : 0);
+    }
+    
+    _ctx.save();
+    _ctx.translate(_x || 0, _y || 0);
+    _ctx.rotate(angle);
+    _ctx.translate(_offsetX || 0, _offsetY || 0);
+    
+    _ctx.drawImage(
+      _image,
+      -_w / 2,
+      -_h / 2,
+      _w,
+      _h
+    );
+  },
+
   // Generic entity creation method that handles boilerplate
   createEntityWithBoilerplate(entityType, config, entityRenderer, entityModule) {
-    const finalConfig = { ...entityModule.defaultConfig, ...config };
-    const cacheKey = entityModule.getCacheKey(finalConfig);
+    const cacheKey = entityModule.getCacheKey(config);
     
     // Determine effective render type based on preferences
-    const originalRenderType = finalConfig.isSprite ? 'sprite' : 'shape';
+    const originalRenderType = config.isSprite ? 'sprite' : 'shape';
     const effectiveRenderType = this.getEffectiveRenderType(entityType, originalRenderType);
     
     // Lazy load: only cache what we need based on effective render type
-    let sprite = null;
-    let canvasImage = null;
+    let spriteAndMeta = null;
+    let canvasImageAndMeta = null;
     
     if (effectiveRenderType === 'sprite') {
-      sprite = entityRenderer.getCachedImage(cacheKey);
-      if (!sprite) {
-        const svg = entityModule.generateSVG(finalConfig);
-        sprite = entityRenderer.createAndCacheImage(cacheKey, svg);
+      spriteAndMeta = entityRenderer.getCachedImage(cacheKey);
+      if (!spriteAndMeta) {
+        const svg = entityModule.generateSVG(config);
+        spriteAndMeta = entityRenderer.createAndCacheImage(cacheKey, svg, config);
       }
     } else if (effectiveRenderType === 'shape') {
-      canvasImage = entityRenderer.getCachedCanvas(cacheKey);
-      if (!canvasImage) {
-        const drawFunction = entityModule.generateCanvasDraw(finalConfig);
-        canvasImage = entityRenderer.createAndCacheCanvas(cacheKey, drawFunction, finalConfig.size);
+      canvasImageAndMeta = entityRenderer.getCachedCanvas(cacheKey);
+      if (!canvasImageAndMeta) {
+        const drawFunction = entityModule.generateCanvasDraw(config);
+        canvasImageAndMeta = entityRenderer.createAndCacheCanvas(cacheKey, drawFunction, config.size, config);
       }
     }
     
     return {
       type: entityType,
-      config: finalConfig,
+      config: config,
       renderType: effectiveRenderType,
       originalRenderType: originalRenderType,
-      sprite: sprite,
-      canvasImage: canvasImage,
-      drawShape: entityModule.generateCanvasDraw(finalConfig),
+      spriteAndMeta: spriteAndMeta,
+      canvasImageAndMeta: canvasImageAndMeta,
+      drawShape: entityModule.generateCanvasDraw(config),
       cacheKey: cacheKey,
       entityRenderer: entityRenderer,
       entityModule: entityModule,
-      fixedScreenAngle: finalConfig.fixedScreenAngle,
+      fixedScreenAngle: config.fixedScreenAngle,
       
       // Generic draw method that handles dynamic render mode switching
       draw(ctx, playerAngle = 0) {
         // Get current effective render type (may have changed since creation)
         const currentEffectiveType = EntityRenderer.getEffectiveRenderType(this.type, this.originalRenderType);
 
-        // Determine angle and offsets for rendering
-        let angle;
-        if (PERSPECTIVE_MODE === "player-perspective" && this.fixedScreenAngle !== null && this.fixedScreenAngle !== undefined) {
-          // Undo world rotation, then apply fixed angle (in radians)
-          angle = playerAngle + (typeof this.fixedScreenAngle === 'number' ? this.fixedScreenAngle * Math.PI / 180 : 0);
-        }
-        const offsetX = this.drawOffsetX || 0;
-        const offsetY = this.drawOffsetY || 0;
-
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(angle);
-        ctx.translate(offsetX, offsetY);
-
+        let sprite = null;
+        let canvasImage = null;
         if (currentEffectiveType === 'sprite') {
-          if (this.sprite && this.sprite.complete && this.sprite.naturalWidth > 0) {
-            const spriteWidth = this.sprite.width || this.config.size;
-            const spriteHeight = this.sprite.height || this.config.size;
-            ctx.drawImage(
-              this.sprite,
-              -spriteWidth / 2,
-              -spriteHeight / 2,
-              spriteWidth,
-              spriteHeight
+          sprite = (this.spriteAndMeta || {}).image;
+          if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+            EntityRenderer.drawAndRotate(
+              ctx, 
+              sprite, 
+              this.x,
+              this.y,
+              playerAngle,
+              this.spriteAndMeta.fixedScreenAngle, 
+              sprite.width || config.size, 
+              sprite.height || config.size,
+              this.spriteAndMeta.drawOffsetX, 
+              this.spriteAndMeta.drawOffsetY
             );
           } else {
-            this.sprite = this.entityRenderer.getCachedImage(this.cacheKey);
-            if (!this.sprite) {
+            this.spriteAndMeta = this.entityRenderer.getCachedImage(this.cacheKey);
+            sprite = (this.spriteAndMeta || {}).image;
+            if (!sprite) {
               const svg = this.entityModule.generateSVG(this.config);
-              this.sprite = this.entityRenderer.createAndCacheImage(this.cacheKey, svg);
+              this.spriteAndMeta = this.entityRenderer.createAndCacheImage(this.cacheKey, svg, this.config);
+              sprite = (this.spriteAndMeta || {}).image;
             }
-            if (this.sprite && this.sprite.complete && this.sprite.naturalWidth > 0) {
-              const spriteWidth = this.sprite.width || this.config.size;
-              const spriteHeight = this.sprite.height || this.config.size;
-              ctx.drawImage(
-                this.sprite,
-                -spriteWidth / 2,
-                -spriteHeight / 2,
-                spriteWidth,
-                spriteHeight
+            if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+              EntityRenderer.drawAndRotate(
+                ctx, 
+                sprite, 
+                this.x,
+                this.y,
+                playerAngle,
+                this.spriteAndMeta.fixedScreenAngle, 
+                sprite.width || config.size, 
+                sprite.height || config.size,
+                this.spriteAndMeta.drawOffsetX, 
+                this.spriteAndMeta.drawOffsetY
               );
             } else {
               this.drawShape(ctx, 0, 0);
             }
           }
         } else if (currentEffectiveType === 'shape') {
-          if (this.canvasImage && this.canvasImage.complete && this.canvasImage.naturalWidth > 0) {
-            const imageWidth = this.canvasImage.width || this.config.size;
-            const imageHeight = this.canvasImage.height || this.config.size;
-            ctx.drawImage(
-              this.canvasImage,
-              -imageWidth / 2,
-              -imageHeight / 2,
-              imageWidth,
-              imageHeight
+          canvasImage = (this.canvasImageAndMeta || {}).image;
+          if (canvasImage && canvasImage.complete && canvasImage.naturalWidth > 0) {
+            EntityRenderer.drawAndRotate(
+              ctx, 
+              canvasImage, 
+              this.x,
+              this.y,
+              playerAngle,
+              this.canvasImageAndMeta.fixedScreenAngle, 
+              canvasImage.width || config.size, 
+              canvasImage.height || config.size,
+              this.canvasImageAndMeta.drawOffsetX, 
+              this.canvasImageAndMeta.drawOffsetY
             );
           } else {
-            this.canvasImage = this.entityRenderer.getCachedCanvas(this.cacheKey);
-            if (!this.canvasImage) {
+            this.canvasImageAndMeta = this.entityRenderer.getCachedCanvas(this.cacheKey);
+            canvasImage = (this.canvasImageAndMeta || {}).image;
+            if (!canvasImage) {
               const drawFunction = this.entityModule.generateCanvasDraw(this.config);
-              this.canvasImage = this.entityRenderer.createAndCacheCanvas(this.cacheKey, drawFunction, this.config.size);
+              this.canvasImageAndMeta = this.entityRenderer.createAndCacheCanvas(this.cacheKey, drawFunction, this.config.size, this.config);
+              canvasImage = (this.canvasImageAndMeta || {}).image;
             }
-            if (this.canvasImage && this.canvasImage.complete && this.canvasImage.naturalWidth > 0) {
-              const imageWidth = this.canvasImage.width || this.config.size;
-              const imageHeight = this.canvasImage.height || this.config.size;
-              ctx.drawImage(
-                this.canvasImage,
-                -imageWidth / 2,
-                -imageHeight / 2,
-                imageWidth,
-                imageHeight
+            if (canvasImage && canvasImage.complete && canvasImage.naturalWidth > 0) {
+              EntityRenderer.drawAndRotate(
+                ctx, 
+                canvasImage, 
+                this.x,
+                this.y, 
+                playerAngle,
+                this.canvasImageAndMeta.fixedScreenAngle, 
+                canvasImage.width || config.size, 
+                canvasImage.height || config.size,
+                this.canvasImageAndMeta.offsetX, 
+                this.canvasImageAndMeta.offsetY
               );
             } else {
               this.drawShape(ctx, 0, 0);
@@ -257,20 +284,12 @@ const EntityRenderer = {
 
   // Get cached image by key
   getCachedImage(cacheKey) {
-    const entry = this.imageCache.get(cacheKey);
-    if (entry) {
-      return entry.image;
-    }
-    return null;
+    return this.imageCache.get(cacheKey);
   },
 
   // Get cached canvas by key
   getCachedCanvas(cacheKey) {
-    const entry = this.canvasCache.get(cacheKey);
-    if (entry) {
-      return entry.image;
-    }
-    return null;
+    return this.canvasCache.get(cacheKey);
   },
 
   // Create and cache image from SVG, with metadata
@@ -279,13 +298,13 @@ const EntityRenderer = {
     const cacheObj = {
       image: img,
       size: meta.size || 32,
-      fixedScreenAngle: meta.fixedScreenAngle || null,
+      fixedScreenAngle: meta.fixedScreenAngle != undefined ? meta.fixedScreenAngle : null,
       drawOffsetX: meta.drawOffsetX || 0,
       drawOffsetY: meta.drawOffsetY || 0
     };
     img.onload = () => {
       this.imageCache.set(cacheKey, cacheObj);
-      console.log(`[EntityRenderer] Cached image for key: ${cacheKey}`);
+      console.log(`[EntityRenderer] Cached image for key: ${cacheKey}`, meta);
       this.saveCacheToStorage();
     };
     img.onerror = () => {
@@ -408,7 +427,6 @@ const EntityRenderer = {
         }
       }
       localStorage.setItem(this.canvasCacheStorageKey, JSON.stringify(cacheData));
-      console.log(`[EntityRenderer] Wrote canvas cache to localStorage (${Object.keys(cacheData).length} entries)`);
     } catch (e) {
       console.warn('[EntityRenderer] Failed to save canvas cache to storage:', e);
     }

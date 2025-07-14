@@ -19,8 +19,8 @@ const TreeEntity = {
     opacity: 1.0,
     // Fixed-angle and offset support
     fixedScreenAngle: 0, // degrees; 0 = always up; null = normal rotation
-    drawOffsetX: 0,      // pixels; offset for rendering alignment
-    drawOffsetY: -20 // will be computed
+    drawOffsetX: undefined,      // pixels; offset for rendering alignment
+    drawOffsetY: -42 
   },
 
   // Generate a unique cache key for tree parameters (do NOT include angle/offset)
@@ -105,23 +105,11 @@ const TreeEntity = {
   // Create a tree entity with unified rendering
   create(config = {}, entityRenderer) {
     // Set default drawOffsetY so the base of the trunk aligns with (x, y)
-    const size = config.size || TreeEntity.defaultConfig.size;
-    const imageHeight = config.imageHeight || TreeEntity.defaultConfig.imageHeight;
-    const trunkY = imageHeight - size * 0.1;
-    // The offset to align the bottom of the trunk with (x, y)
-    let drawOffsetY = - (imageHeight - trunkY);
-    // If user supplies a drawOffsetY, add it as a further offset
-
-    let adjustedOffsetY = drawOffsetY = (config.drawOffsetY !== undefined) ? config.drawOffsetY : TreeEntity.defaultConfig.drawOffsetY;;
-    if (typeof adjustedOffsetY === 'number') {
-      drawOffsetY += adjustedOffsetY;
-    }
-
-    const mergedConfig = { ...config, drawOffsetY, imageHeight };
+    const mergedConfig = { ...config, ...TreeEntity.defaultConfig };
     const entity = EntityRenderer.createEntityWithBoilerplate('tree', mergedConfig, entityRenderer, TreeEntity);
-    entity.fixedScreenAngle = (config.fixedScreenAngle !== undefined) ? config.fixedScreenAngle : TreeEntity.defaultConfig.fixedScreenAngle;
-    entity.drawOffsetX = (config.drawOffsetX !== undefined) ? config.drawOffsetX : TreeEntity.defaultConfig.drawOffsetX;
-    entity.drawOffsetY = drawOffsetY;
+    entity.fixedScreenAngle = mergedConfig.fixedScreenAngle;
+    entity.drawOffsetX = mergedConfig.drawOffsetX;
+    entity.drawOffsetY = mergedConfig.drawOffsetY;
     return entity;
   }
 };
