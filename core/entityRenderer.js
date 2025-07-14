@@ -257,61 +257,67 @@ const EntityRenderer = {
 
   // Get cached image by key
   getCachedImage(cacheKey) {
-    return this.imageCache.get(cacheKey);
+    const entry = this.imageCache.get(cacheKey);
+    if (entry) {
+      return entry.image;
+    }
+    return null;
   },
 
   // Get cached canvas by key
   getCachedCanvas(cacheKey) {
-    return this.canvasCache.get(cacheKey);
+    const entry = this.canvasCache.get(cacheKey);
+    if (entry) {
+      return entry.image;
+    }
+    return null;
   },
 
-  // Create and cache image from SVG
-  createAndCacheImage(cacheKey, svg) {
+  // Create and cache image from SVG, with metadata
+  createAndCacheImage(cacheKey, svg, meta = {}) {
     const img = new Image();
-    
+    const cacheObj = {
+      image: img,
+      size: meta.size || 32,
+      fixedScreenAngle: meta.fixedScreenAngle || null,
+      drawOffsetX: meta.drawOffsetX || 0,
+      drawOffsetY: meta.drawOffsetY || 0
+    };
     img.onload = () => {
-      console.log(`[EntityRenderer] Generated image for cache key: ${cacheKey}`);
-      this.imageCache.set(cacheKey, img);
+      this.imageCache.set(cacheKey, cacheObj);
       this.saveCacheToStorage();
     };
-    
     img.onerror = () => {
       console.warn(`[EntityRenderer] Failed to generate image for cache key: ${cacheKey}`);
     };
-    
     img.src = 'data:image/svg+xml;base64,' + btoa(svg);
-    
-    // Return the image (will be updated when loaded)
-    return img;
+    return cacheObj;
   },
 
-  // Create and cache canvas from draw function
-  createAndCacheCanvas(cacheKey, drawFunction, size) {
-    // Create offscreen canvas
+  // Create and cache canvas from draw function, with metadata
+  createAndCacheCanvas(cacheKey, drawFunction, size, meta = {}) {
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
-    
-    // Draw the shape to the canvas
     drawFunction(ctx, size / 2, size / 2);
-    
-    // Convert to image for caching
     const img = new Image();
+    const cacheObj = {
+      image: img,
+      size: size,
+      fixedScreenAngle: meta.fixedScreenAngle || null,
+      drawOffsetX: meta.drawOffsetX || 0,
+      drawOffsetY: meta.drawOffsetY || 0
+    };
     img.onload = () => {
-      console.log(`[EntityRenderer] Generated canvas image for cache key: ${cacheKey}`);
-      this.canvasCache.set(cacheKey, img);
+      this.canvasCache.set(cacheKey, cacheObj);
       this.saveCanvasCacheToStorage();
     };
-    
     img.onerror = () => {
       console.warn(`[EntityRenderer] Failed to generate canvas image for cache key: ${cacheKey}`);
     };
-    
     img.src = canvas.toDataURL();
-    
-    // Return the image (will be updated when loaded)
-    return img;
+    return cacheObj;
   },
 
   // Create a rock entity (delegates to RockEntity module)
@@ -354,15 +360,21 @@ const EntityRenderer = {
   saveCacheToStorage() {
     try {
       const cacheData = {};
-      for (const [key, img] of this.imageCache) {
-        if (img.complete && img.naturalWidth > 0) {
-          // Convert image to data URL for storage
+      for (const [key, entry] of this.imageCache) {
+        const img = entry.image;
+        if (img && img.complete && img.naturalWidth > 0) {
           const canvas = document.createElement('canvas');
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0);
-          cacheData[key] = canvas.toDataURL();
+          cacheData[key] = {
+            dataUrl: canvas.toDataURL(),
+            size: entry.size,
+            fixedScreenAngle: entry.fixedScreenAngle,
+            drawOffsetX: entry.drawOffsetX,
+            drawOffsetY: entry.drawOffsetY
+          };
         }
       }
       localStorage.setItem(this.cacheStorageKey, JSON.stringify(cacheData));
@@ -375,15 +387,21 @@ const EntityRenderer = {
   saveCanvasCacheToStorage() {
     try {
       const cacheData = {};
-      for (const [key, img] of this.canvasCache) {
-        if (img.complete && img.naturalWidth > 0) {
-          // Convert image to data URL for storage
+      for (const [key, entry] of this.canvasCache) {
+        const img = entry.image;
+        if (img && img.complete && img.naturalWidth > 0) {
           const canvas = document.createElement('canvas');
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0);
-          cacheData[key] = canvas.toDataURL();
+          cacheData[key] = {
+            dataUrl: canvas.toDataURL(),
+            size: entry.size,
+            fixedScreenAngle: entry.fixedScreenAngle,
+            drawOffsetX: entry.drawOffsetX,
+            drawOffsetY: entry.drawOffsetY
+          };
         }
       }
       localStorage.setItem(this.canvasCacheStorageKey, JSON.stringify(cacheData));
@@ -450,27 +468,29 @@ const EntityRenderer = {
           resolve();
           return;
         }
-        
         const parsed = JSON.parse(cacheData);
         const imagePromises = [];
-        
-        for (const [key, dataUrl] of Object.entries(parsed)) {
+        for (const [key, value] of Object.entries(parsed)) {
           const imagePromise = new Promise((imageResolve) => {
             const img = new Image();
             img.onload = () => {
-              this.imageCache.set(key, img);
+              this.imageCache.set(key, {
+                image: img,
+                size: value.size,
+                fixedScreenAngle: value.fixedScreenAngle,
+                drawOffsetX: value.drawOffsetX,
+                drawOffsetY: value.drawOffsetY
+              });
               imageResolve();
             };
             img.onerror = () => {
               console.warn(`[EntityRenderer] Failed to load cached image: ${key}`);
-              imageResolve(); // Resolve even on error to not block other images
+              imageResolve();
             };
-            img.src = dataUrl;
+            img.src = value.dataUrl;
           });
           imagePromises.push(imagePromise);
         }
-        
-        // Wait for all images to load (or fail)
         Promise.all(imagePromises).then(() => {
           console.log(`[EntityRenderer] Loaded ${Object.keys(parsed).length} cached images`);
           resolve();
@@ -491,27 +511,29 @@ const EntityRenderer = {
           resolve();
           return;
         }
-        
         const parsed = JSON.parse(cacheData);
         const imagePromises = [];
-        
-        for (const [key, dataUrl] of Object.entries(parsed)) {
+        for (const [key, value] of Object.entries(parsed)) {
           const imagePromise = new Promise((imageResolve) => {
             const img = new Image();
             img.onload = () => {
-              this.canvasCache.set(key, img);
+              this.canvasCache.set(key, {
+                image: img,
+                size: value.size,
+                fixedScreenAngle: value.fixedScreenAngle,
+                drawOffsetX: value.drawOffsetX,
+                drawOffsetY: value.drawOffsetY
+              });
               imageResolve();
             };
             img.onerror = () => {
               console.warn(`[EntityRenderer] Failed to load cached canvas image: ${key}`);
-              imageResolve(); // Resolve even on error to not block other images
+              imageResolve();
             };
-            img.src = dataUrl;
+            img.src = value.dataUrl;
           });
           imagePromises.push(imagePromise);
         }
-        
-        // Wait for all images to load (or fail)
         Promise.all(imagePromises).then(() => {
           console.log(`[EntityRenderer] Loaded ${Object.keys(parsed).length} cached canvas images`);
           resolve();

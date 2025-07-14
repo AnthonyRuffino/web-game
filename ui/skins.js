@@ -12,8 +12,8 @@ window.UI.skinsManager = {
   preferencesKey: 'entityRenderer_preferences',
   
   // Cache data
-  imageCache: {}, // { cacheKey: dataURL }
-  canvasCache: {}, // { cacheKey: dataURL }
+  imageCache: {}, // { cacheKey: { dataUrl: dataURL, size: number, fixedScreenAngle: number, drawOffsetX: number, drawOffsetY: number } }
+  canvasCache: {}, // { cacheKey: { dataUrl: dataURL, size: number, fixedScreenAngle: number, drawOffsetX: number, drawOffsetY: number } }
   preferences: {}, // { entityType: renderMode }
   
   // Initialize skins system
@@ -30,22 +30,39 @@ window.UI.skinsManager = {
       if (imageData) {
         this.imageCache = JSON.parse(imageData);
       }
-      
+      // Migrate old format if needed
+      for (const k in this.imageCache) {
+        const entry = this.imageCache[k];
+        if (typeof entry === 'string') {
+          this.imageCache[k] = { dataUrl: entry };
+        } else if (entry && entry.image) {
+          // Old wrapper format
+          this.imageCache[k] = { dataUrl: entry.image, ...entry.meta };
+        }
+      }
       // Load canvas cache
       const canvasData = localStorage.getItem(this.canvasCacheKey);
       if (canvasData) {
         this.canvasCache = JSON.parse(canvasData);
       }
-      
+      for (const k in this.canvasCache) {
+        const entry = this.canvasCache[k];
+        if (typeof entry === 'string') {
+          this.canvasCache[k] = { dataUrl: entry };
+        } else if (entry && entry.image) {
+          this.canvasCache[k] = { dataUrl: entry.image, ...entry.meta };
+        }
+      }
       // Load preferences
       const preferencesData = localStorage.getItem(this.preferencesKey);
       if (preferencesData) {
         this.preferences = JSON.parse(preferencesData);
       }
-      
       // Ensure all entity types have default preferences
       this.ensureDefaultPreferences();
-      
+      // Save migrated caches if needed
+      this.saveImageCache();
+      this.saveCanvasCache();
       console.log(`[UI] Loaded ${Object.keys(this.imageCache).length} image cache entries`);
       console.log(`[UI] Loaded ${Object.keys(this.canvasCache).length} canvas cache entries`);
       console.log(`[UI] Loaded ${Object.keys(this.preferences).length} preference entries`);
@@ -103,24 +120,42 @@ window.UI.skinsManager = {
     }
   },
 
-  // Update a cache entry
-  updateCacheEntry(cacheKey, newDataURL, isCanvas = false) {
+  // Update a cache entry (EntityRenderer format)
+  updateCacheEntry(cacheKey, newDataURL, isCanvas = false, meta = {}) {
+    const entry = {
+      dataUrl: newDataURL,
+      size: meta.size,
+      fixedScreenAngle: meta.fixedScreenAngle,
+      drawOffsetX: meta.drawOffsetX,
+      drawOffsetY: meta.drawOffsetY
+    };
     if (isCanvas) {
-      this.canvasCache[cacheKey] = newDataURL;
+      this.canvasCache[cacheKey] = entry;
       this.saveCanvasCache();
     } else {
-      this.imageCache[cacheKey] = newDataURL;
+      this.imageCache[cacheKey] = entry;
       this.saveImageCache();
     }
-    
     // Update EntityRenderer cache if available
     if (window.EntityRenderer) {
       const img = new Image();
       img.onload = () => {
         if (isCanvas) {
-          window.EntityRenderer.canvasCache.set(cacheKey, img);
+          window.EntityRenderer.canvasCache.set(cacheKey, {
+            image: img,
+            size: entry.size,
+            fixedScreenAngle: entry.fixedScreenAngle,
+            drawOffsetX: entry.drawOffsetX,
+            drawOffsetY: entry.drawOffsetY
+          });
         } else {
-          window.EntityRenderer.imageCache.set(cacheKey, img);
+          window.EntityRenderer.imageCache.set(cacheKey, {
+            image: img,
+            size: entry.size,
+            fixedScreenAngle: entry.fixedScreenAngle,
+            drawOffsetX: entry.drawOffsetX,
+            drawOffsetY: entry.drawOffsetY
+          });
         }
       };
       img.src = newDataURL;
@@ -160,16 +195,15 @@ window.UI.skinsManager = {
     }
   },
 
-  // Export all cache data to JSON
+  // Export all cache data to JSON (wrapper objects)
   exportCacheData() {
     const exportData = {
       imageCache: this.imageCache,
       canvasCache: this.canvasCache,
       preferences: this.preferences,
       exportDate: new Date().toISOString(),
-      version: '1.0'
+      version: '2.0-wrapper'
     };
-    
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -181,7 +215,7 @@ window.UI.skinsManager = {
     URL.revokeObjectURL(url);
   },
 
-  // Import cache data from JSON file
+  // Import cache data from JSON file (wrapper objects)
   importCacheData(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -226,42 +260,45 @@ window.UI.skinsManager = {
     });
   },
 
-  // Get all cache entries for display
+  // Get all cache entries for display (EntityRenderer format)
   getAllCacheEntries() {
     const entries = [];
-    
-    // Add image cache entries
-    for (const [key, dataURL] of Object.entries(this.imageCache)) {
+    for (const [key, entry] of Object.entries(this.imageCache)) {
       entries.push({
         key: key,
-        dataURL: dataURL,
+        dataURL: entry.dataUrl,
+        meta: {
+          size: entry.size,
+          fixedScreenAngle: entry.fixedScreenAngle,
+          drawOffsetX: entry.drawOffsetX,
+          drawOffsetY: entry.drawOffsetY
+        },
         type: 'image',
-        size: this.estimateImageSize(dataURL)
+        size: this.estimateImageSize(entry.dataUrl)
       });
     }
-    
-    // Add canvas cache entries
-    for (const [key, dataURL] of Object.entries(this.canvasCache)) {
+    for (const [key, entry] of Object.entries(this.canvasCache)) {
       entries.push({
         key: key,
-        dataURL: dataURL,
+        dataURL: entry.dataUrl,
+        meta: {
+          size: entry.size,
+          fixedScreenAngle: entry.fixedScreenAngle,
+          drawOffsetX: entry.drawOffsetX,
+          drawOffsetY: entry.drawOffsetY
+        },
         type: 'canvas',
-        size: this.estimateImageSize(dataURL)
+        size: this.estimateImageSize(entry.dataUrl)
       });
     }
-    
     return entries.sort((a, b) => a.key.localeCompare(b.key));
   },
 
   // Estimate image size from data URL
   estimateImageSize(dataURL) {
-    // Remove data URL prefix to get base64 data
     const base64 = dataURL.split(',')[1];
     if (!base64) return 'Unknown';
-    
-    // Calculate approximate size in bytes (base64 is ~33% larger than binary)
     const sizeInBytes = Math.ceil((base64.length * 3) / 4);
-    
     if (sizeInBytes < 1024) {
       return `${sizeInBytes} B`;
     } else if (sizeInBytes < 1024 * 1024) {
@@ -312,8 +349,6 @@ window.UI.skinsManager = {
     // --- Image Upload Dialog ---
     const openUploadDialog = (cacheKey, isCanvas = false) => {
       if (document.getElementById('skins-upload-dialog')) return;
-
-      // Helper: get target size for tree skins
       function getTreeTargetSize() {
         if (window.TreeEntity) {
           const def = window.TreeEntity.defaultConfig;
@@ -321,8 +356,6 @@ window.UI.skinsManager = {
         }
         return { width: 64, height: 64 };
       }
-
-      // Helper: resize image to target size
       function resizeImageToTarget(img, width, height, callback) {
         const canvas = document.createElement('canvas');
         canvas.width = width;
@@ -335,8 +368,6 @@ window.UI.skinsManager = {
           resizedImg.src = URL.createObjectURL(blob);
         }, 'image/png');
       }
-
-      // Overlay
       const dialogOverlay = document.createElement('div');
       dialogOverlay.id = 'skins-upload-dialog';
       dialogOverlay.style.position = 'fixed';
@@ -349,8 +380,6 @@ window.UI.skinsManager = {
       dialogOverlay.style.display = 'flex';
       dialogOverlay.style.alignItems = 'center';
       dialogOverlay.style.justifyContent = 'center';
-
-      // Dialog
       const dialog = document.createElement('div');
       dialog.style.background = '#23232b';
       dialog.style.borderRadius = '10px';
@@ -360,10 +389,8 @@ window.UI.skinsManager = {
       dialog.style.maxWidth = '95vw';
       dialog.style.color = '#fff';
       dialog.style.position = 'relative';
-
       dialog.innerHTML = `<h3 style='margin-top:0'>Upload New Image</h3>
         <p style='color:#aaa;margin-bottom:20px'>Replace image for: ${cacheKey}</p>`;
-
       // Current image preview
       const currentPreview = document.createElement('img');
       currentPreview.style.width = '64px';
@@ -374,13 +401,11 @@ window.UI.skinsManager = {
       currentPreview.style.margin = '8px auto 16px auto';
       currentPreview.style.objectFit = 'cover';
       currentPreview.alt = 'Current Image';
-      
       const currentCache = isCanvas ? this.canvasCache : this.imageCache;
-      if (currentCache[cacheKey]) {
-        currentPreview.src = currentCache[cacheKey];
+      if (currentCache[cacheKey] && currentCache[cacheKey].dataUrl) {
+        currentPreview.src = currentCache[cacheKey].dataUrl;
       }
       dialog.appendChild(currentPreview);
-
       // New image preview
       const newPreview = document.createElement('img');
       newPreview.style.width = '64px';
@@ -392,14 +417,12 @@ window.UI.skinsManager = {
       newPreview.style.objectFit = 'cover';
       newPreview.alt = 'New Image';
       dialog.appendChild(newPreview);
-
       // File input
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
       fileInput.accept = 'image/*';
       fileInput.style.display = 'none';
       dialog.appendChild(fileInput);
-      
       const uploadBtn = document.createElement('button');
       uploadBtn.textContent = 'Choose Image File';
       uploadBtn.style.marginRight = '8px';
@@ -412,13 +435,11 @@ window.UI.skinsManager = {
       uploadBtn.style.cursor = 'pointer';
       uploadBtn.onclick = () => fileInput.click();
       dialog.appendChild(uploadBtn);
-
       fileInput.addEventListener('change', function (event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = function () {
-          // If this is a tree skin, auto-resize to match procedural art
           if (cacheKey.startsWith('tree-')) {
             const img = new window.Image();
             img.onload = function () {
@@ -436,7 +457,6 @@ window.UI.skinsManager = {
         };
         reader.readAsDataURL(file);
       });
-
       // Save/Cancel buttons
       const btnRow = document.createElement('div');
       btnRow.style.marginTop = '18px';
@@ -444,7 +464,6 @@ window.UI.skinsManager = {
       btnRow.style.display = 'flex';
       btnRow.style.justifyContent = 'flex-end';
       btnRow.style.gap = '12px';
-      
       const saveBtn = document.createElement('button');
       saveBtn.textContent = 'Save';
       saveBtn.style.background = '#4ECDC4';
@@ -454,7 +473,6 @@ window.UI.skinsManager = {
       saveBtn.style.padding = '7px 18px';
       saveBtn.style.fontWeight = 'bold';
       saveBtn.style.cursor = 'pointer';
-      
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
       cancelBtn.style.background = '#444';
@@ -463,12 +481,9 @@ window.UI.skinsManager = {
       cancelBtn.style.borderRadius = '5px';
       cancelBtn.style.padding = '7px 18px';
       cancelBtn.style.cursor = 'pointer';
-      
       btnRow.appendChild(saveBtn);
       btnRow.appendChild(cancelBtn);
       dialog.appendChild(btnRow);
-
-      // Save handler
       saveBtn.onclick = () => {
         if (newPreview._pendingDataURL) {
           this.updateCacheEntry(cacheKey, newPreview._pendingDataURL, isCanvas);
@@ -478,12 +493,9 @@ window.UI.skinsManager = {
           alert('Please select an image file first.');
         }
       };
-      
-      // Cancel handler
       cancelBtn.onclick = () => {
         document.body.removeChild(dialogOverlay);
       };
-
       dialogOverlay.appendChild(dialog);
       document.body.appendChild(dialogOverlay);
     };
@@ -747,7 +759,7 @@ window.UI.skinsManager = {
       contentArea.appendChild(preferencesSection);
     };
 
-    // Load sprites content
+    // Load sprites content (EntityRenderer format)
     const loadSpritesContent = () => {
       const spriteEntries = Object.entries(this.imageCache);
       if (spriteEntries.length === 0) {
@@ -760,21 +772,15 @@ window.UI.skinsManager = {
         contentArea.appendChild(emptyMsg);
         return;
       }
-
-      // Grid config - more compact
       const gridCols = 6;
       const gridRows = Math.ceil(spriteEntries.length / gridCols);
-
-      // Create grid container
       const grid = document.createElement('div');
       grid.style.display = 'grid';
       grid.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
       grid.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
       grid.style.gap = '12px';
       grid.style.margin = '16px 0';
-
-      // Render sprite entries
-      spriteEntries.forEach(([key, dataURL]) => {
+      spriteEntries.forEach(([key, entry]) => {
         const cell = document.createElement('div');
         cell.style.background = '#333';
         cell.style.borderRadius = '6px';
@@ -787,10 +793,9 @@ window.UI.skinsManager = {
         cell.style.position = 'relative';
         cell.style.transition = 'background 0.2s';
         cell.style.padding = '8px';
-
         // Image preview
         const img = document.createElement('img');
-        img.src = dataURL;
+        img.src = entry.dataUrl;
         img.alt = key;
         img.style.width = '48px';
         img.style.height = '48px';
@@ -798,7 +803,20 @@ window.UI.skinsManager = {
         img.style.borderRadius = '4px';
         img.style.objectFit = 'cover';
         cell.appendChild(img);
-
+        // Meta info
+        if (entry.size || entry.fixedScreenAngle || entry.drawOffsetX || entry.drawOffsetY) {
+          const metaDiv = document.createElement('div');
+          metaDiv.style.fontSize = '10px';
+          metaDiv.style.color = '#6ec6ff';
+          metaDiv.style.marginBottom = '2px';
+          metaDiv.textContent = [
+            entry.size ? `size: ${entry.size}` : '',
+            entry.fixedScreenAngle ? `angle: ${entry.fixedScreenAngle}` : '',
+            entry.drawOffsetX ? `dx: ${entry.drawOffsetX}` : '',
+            entry.drawOffsetY ? `dy: ${entry.drawOffsetY}` : ''
+          ].filter(Boolean).join(', ');
+          cell.appendChild(metaDiv);
+        }
         // Cache key (truncated)
         const keyLabel = document.createElement('div');
         keyLabel.textContent = key.length > 10 ? key.substring(0, 10) + '...' : key;
@@ -807,7 +825,6 @@ window.UI.skinsManager = {
         keyLabel.style.wordBreak = 'break-all';
         keyLabel.style.color = '#aaa';
         cell.appendChild(keyLabel);
-
         // Delete button (small X)
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = '×';
@@ -828,8 +845,6 @@ window.UI.skinsManager = {
           openDeleteDialog(key, false);
         };
         cell.appendChild(deleteBtn);
-
-        // Show delete button on hover
         cell.onmouseenter = () => {
           cell.style.background = '#444';
           deleteBtn.style.display = 'block';
@@ -838,17 +853,12 @@ window.UI.skinsManager = {
           cell.style.background = '#333';
           deleteBtn.style.display = 'none';
         };
-
-        // Click to upload new image
         cell.onclick = () => openUploadDialog(key, false);
-
         grid.appendChild(cell);
       });
-
       contentArea.appendChild(grid);
     };
-
-    // Load shapes content
+    // Load shapes content (EntityRenderer format)
     const loadShapesContent = () => {
       const shapeEntries = Object.entries(this.canvasCache);
       if (shapeEntries.length === 0) {
@@ -861,21 +871,15 @@ window.UI.skinsManager = {
         contentArea.appendChild(emptyMsg);
         return;
       }
-
-      // Grid config - more compact
       const gridCols = 6;
       const gridRows = Math.ceil(shapeEntries.length / gridCols);
-
-      // Create grid container
       const grid = document.createElement('div');
       grid.style.display = 'grid';
       grid.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
       grid.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
       grid.style.gap = '12px';
       grid.style.margin = '16px 0';
-
-      // Render shape entries
-      shapeEntries.forEach(([key, dataURL]) => {
+      shapeEntries.forEach(([key, entry]) => {
         const cell = document.createElement('div');
         cell.style.background = '#333';
         cell.style.borderRadius = '6px';
@@ -888,10 +892,9 @@ window.UI.skinsManager = {
         cell.style.position = 'relative';
         cell.style.transition = 'background 0.2s';
         cell.style.padding = '8px';
-
         // Image preview
         const img = document.createElement('img');
-        img.src = dataURL;
+        img.src = entry.dataUrl;
         img.alt = key;
         img.style.width = '48px';
         img.style.height = '48px';
@@ -899,7 +902,20 @@ window.UI.skinsManager = {
         img.style.borderRadius = '4px';
         img.style.objectFit = 'cover';
         cell.appendChild(img);
-
+        // Meta info
+        if (entry.size || entry.fixedScreenAngle || entry.drawOffsetX || entry.drawOffsetY) {
+          const metaDiv = document.createElement('div');
+          metaDiv.style.fontSize = '10px';
+          metaDiv.style.color = '#6ec6ff';
+          metaDiv.style.marginBottom = '2px';
+          metaDiv.textContent = [
+            entry.size ? `size: ${entry.size}` : '',
+            entry.fixedScreenAngle ? `angle: ${entry.fixedScreenAngle}` : '',
+            entry.drawOffsetX ? `dx: ${entry.drawOffsetX}` : '',
+            entry.drawOffsetY ? `dy: ${entry.drawOffsetY}` : ''
+          ].filter(Boolean).join(', ');
+          cell.appendChild(metaDiv);
+        }
         // Cache key (truncated)
         const keyLabel = document.createElement('div');
         keyLabel.textContent = key.length > 10 ? key.substring(0, 10) + '...' : key;
@@ -908,7 +924,6 @@ window.UI.skinsManager = {
         keyLabel.style.wordBreak = 'break-all';
         keyLabel.style.color = '#aaa';
         cell.appendChild(keyLabel);
-
         // Delete button (small X)
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = '×';
@@ -929,8 +944,6 @@ window.UI.skinsManager = {
           openDeleteDialog(key, true);
         };
         cell.appendChild(deleteBtn);
-
-        // Show delete button on hover
         cell.onmouseenter = () => {
           cell.style.background = '#444';
           deleteBtn.style.display = 'block';
@@ -939,13 +952,9 @@ window.UI.skinsManager = {
           cell.style.background = '#333';
           deleteBtn.style.display = 'none';
         };
-
-        // Click to upload new image
         cell.onclick = () => openUploadDialog(key, true);
-
         grid.appendChild(cell);
       });
-
       contentArea.appendChild(grid);
     };
 
