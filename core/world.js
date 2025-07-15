@@ -81,7 +81,23 @@ const World = {
     // Generate new chunk
     const chunk = this.generateChunk(chunkX, chunkY);
     this.chunkCache.set(key, chunk);
+
+    // Calculate player distance and chunk coordinates (if Player exists)
+    let playerDistance = null;
+    let playerChunkCoords = null;
+    if (typeof Player !== 'undefined') {
+      const playerChunk = this.worldToChunk(Player.x / this.config.tileSize, Player.y / this.config.tileSize);
+      playerDistance = Math.max(Math.abs(chunkX - playerChunk.x), Math.abs(chunkY - playerChunk.y));
+      playerChunkCoords = { x: playerChunk.x, y: playerChunk.y };
+    }
     
+    // Aggregate log
+    let entry = window._chunkLogStats.loaded.get(key);
+    if (!entry) entry = { count: 0, distances: [], playerChunks: [] };
+    entry.count++;
+    if (playerDistance !== null) entry.distances.push(playerDistance);
+    if (playerChunkCoords) entry.playerChunks.push(playerChunkCoords);
+    window._chunkLogStats.loaded.set(key, entry);
     return chunk;
   },
 
@@ -359,29 +375,20 @@ const World = {
     });
   },
 
-  // Clean up chunks that are far from the player
-  cleanupChunks(playerX, playerY, keepDistance = 5) {
-    const playerChunk = this.worldToChunk(
-      playerX / this.config.tileSize, 
-      playerY / this.config.tileSize
-    );
-    
-    const chunksToRemove = [];
-    
-    for (const [key, chunk] of this.chunkCache) {
-      const distance = Math.max(
-        Math.abs(chunk.x - playerChunk.x),
-        Math.abs(chunk.y - playerChunk.y)
-      );
-      
-      if (distance > keepDistance) {
-        chunksToRemove.push(key);
+  // Refactored cleanupChunks: accepts a Set of chunk IDs to keep
+  cleanupChunks(keepChunkKeys) {
+    for (const key of this.chunkCache.keys()) {
+      if (!keepChunkKeys.has(key)) {
+        let entry = window._chunkLogStats.discarded.get(key);
+        if (!entry) entry = { count: 0, distances: [], playerChunks: [] };
+        entry.count++;
+        // No distance calculation needed, but keep for compatibility
+        entry.distances.push(null);
+        entry.playerChunks.push(null);
+        window._chunkLogStats.discarded.set(key, entry);
+        this.chunkCache.delete(key);
       }
     }
-    
-    chunksToRemove.forEach(key => {
-      this.chunkCache.delete(key);
-    });
   },
 
   // Wrap coordinates to world boundaries
@@ -503,32 +510,44 @@ const World = {
     console.log('[World] Configuration updated:', this.config);
   },
 
+  // Helper: get all chunk coordinates within a radius of the player (no wrapping)
+  getChunksInRadius(playerX, playerY, radiusChunks) {
+    const playerChunk = this.worldToChunk(playerX / this.config.tileSize, playerY / this.config.tileSize);
+    const chunkCount = this.getChunkCount();
+    const chunks = [];
+    for (let dy = -radiusChunks; dy <= radiusChunks; dy++) {
+      for (let dx = -radiusChunks; dx <= radiusChunks; dx++) {
+        let cx = playerChunk.x + dx;
+        let cy = playerChunk.y + dy;
+        // No wrapping: only load if within world bounds
+        if (cx >= 0 && cx < chunkCount.x && cy >= 0 && cy < chunkCount.y) {
+          chunks.push({ x: cx, y: cy });
+        }
+      }
+    }
+    return chunks;
+  },
+
   // Render world using chunk system
   render(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle) {
     ctx.save();
-    
     // Draw world boundary
     ctx.strokeStyle = '#ff0000';
     ctx.lineWidth = 3;
     ctx.strokeRect(0, 0, this.width, this.height);
-    
-    // Get visible chunks
-    const visibleChunks = this.getVisibleChunks(cameraX, cameraY, cameraWidth, cameraHeight);
-    
-    // Render each visible chunk at its correct world position
-    visibleChunks.forEach(chunkInfo => {
-      const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
+
+    // Only load and render chunks within keepDistance of the player
+    const keepDistance = 5; // or make this configurable
+    const chunksToLoad = this.getChunksInRadius(cameraX, cameraY, keepDistance);
+    const keepChunkKeys = new Set();
+    for (const {x, y} of chunksToLoad) {
+      const chunk = this.loadChunk(x, y);
       this.renderChunk(ctx, chunk, playerAngle);
-    });
-    
-    // Handle wrapping by rendering chunks that should be visible on the opposite side
-    //this.renderWrappedChunks(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle);
-    
-    // Directly render world objects with wrapping
-    this.renderWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle);
-    
-    // Clean up distant chunks (silently)
-    this.cleanupChunks(cameraX / this.config.tileSize, cameraY / this.config.tileSize);
+      keepChunkKeys.add(this.getChunkKey(x, y));
+    }
+
+    // Clean up distant chunks (remove all not in keepChunkKeys)
+    this.cleanupChunks(keepChunkKeys);
 
     // --- Render grid overlay above world entities but below player/trees ---
     if (window.RENDER_GRID) {
@@ -541,20 +560,18 @@ const World = {
       Player.render(ctx);
     }
 
-    // --- NEW: Render all fixedScreenAngle entities last, sorted by y (descending) ---
-    // Gather all fixedScreenAngle entities from all visible chunks
+    // --- Render all fixedScreenAngle entities last, sorted by y (descending) ---
+    // Gather all fixedScreenAngle entities from loaded chunks
     let allFixedAngleEntities = [];
-    visibleChunks.forEach(chunkInfo => {
-      const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
+    for (const {x, y} of chunksToLoad) {
+      const chunk = this.loadChunk(x, y);
       if (chunk.entities && Array.isArray(chunk.entities)) {
         allFixedAngleEntities = allFixedAngleEntities.concat(
           chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined)
         );
       }
-    });
-    // Sort by y (descending)
+    }
     allFixedAngleEntities.sort((a, b) => b.y - a.y);
-    // Render all fixedScreenAngle entities on top of everything else
     allFixedAngleEntities.forEach(entity => {
       entity.draw(ctx, playerAngle);
     });
@@ -599,79 +616,7 @@ const World = {
     ctx.restore();
   },
 
-  // Render chunks that appear on the opposite side due to wrapping
-  renderWrappedChunks(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle) {
-    const worldWidth = this.width;
-    const worldHeight = this.height;
-    
-    // Calculate visible world area
-    const left = cameraX - cameraWidth / 2;
-    const right = cameraX + cameraWidth / 2;
-    const top = cameraY - cameraHeight / 2;
-    const bottom = cameraY + cameraHeight / 2;
-    
-    // Check if we need to render wrapped chunks
-    let needsWrappedRendering = false;
-    let wrappedOffsets = [];
-    
-    // Check horizontal wrapping
-    if (left < 0) {
-      needsWrappedRendering = true;
-      wrappedOffsets.push({ x: worldWidth, y: 0 });
-    }
-    if (right > worldWidth) {
-      needsWrappedRendering = true;
-      wrappedOffsets.push({ x: -worldWidth, y: 0 });
-    }
-    
-    // Check vertical wrapping
-    if (top < 0) {
-      needsWrappedRendering = true;
-      wrappedOffsets.push({ x: 0, y: worldHeight });
-    }
-    if (bottom > worldHeight) {
-      needsWrappedRendering = true;
-      wrappedOffsets.push({ x: 0, y: -worldHeight });
-    }
-    
-    // Check corner wrapping
-    if (left < 0 && top < 0) {
-      wrappedOffsets.push({ x: worldWidth, y: worldHeight });
-    }
-    if (right > worldWidth && top < 0) {
-      wrappedOffsets.push({ x: -worldWidth, y: worldHeight });
-    }
-    if (left < 0 && bottom > worldHeight) {
-      wrappedOffsets.push({ x: worldWidth, y: -worldHeight });
-    }
-    if (right > worldWidth && bottom > worldHeight) {
-      wrappedOffsets.push({ x: -worldWidth, y: -worldHeight });
-    }
-    
-    // Render wrapped chunks if needed
-    if (needsWrappedRendering) {
-      wrappedOffsets.forEach(offset => {
-        // Get chunks for the wrapped area
-        const wrappedVisibleChunks = this.getVisibleChunks(
-          cameraX - offset.x, 
-          cameraY - offset.y, 
-          cameraWidth, 
-          cameraHeight
-        );
-        
-        // Render each wrapped chunk at the offset position
-        wrappedVisibleChunks.forEach(chunkInfo => {
-          const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
-          
-          // Save context, apply offset, render chunk, restore context
-          ctx.save();
-          ctx.translate(offset.x, offset.y);
-          this.renderChunk(ctx, chunk, playerAngle);
-          ctx.restore();
-        });
-      });
-    }
-  },
+  
 
   // Directly render world objects with proper wrapping
   renderWorldObjects(ctx, cameraX, cameraY, cameraWidth, cameraHeight, playerAngle) {
@@ -775,3 +720,35 @@ const World = {
 window.World = World;
 // Add global toggle for grid rendering
 window.RENDER_GRID = false; 
+
+// --- Chunk load/discard logging aggregation ---
+if (!window._chunkLogStats) {
+  window._chunkLogStats = {
+    loaded: new Map(), // key: 'x,y' -> { count, distances: [], playerChunks: [] }
+    discarded: new Map(), // key: 'x,y' -> { count, distances: [], playerChunks: [] }
+    interval: null
+  };
+  window._chunkLogStats.interval = setInterval(() => {
+    const loaded = window._chunkLogStats.loaded;
+    const discarded = window._chunkLogStats.discarded;
+    const allKeys = new Set([...loaded.keys(), ...discarded.keys()]);
+    const summary = {};
+    for (const key of allKeys) {
+      const l = loaded.get(key) || { count: 0, distances: [], playerChunks: [] };
+      const d = discarded.get(key) || { count: 0, distances: [], playerChunks: [] };
+      summary[key] = {
+        numberOfLoads: l.count,
+        loadDistances: l.distances,
+        loadPlayerChunks: l.playerChunks,
+        numberOfDiscards: d.count,
+        discardDistances: d.distances,
+        discardPlayerChunks: d.playerChunks
+      };
+    }
+    if (Object.keys(summary).length > 0) {
+      console.log('[Chunk Stats]', summary);
+    }
+    loaded.clear();
+    discarded.clear();
+  }, 10000);
+} 
