@@ -286,11 +286,11 @@ const World = {
     return this.shouldPlaceEntity(
       tileX,
       tileY,
-      0.1,         // baseChance
+      0.01,         // baseChance
       0,            // hashSalt (can be 0 for grass)
       200,          // variationMod (was 200)
       1000,         // variationDiv (was 1000)
-      0.05,         // minChance
+      0.01,         // minChance
       1,            // maxChance
       'grass'       // hashLabel
     );

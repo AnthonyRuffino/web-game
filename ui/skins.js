@@ -30,29 +30,13 @@ window.UI.skinsManager = {
       if (imageData) {
         this.imageCache = JSON.parse(imageData);
       }
-      // Migrate old format if needed
-      for (const k in this.imageCache) {
-        const entry = this.imageCache[k];
-        if (typeof entry === 'string') {
-          this.imageCache[k] = { dataUrl: entry };
-        } else if (entry && entry.image) {
-          // Old wrapper format
-          this.imageCache[k] = { dataUrl: entry.image, ...entry.meta };
-        }
-      }
+
       // Load canvas cache
       const canvasData = localStorage.getItem(this.canvasCacheKey);
       if (canvasData) {
         this.canvasCache = JSON.parse(canvasData);
       }
-      for (const k in this.canvasCache) {
-        const entry = this.canvasCache[k];
-        if (typeof entry === 'string') {
-          this.canvasCache[k] = { dataUrl: entry };
-        } else if (entry && entry.image) {
-          this.canvasCache[k] = { dataUrl: entry.image, ...entry.meta };
-        }
-      }
+
       // Load preferences
       const preferencesData = localStorage.getItem(this.preferencesKey);
       if (preferencesData) {
@@ -61,8 +45,6 @@ window.UI.skinsManager = {
       // Ensure all entity types have default preferences
       this.ensureDefaultPreferences();
       // Save migrated caches if needed
-      this.saveImageCache();
-      this.saveCanvasCache();
       console.log(`[UI] Loaded ${Object.keys(this.imageCache).length} image cache entries`);
       console.log(`[UI] Loaded ${Object.keys(this.canvasCache).length} canvas cache entries`);
       console.log(`[UI] Loaded ${Object.keys(this.preferences).length} preference entries`);
@@ -105,6 +87,7 @@ window.UI.skinsManager = {
     try {
       localStorage.setItem(this.canvasCacheKey, JSON.stringify(this.canvasCache));
       console.log('[UI] Saved canvas cache to storage');
+      EntityRenderer.canvasCache.delete(this.canvasCacheKey);
     } catch (e) {
       console.warn('[UI] Failed to save canvas cache:', e);
     }
@@ -131,9 +114,11 @@ window.UI.skinsManager = {
     };
     if (isCanvas) {
       this.canvasCache[cacheKey] = entry;
+      EntityRenderer.canvasCache[cacheKey] = entry;;
       this.saveCanvasCache();
     } else {
       this.imageCache[cacheKey] = entry;
+      EntityRenderer.imageCache[cacheKey] = entry;
       this.saveImageCache();
     }
     // Update EntityRenderer cache if available
