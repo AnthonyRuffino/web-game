@@ -31,7 +31,7 @@ This guide covers all the controls and game mechanics for the Web Game.
 - **Right-click** - Hold to enable strafe mode with A/D keys
 
 ### UI Interaction
-- **Left-click** - Interact with UI elements, action bar slots
+- **Left-click** - Interact with UI elements, action bar slots, and dialogs
 - **Hover** - Mouse over UI elements for tooltips and visual feedback
 
 ## 🎯 Camera Modes
@@ -66,13 +66,15 @@ The game supports two camera perspectives:
 
 ### Action Bar Controls
 - **Number Keys 1-0** - Activate action bar slots
+- **Shift + Number Keys 1-0** - Activate secondary action bar slots
 - **Mouse Click** - Click on action bar slots to activate
 - **10 Slots**: Configurable action bar with 10 slots by default
 
 ### Action Bar Features
-- **Item Binding**: Bind items, tools, or spells to slots (future feature)
+- **Item/Action Binding**: Bind items, tools, spells, or macros to slots
 - **Visual Feedback**: Hover and click effects
 - **Keyboard Shortcuts**: Quick access to frequently used actions
+- **Macro Support**: Bind macros to action bar slots via the Macro UI
 
 ## 🛠️ Crafting System
 
@@ -111,6 +113,27 @@ The game supports two camera perspectives:
 - **Visual Feedback**: Player stops when hitting obstacles
 - **Perspective Support**: Collision works in both camera modes
 
+## 🖥️ UI Dialogs & Input Blocking
+
+### UI Dialogs
+- **Inventory**: B to open/close
+- **Crafting**: Button in inventory
+- **Macro UI**: Manage macros, icons, and bindings
+- **Skins UI**: Manage entity images, render modes, and metadata
+
+### Input Blocking (Focus-Based)
+- **Input is blocked whenever a text input, textarea, or number input is focused** (e.g., in macro/skin dialogs)
+- **Escape**: Closes the currently open dialog or input bar
+- **Tab**: Moves focus between fields in dialogs
+- **Enter**: Confirms dialog actions (where applicable)
+- **Mouse Click**: Clicking outside a dialog or on a close button will close the dialog
+
+### UI Interaction Best Practices
+- **Always use Escape to close dialogs or exit input mode**
+- **Focus is managed automatically**: Input is only blocked when a UI element is focused
+- **No stuck input**: Input is released when focus is lost or dialog is closed
+- **Consistent UI**: All dialogs and menus follow the same input blocking and closing conventions
+
 ## 🔧 Console Commands
 
 Press **F12** to open the browser console and access debugging commands:
@@ -122,6 +145,8 @@ Press **F12** to open the browser console and access debugging commands:
 - `cmd("setspeed value")` - Change movement speed
 - `cmd("setzoom value")` - Set zoom level
 - `cmd("perspective")` - Toggle camera mode
+- `cmd("cacheinfo")` - Show entity image/canvas cache state
+- `cmd("inputblockinfo")` - Show input blocking state
 
 ### Background Customization
 - `cmd("bgconfig")` - Show background settings
@@ -160,6 +185,8 @@ See [COMMANDS.md](COMMANDS.md) for complete command reference.
 6. **Customize Background**: Try different background presets with `cmd("bgpreset")`
 7. **Open Inventory**: Press B to see the inventory system
 8. **Try Crafting**: Access crafting through the inventory interface
+9. **Use Escape**: Always use Escape to close dialogs or exit input mode
+10. **Check Cache**: Use `cmd("cacheinfo")` to ensure all entity images are preloaded
 
 ## 🚧 Future Features
 

@@ -20,26 +20,17 @@ This document details the foundational file structure for the web-game project, 
   - Initializes core modules (game engine, input, game loop).
   - Starts the game loop.
 
-### 3. `gameEngine.js` ✅
-- **Purpose:** Contains core game logic and state management.
-- **Contents:**
-  - Manages game objects (player, world, etc.).
-  - Provides update and render methods for the game state.
-  - Exposes hooks for developer tools and debugging.
+### 3. `gameEngine.js` ✅ (deleted, logic now modularized)
+- **Purpose:** Core game logic and state management.
+- **Status:** Logic has been split into modular files under `core/` and `ui/` directories.
 
-### 4. `input.js` ✅
+### 4. `input.js` ✅ (deleted, logic now modularized)
 - **Purpose:** Handles keyboard and mouse input.
-- **Contents:**
-  - Listens for keydown/keyup and mouse events.
-  - Maps input to game actions (movement, rotation, UI toggles).
-  - Exposes input state to the game engine.
+- **Status:** Input handling is now in `core/input.js` and related modules.
 
-### 5. `gameLoop.js` ✅
+### 5. `gameLoop.js` ✅ (deleted, logic now modularized)
 - **Purpose:** Manages the main update/render loop.
-- **Contents:**
-  - Implements a frame-rate independent game loop using `requestAnimationFrame`.
-  - Calls update and render methods on the game engine.
-  - Tracks timing and delta for smooth motion.
+- **Status:** Game loop logic is now in `core/gameLoop.js` and related modules.
 
 ---
 
@@ -49,12 +40,13 @@ This document details the foundational file structure for the web-game project, 
 web-game/
   index.html ✅
   main.js ✅
-  gameEngine.js ✅
-  input.js ✅
-  gameLoop.js ✅
+  core/  # Modularized core logic (game engine, input, rendering, etc.)
+  ui/    # Modularized UI components (inventory, action bar, macro, skins, etc.)
   requirements/
-    inital-requirements.md
-    step-1-file-structure.md  <-- (this file)
+    initial-requirements.md
+    step-1-the-basics.md  <-- (this file)
+    step-2-advanced-features.md
+    step-3-entity-rendering.md
 ```
 
 ---
@@ -64,13 +56,13 @@ web-game/
 - No game logic should be in `index.html`—all logic in JS modules. ✅
 - Use clear comments and TODOs for unimplemented sections. ✅
 - Ensure all files are referenced correctly in `index.html`. ✅
-- **The codebase should support both fixed-north and player-perspective camera modes, switchable via a variable for easy testing and debugging.** ✅
+- **The codebase supports both fixed-north and player-perspective camera modes, switchable via a variable for easy testing and debugging.** ✅
 - **The world uses a coordinate grid system with tiles as the smallest world unit, but sub-tile rendering is supported (e.g., multiple small objects per tile).** ✅
-- **Procedural generation logic should, for each world seed, place a red 'X' at the player's starting coordinates.** ✅
-- **The rendering system should support geometric shapes, sprites, and text at any position.** ✅
-- **The game must support zooming in and out with the mouse scroll wheel, with upper and lower zoom limits.** ✅
-- **The default browser right-click context menu must be disabled on the game canvas.** ✅
-- **Input should be robust to browser focus changes (e.g., releasing keys when focus is lost to prevent stuck movement/rotation).** ✅
+- **Procedural generation logic, for each world seed, places a red 'X' at the player's starting coordinates.** ✅
+- **The rendering system supports geometric shapes, sprites, and text at any position.** ✅
+- **The game supports zooming in and out with the mouse scroll wheel, with upper and lower zoom limits.** ✅
+- **The default browser right-click context menu is disabled on the game canvas.** ✅
+- **Input is robust to browser focus changes (e.g., releasing keys when focus is lost to prevent stuck movement/rotation).** ✅
 
 ---
 
@@ -80,7 +72,7 @@ web-game/
 - No errors in the browser console. ✅
 - **Step 1 is 100% complete!** All requirements have been implemented and tested.
 
-## 🎯 Step 1 Achievements
+## 🏆 Step 1 Achievements
 - ✅ Complete file structure with modular architecture
 - ✅ Working game loop with frame-rate independent motion
 - ✅ Player movement with WASD controls and proper vector normalization
@@ -98,10 +90,16 @@ web-game/
 - ✅ Secondary action bar: Shift+Number keys 1-0 (10 slots)
 - ✅ Visual styling with lower opacity interior cells
 - ✅ Temporary highlighting (only during mouse press or key hold)
-- ✅ First macro implementation: "perspective" command bound to Control+0
-- ✅ Support for future spell/item binding with key labels overlaid
+- ✅ Macro implementation: "perspective" command bound to Control+0
+- ✅ Modularized action bar system for reuse
 
-## 🚀 Ready for Step 2
+## 🧩 Modularity & Technical Debt
+- Most foundational logic is now modularized under `core/` and `ui/` directories.
+- Some files are still large and could be further split for maintainability.
+- UI components (inventory, macro, skins) could be more reusable and DRY.
+- Homegrown module/dependency system; initialization is not fully orchestrated from a single entry point.
+
+## 🚦 Ready for Step 2
 Step 1 has been completed successfully. The game now has a solid foundation with:
 - Working player movement and controls
 - Dual camera perspectives
@@ -109,5 +107,6 @@ Step 1 has been completed successfully. The game now has a solid foundation with
 - Procedural world generation
 - Robust input handling
 - Enhanced dual action bar system with macro support
+- Modular file structure for future expansion
 
 Ready to proceed to Step 2: Advanced Game Features and Systems. 

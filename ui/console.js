@@ -479,7 +479,7 @@ window.UI.console = {
     // Responsive canvas commands
     this.register('canvasinfo', 'Show responsive canvas information', (args) => {
       if (typeof ResponsiveCanvas !== 'undefined') {
-        const info = ResponsiveCanvas.getInfo();
+        const info = window.UI.responsiveCanvas.getInfo();
         console.log('[Console] Responsive Canvas Information:');
         console.log(`  Canvas Size: ${info.width}x${info.height}`);
         console.log(`  Viewport Size: ${info.viewportWidth}x${info.viewportHeight}`);
