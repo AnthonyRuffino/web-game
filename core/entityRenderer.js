@@ -1,6 +1,49 @@
 // core/entityRenderer.js
 // Unified entity rendering system - orchestrator and cache controller
 
+// --- Entity Renderer Config ---
+const ENTITY_RENDERER_CONFIG = {
+  cacheStorageKey: 'entityRenderer_cache',
+  canvasCacheStorageKey: 'entityRenderer_canvas_cache',
+  preferencesStorageKey: 'entityRenderer_preferences',
+  defaultRenderMode: 'default',
+  defaultEntitySize: 32,
+  svgBackground: {
+    plains: {
+      width: 640,
+      height: 640,
+      baseColor: '#3cb043',
+      rects: [
+        { x: 40, y: 80, w: 40, h: 40, color: '#4fdc5a' },
+        { x: 120, y: 200, w: 40, h: 40, color: '#2e8b3d' },
+        { x: 320, y: 320, w: 40, h: 40, color: '#4fdc5a' },
+        { x: 480, y: 560, w: 40, h: 40, color: '#2e8b3d' },
+        { x: 600, y: 40, w: 40, h: 40, color: '#4fdc5a' },
+        { x: 200, y: 400, w: 40, h: 40, color: '#2e8b3d' },
+        { x: 560, y: 320, w: 40, h: 40, color: '#4fdc5a' },
+        { x: 80, y: 600, w: 40, h: 40, color: '#2e8b3d' }
+      ]
+    },
+    desert: {
+      width: 640,
+      height: 640,
+      baseColor: '#f7e9a0',
+      rects: [
+        { x: 40, y: 80, w: 40, h: 40, color: '#e6d17a' },
+        { x: 120, y: 200, w: 40, h: 40, color: '#fff7c0' },
+        { x: 320, y: 320, w: 40, h: 40, color: '#e6d17a' },
+        { x: 480, y: 560, w: 40, h: 40, color: '#fff7c0' },
+        { x: 600, y: 40, w: 40, h: 40, color: '#e6d17a' },
+        { x: 200, y: 400, w: 40, h: 40, color: '#fff7c0' },
+        { x: 560, y: 320, w: 40, h: 40, color: '#e6d17a' },
+        { x: 80, y: 600, w: 40, h: 40, color: '#fff7c0' }
+      ]
+    }
+  },
+  // Add more config values as needed
+};
+// --- End Entity Renderer Config ---
+
 const EntityRenderer = {
   // Global image cache for all generated sprites
   imageCache: new Map(),
@@ -9,21 +52,18 @@ const EntityRenderer = {
   canvasCache: new Map(),
   
   // Cache key for localStorage
-  cacheStorageKey: 'entityRenderer_cache',
-  canvasCacheStorageKey: 'entityRenderer_canvas_cache',
-  preferencesStorageKey: 'entityRenderer_preferences',
+  cacheStorageKey: ENTITY_RENDERER_CONFIG.cacheStorageKey,
+  canvasCacheStorageKey: ENTITY_RENDERER_CONFIG.canvasCacheStorageKey,
+  preferencesStorageKey: ENTITY_RENDERER_CONFIG.preferencesStorageKey,
   
   // Registry of entity modules
   entityModules: {},
 
   // Render mode preferences per entity type
-  renderModePreferences: {
-    // 'rock': 'sprite' | 'shape' | 'default'
-    // 'tree': 'sprite' | 'shape' | 'default'
-  },
+  renderModePreferences: {},
 
   // Default render mode preference
-  defaultRenderMode: 'default',
+  defaultRenderMode: ENTITY_RENDERER_CONFIG.defaultRenderMode,
 
   // Hash function for creating compact cache keys
   hashString(str) {
@@ -199,11 +239,25 @@ const EntityRenderer = {
     const plainsKey = 'background-plains';
     const desertKey = 'background-desert';
     if (!this.imageCache.has(plainsKey)) {
-      const plainsSVG = `<svg width="640" height="640" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg"><rect width="640" height="640" fill="#3cb043"/><rect x="40" y="80" width="40" height="40" fill="#4fdc5a"/><rect x="120" y="200" width="40" height="40" fill="#2e8b3d"/><rect x="320" y="320" width="40" height="40" fill="#4fdc5a"/><rect x="480" y="560" width="40" height="40" fill="#2e8b3d"/><rect x="600" y="40" width="40" height="40" fill="#4fdc5a"/><rect x="200" y="400" width="40" height="40" fill="#2e8b3d"/><rect x="560" y="320" width="40" height="40" fill="#4fdc5a"/><rect x="80" y="600" width="40" height="40" fill="#2e8b3d"/></svg>`;
+      const plainsCfg = ENTITY_RENDERER_CONFIG.svgBackground.plains;
+      let w = plainsCfg.width, h = plainsCfg.height, base = plainsCfg.baseColor, rects = plainsCfg.rects;
+      const plainsSVG = `
+        <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="${w}" height="${h}" fill="${base}"/>
+          ${rects.map(r => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${r.color}"/>`).join('\n          ')}
+        </svg>
+      `;
       await this.createAndCacheImage(plainsKey, plainsSVG, {});
     }
     if (!this.imageCache.has(desertKey)) {
-      const desertSVG = `<svg width="640" height="640" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg"><rect width="640" height="640" fill="#f7e9a0"/><rect x="40" y="80" width="40" height="40" fill="#e6d17a"/><rect x="120" y="200" width="40" height="40" fill="#fff7c0"/><rect x="320" y="320" width="40" height="40" fill="#e6d17a"/><rect x="480" y="560" width="40" height="40" fill="#fff7c0"/><rect x="600" y="40" width="40" height="40" fill="#e6d17a"/><rect x="200" y="400" width="40" height="40" fill="#fff7c0"/><rect x="560" y="320" width="40" height="40" fill="#e6d17a"/><rect x="80" y="600" width="40" height="40" fill="#fff7c0"/></svg>`;
+      const desertCfg = ENTITY_RENDERER_CONFIG.svgBackground.desert;
+      let w = desertCfg.width, h = desertCfg.height, base = desertCfg.baseColor, rects = desertCfg.rects;
+      const desertSVG = `
+        <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="${w}" height="${h}" fill="${base}"/>
+          ${rects.map(r => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${r.color}"/>`).join('\n          ')}
+        </svg>
+      `;
       await this.createAndCacheImage(desertKey, desertSVG, {});
     }
     // --- End biome backgrounds ---
@@ -306,7 +360,7 @@ const EntityRenderer = {
       };
       const cacheObj = {
         image: img,
-        size: meta.size || 32,
+        size: meta.size || ENTITY_RENDERER_CONFIG.defaultEntitySize,
         fixedScreenAngle: meta.fixedScreenAngle != undefined ? meta.fixedScreenAngle : null,
         drawOffsetX: meta.drawOffsetX || 0,
         drawOffsetY: meta.drawOffsetY || 0
