@@ -7,7 +7,7 @@ const World = {
     seed: 12345,
     chunkSize: 16, // tiles per chunk
     tileSize: 32, // pixels per tile
-    worldSize: 1000, // chunks per world dimension
+    chunkCount: 64, // number of chunks per edge (square world)
     startingChunkX: 0,
     startingChunkY: 0
   },
@@ -24,11 +24,11 @@ const World = {
 
   // Calculate world dimensions in pixels
   get width() {
-    return this.config.worldSize * this.config.tileSize;
+    return this.config.chunkCount * this.config.chunkSize * this.config.tileSize;
   },
 
   get height() {
-    return this.config.worldSize * this.config.tileSize;
+    return this.config.chunkCount * this.config.chunkSize * this.config.tileSize;
   },
 
   // Calculate approximate traversal time based on player speed
@@ -40,9 +40,7 @@ const World = {
 
   // Get chunk count
   getChunkCount() {
-    const chunksX = Math.ceil(this.config.worldSize / this.config.chunkSize);
-    const chunksY = Math.ceil(this.config.worldSize / this.config.chunkSize);
-    return { x: chunksX, y: chunksY, total: chunksX * chunksY };
+    return { x: this.config.chunkCount, y: this.config.chunkCount, total: this.config.chunkCount * this.config.chunkCount };
   },
 
   // Convert world coordinates to chunk coordinates
@@ -88,15 +86,20 @@ const World = {
     if (typeof Player !== 'undefined') {
       const playerChunk = this.worldToChunk(Player.x / this.config.tileSize, Player.y / this.config.tileSize);
       playerDistance = Math.max(Math.abs(chunkX - playerChunk.x), Math.abs(chunkY - playerChunk.y));
-      playerChunkCoords = { x: playerChunk.x, y: playerChunk.y };
+      playerChunkCoords = `{ x: ${playerChunk.x}, y: ${playerChunk.y} }`;
     }
     
     // Aggregate log
     let entry = window._chunkLogStats.loaded.get(key);
-    if (!entry) entry = { count: 0, distances: [], playerChunks: [] };
+    if (!entry) entry = { count: 0, distanceMap: new Map(), playerChunkMap: new Map(), playerChunks: [] };
     entry.count++;
-    if (playerDistance !== null) entry.distances.push(playerDistance);
-    if (playerChunkCoords) entry.playerChunks.push(playerChunkCoords);
+    if (playerDistance !== null) {
+      entry.distanceMap.set(playerDistance, (entry.distanceMap.get(playerDistance) || 0) + 1);
+    }
+    if (playerChunkCoords){
+      entry.playerChunkMap.set(playerChunkCoords, (entry.playerChunkMap.get(playerChunkCoords) || 0) + 1);
+    }
+
     window._chunkLogStats.loaded.set(key, entry);
     return chunk;
   },
@@ -117,8 +120,8 @@ const World = {
     // Generate tiles for this chunk
     const startTileX = chunkX * this.config.chunkSize;
     const startTileY = chunkY * this.config.chunkSize;
-    const endTileX = Math.min(startTileX + this.config.chunkSize, this.config.worldSize);
-    const endTileY = Math.min(startTileY + this.config.chunkSize, this.config.worldSize);
+    const endTileX = Math.min(startTileX + this.config.chunkSize, this.config.chunkCount * this.config.chunkSize);
+    const endTileY = Math.min(startTileY + this.config.chunkSize, this.config.chunkCount * this.config.chunkSize);
 
     for (let tileY = startTileY; tileY < endTileY; tileY++) {
       for (let tileX = startTileX; tileX < endTileX; tileX++) {
@@ -283,7 +286,7 @@ const World = {
     return this.shouldPlaceEntity(
       tileX,
       tileY,
-      0.05,         // baseChance
+      0.1,         // baseChance
       0,            // hashSalt (can be 0 for grass)
       200,          // variationMod (was 200)
       1000,         // variationDiv (was 1000)
@@ -380,10 +383,8 @@ const World = {
     for (const key of this.chunkCache.keys()) {
       if (!keepChunkKeys.has(key)) {
         let entry = window._chunkLogStats.discarded.get(key);
-        if (!entry) entry = { count: 0, distances: [], playerChunks: [] };
+        if (!entry) entry = { count: 0, playerChunks: [] };
         entry.count++;
-        // No distance calculation needed, but keep for compatibility
-        entry.distances.push(null);
         entry.playerChunks.push(null);
         window._chunkLogStats.discarded.set(key, entry);
         this.chunkCache.delete(key);
@@ -421,8 +422,8 @@ const World = {
   // Get world dimensions in tiles
   getTileDimensions() {
     return {
-      width: this.config.worldSize,
-      height: this.config.worldSize
+      width: this.config.chunkCount * this.config.chunkSize,
+      height: this.config.chunkCount * this.config.chunkSize
     };
   },
 
@@ -510,7 +511,7 @@ const World = {
     console.log('[World] Configuration updated:', this.config);
   },
 
-  // Helper: get all chunk coordinates within a radius of the player (no wrapping)
+  // Helper: get all chunk coordinates within a radius of the player (chunks always fully in world, no wrapping)
   getChunksInRadius(playerX, playerY, radiusChunks) {
     const playerChunk = this.worldToChunk(playerX / this.config.tileSize, playerY / this.config.tileSize);
     const chunkCount = this.getChunkCount();
@@ -519,8 +520,16 @@ const World = {
       for (let dx = -radiusChunks; dx <= radiusChunks; dx++) {
         let cx = playerChunk.x + dx;
         let cy = playerChunk.y + dy;
-        // No wrapping: only load if within world bounds
-        if (cx >= 0 && cx < chunkCount.x && cy >= 0 && cy < chunkCount.y) {
+        // Only include if chunk is fully within world bounds
+        if (
+          cx >= 0 && cx < chunkCount.x &&
+          cy >= 0 && cy < chunkCount.y
+        ) {
+          // Debug: log if this chunk is far from the player
+          const dist = Math.max(Math.abs(dx), Math.abs(dy));
+          if (dist > radiusChunks) {
+            console.warn('[getChunksInRadius] Including far chunk:', {cx, cy, playerChunk, dist, radiusChunks});
+          }
           chunks.push({ x: cx, y: cy });
         }
       }
@@ -635,9 +644,9 @@ const World = {
     
     // Check if we need to render wrapped objects
     const isNearEdge = playerTile.x <= edgeThreshold || 
-                      playerTile.x >= this.config.worldSize - 1 - edgeThreshold ||
+                      playerTile.x >= this.config.chunkCount * this.config.chunkSize - 1 - edgeThreshold ||
                       playerTile.y <= edgeThreshold || 
-                      playerTile.y >= this.config.worldSize - 1 - edgeThreshold;
+                      playerTile.y >= this.config.chunkCount * this.config.chunkSize - 1 - edgeThreshold;
     
     // Render regular chunk entities for visible chunks
     const visibleChunks = this.getVisibleChunks(cameraX, cameraY, cameraWidth, cameraHeight);
@@ -724,8 +733,8 @@ window.RENDER_GRID = false;
 // --- Chunk load/discard logging aggregation ---
 if (!window._chunkLogStats) {
   window._chunkLogStats = {
-    loaded: new Map(), // key: 'x,y' -> { count, distances: [], playerChunks: [] }
-    discarded: new Map(), // key: 'x,y' -> { count, distances: [], playerChunks: [] }
+    loaded: new Map(), // key: 'x,y' -> { count, distanceMap: Map, playerChunks: [] }
+    discarded: new Map(), // key: 'x,y' -> { count, playerChunks: [] }
     interval: null
   };
   window._chunkLogStats.interval = setInterval(() => {
@@ -734,14 +743,13 @@ if (!window._chunkLogStats) {
     const allKeys = new Set([...loaded.keys(), ...discarded.keys()]);
     const summary = {};
     for (const key of allKeys) {
-      const l = loaded.get(key) || { count: 0, distances: [], playerChunks: [] };
-      const d = discarded.get(key) || { count: 0, distances: [], playerChunks: [] };
+      const l = loaded.get(key) || { count: 0, distanceMap: new Map(), playerChunkMap:new Map() };
+      const d = discarded.get(key) || { count: 0, playerChunks: [] };
       summary[key] = {
         numberOfLoads: l.count,
-        loadDistances: l.distances,
-        loadPlayerChunks: l.playerChunks,
+        loadDistances: Object.fromEntries(l.distanceMap),
+        loadPlayerChunks: l.playerChunkMap,
         numberOfDiscards: d.count,
-        discardDistances: d.distances,
         discardPlayerChunks: d.playerChunks
       };
     }
