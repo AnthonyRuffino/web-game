@@ -337,9 +337,16 @@ window.UI.skinsManager = {
       function getTreeTargetSize() {
         if (window.TreeEntity) {
           const def = window.TreeEntity.defaultConfig;
-          return { width: def.size * 2, height: def.imageHeight * 2 };
+          return { width: def.size, height: def.imageHeight };
         }
         return { width: 64, height: 64 };
+      }
+      function getGrassTargetSize() {
+        if (window.TreeEntity) {
+          const def = window.GrassEntity.defaultConfig;
+          return { width: def.size, height: def.size };
+        }
+        return { width: 32, height: 32 };
       }
       function resizeImageToTarget(img, width, height, callback) {
         const canvas = document.createElement('canvas');
@@ -472,7 +479,19 @@ window.UI.skinsManager = {
               });
             };
             img.src = reader.result;
-          } else {
+          } else if(cacheKey.startsWith('grass-')) {
+            const img = new window.Image();
+            img.onload = function () {
+              const { width, height } = getGrassTargetSize();
+              resizeImageToTarget(img, 32, 32, (resizedImg, dataUrl) => {
+                newPreview.src = dataUrl;
+                newPreview._pendingDataURL = dataUrl;
+                newPreview.style.display = 'block';
+              });
+            };
+            img.src = reader.result;
+          }
+          else {
             newPreview.src = reader.result;
             newPreview._pendingDataURL = reader.result;
             newPreview.style.display = 'block';
