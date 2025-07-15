@@ -250,6 +250,9 @@ const EntityRenderer = {
     // Ensure all entity types have default preferences
     this.ensureDefaultPreferences();
     
+    // Pre-generate all images for all entity types and render modes
+    await this.preGenerateAllImages();
+    
     console.log('[EntityRenderer] Initialization complete');
   },
 
@@ -282,6 +285,46 @@ const EntityRenderer = {
     // Future entity modules can be registered here
   },
 
+  // Utility: Pre-generate all images for all entity types and render modes
+  async preGenerateAllImages() {
+    const entityTypes = Object.keys(this.entityModules);
+    const renderModes = ['sprite', 'shape'];
+    const promises = [];
+    for (const entityType of entityTypes) {
+      for (const mode of renderModes) {
+        promises.push(this.preGenerateForEntityType(entityType, mode));
+      }
+    }
+    await Promise.all(promises);
+  },
+
+  // Utility: Pre-generate image for a single entity type and render mode
+  async preGenerateForEntityType(entityType, mode) {
+    const entityModule = this.entityModules[entityType];
+    if (!entityModule) return;
+    const config = { ...entityModule.defaultConfig };
+    // Force render mode
+    config.isSprite = (mode === 'sprite');
+    const cacheKey = entityModule.getCacheKey(config);
+    if (mode === 'sprite') {
+      if (!this.imageCache.has(cacheKey)) {
+        const svg = entityModule.generateSVG(config);
+        await new Promise((resolve, reject) => {
+          this.createAndCacheImageAsync(cacheKey, svg, resolve, reject, config);
+        });
+      }
+    } else if (mode === 'shape') {
+      if (!this.canvasCache.has(cacheKey)) {
+        const drawFunction = entityModule.generateCanvasDraw(config);
+        await this.createAndCacheCanvas(cacheKey, drawFunction, config.size, config);
+
+        await new Promise((resolve, reject) => {
+          this.createAndCacheCanvasAsync(cacheKey, drawFunction, config.size, resolve, reject, config);
+        });
+      }
+    }
+  },
+
   // Get cached image by key
   getCachedImage(cacheKey) {
     return this.imageCache.get(cacheKey);
@@ -293,54 +336,73 @@ const EntityRenderer = {
   },
 
   // Create and cache image from SVG, with metadata
-  createAndCacheImage(cacheKey, svg, meta = {}) {
-    const img = new Image();
-    const cacheObj = {
-      image: img,
-      size: meta.size || 32,
-      fixedScreenAngle: meta.fixedScreenAngle != undefined ? meta.fixedScreenAngle : null,
-      drawOffsetX: meta.drawOffsetX || 0,
-      drawOffsetY: meta.drawOffsetY || 0
-    };
-    img.onload = () => {
-      this.imageCache.set(cacheKey, cacheObj);
-      console.log(`[EntityRenderer] Cached image for key: ${cacheKey}`, meta);
-      this.saveCacheToStorage();
-    };
-    img.onerror = () => {
-      console.warn(`[EntityRenderer] Failed to generate image for cache key: ${cacheKey}`);
-    };
-    img.src = 'data:image/svg+xml;base64,' + btoa(svg);
-    return cacheObj;
+  async createAndCacheImageAsync(cacheKey, svg, resolve, reject, meta = {}) {
+      const img = new Image();
+      const dataUrl = 'data:image/svg+xml;base64,' + btoa(svg);
+      img.src = dataUrl;
+      img.onerror = (e) => {
+        console.warn(`[EntityRenderer] Failed to generate image for cache key: ${cacheKey}`);
+        if(reject) {
+          reject(e);
+        }
+      };
+      const cacheObj = {
+        image: img,
+        size: meta.size || 32,
+        fixedScreenAngle: meta.fixedScreenAngle != undefined ? meta.fixedScreenAngle : null,
+        drawOffsetX: meta.drawOffsetX || 0,
+        drawOffsetY: meta.drawOffsetY || 0
+      };
+
+      img.onload = () => {
+        this.imageCache.set(cacheKey, cacheObj);
+        console.log(`[EntityRenderer] Cached image for key: ${cacheKey}`, meta);
+        this.saveCacheToStorage();
+        if(resolve) {
+          resolve(cacheObj);
+        }
+      };
+      return cacheObj;
+  },
+  async createAndCacheImage(cacheKey, svg, meta = {}) {
+    return this.createAndCacheImageAsync(cacheKey, svg, null, null, meta);
   },
 
   // Create and cache canvas from draw function, with metadata
+  createAndCacheCanvasAsync(cacheKey, drawFunction, size, resolve, reject, meta = {}) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      drawFunction(ctx, size / 2, size / 2);
+      const img = new Image();
+      img.src = canvas.toDataURL();
+      img.onerror = (e) => {
+        console.warn(`[EntityRenderer] Failed to generate image for canvas cache key: ${cacheKey}`);
+        if(reject) {
+          reject(e);
+        }
+      };
+      const cacheObj = {
+        image: img,
+        size: size,
+        fixedScreenAngle: meta.fixedScreenAngle !== undefined ? meta.fixedScreenAngle : null,
+        drawOffsetX: meta.drawOffsetX || 0,
+        drawOffsetY: meta.drawOffsetY || 0
+      }
+      img.onload = () => {
+        this.canvasCache.set(cacheKey, cacheObj);
+        console.log(`[EntityRenderer] Cached canvas for key: ${cacheKey}`);
+        this.saveCanvasCacheToStorage();
+        if(resolve) {
+          resolve(cacheObj);
+        }
+      };
+      return cacheObj;
+  }, 
   createAndCacheCanvas(cacheKey, drawFunction, size, meta = {}) {
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    drawFunction(ctx, size / 2, size / 2);
-    const img = new Image();
-    const cacheObj = {
-      image: img,
-      size: size,
-      fixedScreenAngle: meta.fixedScreenAngle !== undefined ? meta.fixedScreenAngle : null,
-      drawOffsetX: meta.drawOffsetX || 0,
-      drawOffsetY: meta.drawOffsetY || 0
-    };
-    img.onload = () => {
-      this.canvasCache.set(cacheKey, cacheObj);
-      console.log(`[EntityRenderer] Cached canvas for key: ${cacheKey}`);
-      this.saveCanvasCacheToStorage();
-    };
-    img.onerror = () => {
-      console.warn(`[EntityRenderer] Failed to generate canvas image for cache key: ${cacheKey}`);
-    };
-    img.src = canvas.toDataURL();
-    return cacheObj;
+    return this.createAndCacheCanvasAsync(cacheKey, drawFunction, size, null, null, meta)
   },
-
   // Create a rock entity (delegates to RockEntity module)
   createRock(config = {}) {
     if (!this.entityModules.rock) {
