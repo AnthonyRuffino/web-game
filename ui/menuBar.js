@@ -3,6 +3,36 @@
 
 window.UI = window.UI || {};
 
+// --- Menu Bar Config ---
+const MENU_BAR_CONFIG = {
+  height: '32px',
+  background: 'rgba(30,30,40,0.96)',
+  zIndex: 1100,
+  borderTop: '2px solid #444',
+  boxShadow: '0 -2px 8px rgba(0,0,0,0.3)',
+  gap: '8px',
+  fontFamily: 'inherit',
+  button: {
+    height: '24px',
+    minWidth: '24px',
+    padding: '0 8px',
+    margin: '0 2px',
+    fontSize: '14px',
+    background: '#222',
+    color: '#fff',
+    border: '1px solid #555',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    opacity: '1',
+    disabledBackground: '#333',
+    disabledColor: '#888',
+    disabledCursor: 'default',
+    disabledOpacity: '0.6'
+  },
+  pollInterval: 500
+};
+// --- End Menu Bar Config ---
+
 window.UI.menuBar = {
   init() {
     if (document.getElementById('ui-menu-bar')) return;
@@ -12,33 +42,33 @@ window.UI.menuBar = {
     bar.style.left = '0';
     bar.style.right = '0';
     bar.style.bottom = '0';
-    bar.style.height = '32px';
-    bar.style.background = 'rgba(30,30,40,0.96)';
+    bar.style.height = MENU_BAR_CONFIG.height;
+    bar.style.background = MENU_BAR_CONFIG.background;
     bar.style.display = 'flex';
     bar.style.flexDirection = 'row';
     bar.style.alignItems = 'center';
     bar.style.justifyContent = 'center';
-    bar.style.zIndex = 1100;
-    bar.style.borderTop = '2px solid #444';
-    bar.style.boxShadow = '0 -2px 8px rgba(0,0,0,0.3)';
-    bar.style.gap = '8px';
-    bar.style.fontFamily = 'inherit';
+    bar.style.zIndex = MENU_BAR_CONFIG.zIndex;
+    bar.style.borderTop = MENU_BAR_CONFIG.borderTop;
+    bar.style.boxShadow = MENU_BAR_CONFIG.boxShadow;
+    bar.style.gap = MENU_BAR_CONFIG.gap;
+    bar.style.fontFamily = MENU_BAR_CONFIG.fontFamily;
 
     function makeButton(label, title, onClick, enabled = true) {
       const btn = document.createElement('button');
       btn.textContent = label;
       btn.title = title;
-      btn.style.height = '24px';
-      btn.style.minWidth = '24px';
-      btn.style.padding = '0 8px';
-      btn.style.margin = '0 2px';
-      btn.style.fontSize = '14px';
-      btn.style.background = enabled ? '#222' : '#333';
-      btn.style.color = enabled ? '#fff' : '#888';
-      btn.style.border = '1px solid #555';
-      btn.style.borderRadius = '4px';
-      btn.style.cursor = enabled ? 'pointer' : 'default';
-      btn.style.opacity = enabled ? '1' : '0.6';
+      btn.style.height = MENU_BAR_CONFIG.button.height;
+      btn.style.minWidth = MENU_BAR_CONFIG.button.minWidth;
+      btn.style.padding = MENU_BAR_CONFIG.button.padding;
+      btn.style.margin = MENU_BAR_CONFIG.button.margin;
+      btn.style.fontSize = MENU_BAR_CONFIG.button.fontSize;
+      btn.style.background = enabled ? MENU_BAR_CONFIG.button.background : MENU_BAR_CONFIG.button.disabledBackground;
+      btn.style.color = enabled ? MENU_BAR_CONFIG.button.color : MENU_BAR_CONFIG.button.disabledColor;
+      btn.style.border = MENU_BAR_CONFIG.button.border;
+      btn.style.borderRadius = MENU_BAR_CONFIG.button.borderRadius;
+      btn.style.cursor = enabled ? MENU_BAR_CONFIG.button.cursor : MENU_BAR_CONFIG.button.disabledCursor;
+      btn.style.opacity = enabled ? MENU_BAR_CONFIG.button.opacity : MENU_BAR_CONFIG.button.disabledOpacity;
       if (enabled && onClick) btn.onclick = onClick;
       return btn;
     }

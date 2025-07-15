@@ -1,21 +1,37 @@
 // ui/inventory.js
 // Inventory System
+// --- Inventory Config ---
+const INVENTORY_CONFIG = {
+  inventoryGridSize: 5,
+  inventorySlotSize: 60,
+  inventorySpacing: 4,
+  inventoryMargin: 20,
+  inventoryBackground: 'rgba(20,20,20,0.95)',
+  inventoryBorder: '#666',
+  slotBackground: 'rgba(40,40,40,0.9)',
+  slotHoverBackground: 'rgba(60,60,60,0.9)',
+  slotSelectedBackground: 'rgba(80,80,80,0.9)',
+  inventoryOpacity: 0.95,
+  itemIconOpacity: 0.9,
+  actionBarHeight: 80,
+  minInventorySize: 200,
+  maxInventoryViewport: 0.4,
+  titleFont: 'bold 18px sans-serif',
+  titleColor: '#fff',
+  titleY: 25,
+  gridStartX: 20,
+  gridStartY: 40,
+  slotNumberFont: '12px sans-serif',
+  slotNumberColor: 'rgba(136, 136, 136, 0.95)',
+  slotNumberYOffset: 4,
+  borderRadius: 8,
+  boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+  zIndex: 999
+};
+// --- End Inventory Config ---
 window.UI.inventory = {
   // Configuration
-  config: {
-    inventoryGridSize: 5, // Default 5x5 inventory
-    inventorySlotSize: 60, // Size of each inventory slot in pixels
-    inventorySpacing: 4, // Spacing between slots
-    inventoryMargin: 20, // Margin from screen edges
-    inventoryBackground: 'rgba(20,20,20,0.95)',
-    inventoryBorder: '#666',
-    slotBackground: 'rgba(40,40,40,0.9)',
-    slotHoverBackground: 'rgba(60,60,60,0.9)',
-    slotSelectedBackground: 'rgba(80,80,80,0.9)',
-    inventoryOpacity: 0.95, // Configurable inventory opacity
-    itemIconOpacity: 0.9, // Configurable item icon opacity (for future)
-    actionBarHeight: 80 // Height of action bar (inventory will be shifted up by this amount)
-  },
+  config: { ...INVENTORY_CONFIG },
 
   // State
   inventoryOpen: false,
@@ -41,11 +57,11 @@ window.UI.inventory = {
     canvas.style.bottom = `${this.config.inventoryMargin + this.config.actionBarHeight}px`;
     canvas.style.right = `${this.config.inventoryMargin}px`;
     // Note: Inventory is positioned to avoid overlapping with the dual action bars
-    canvas.style.zIndex = '999';
+    canvas.style.zIndex = INVENTORY_CONFIG.zIndex;
     canvas.style.display = 'none';
     canvas.style.border = `2px solid ${this.config.inventoryBorder}`;
-    canvas.style.borderRadius = '8px';
-    canvas.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6)';
+    canvas.style.borderRadius = `${INVENTORY_CONFIG.borderRadius}px`;
+    canvas.style.boxShadow = INVENTORY_CONFIG.boxShadow;
     document.body.appendChild(canvas);
     
     this.inventoryCanvas = canvas;
@@ -80,8 +96,8 @@ window.UI.inventory = {
     
     // Calculate scale factor based on viewport size
     // Use the smaller dimension to ensure inventory fits
-    const maxInventorySize = Math.min(viewportWidth * 0.4, viewportHeight * 0.4); // Max 40% of viewport
-    const minInventorySize = 200; // Minimum size
+    const maxInventorySize = Math.min(viewportWidth * INVENTORY_CONFIG.maxInventoryViewport, viewportHeight * INVENTORY_CONFIG.maxInventoryViewport);
+    const minInventorySize = INVENTORY_CONFIG.minInventorySize;
     const targetSize = Math.max(minInventorySize, Math.min(maxInventorySize, baseSize));
     
     // Calculate scale factor
@@ -125,14 +141,14 @@ window.UI.inventory = {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Draw title
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px sans-serif';
+    ctx.fillStyle = INVENTORY_CONFIG.titleColor;
+    ctx.font = INVENTORY_CONFIG.titleFont;
     ctx.textAlign = 'center';
-    ctx.fillText('Inventory', canvas.width / 2, 25);
+    ctx.fillText('Inventory', canvas.width / 2, INVENTORY_CONFIG.titleY);
     
     // Draw grid
-    const startX = 20;
-    const startY = 40;
+    const startX = INVENTORY_CONFIG.gridStartX;
+    const startY = INVENTORY_CONFIG.gridStartY;
     
     for (let row = 0; row < this.config.inventoryGridSize; row++) {
       for (let col = 0; col < this.config.inventoryGridSize; col++) {
@@ -161,10 +177,10 @@ window.UI.inventory = {
         ctx.strokeRect(x, y, this.config.inventorySlotSize, this.config.inventorySlotSize);
         
         // Draw slot number (for debugging) with opacity
-        ctx.fillStyle = `rgba(136, 136, 136, ${this.config.inventoryOpacity})`;
-        ctx.font = '12px sans-serif';
+        ctx.fillStyle = INVENTORY_CONFIG.slotNumberColor.replace('0.95', `${this.config.inventoryOpacity}`);
+        ctx.font = INVENTORY_CONFIG.slotNumberFont;
         ctx.textAlign = 'center';
-        ctx.fillText(`${row * this.config.inventoryGridSize + col + 1}`, x + this.config.inventorySlotSize / 2, y + this.config.inventorySlotSize / 2 + 4);
+        ctx.fillText(`${row * this.config.inventoryGridSize + col + 1}`, x + this.config.inventorySlotSize / 2, y + this.config.inventorySlotSize / 2 + INVENTORY_CONFIG.slotNumberYOffset);
       }
     }
   },
@@ -176,8 +192,8 @@ window.UI.inventory = {
     const x = (e.clientX - rect.left) / this.inventoryScale;
     const y = (e.clientY - rect.top) / this.inventoryScale;
     
-    const startX = 20;
-    const startY = 40;
+    const startX = INVENTORY_CONFIG.gridStartX;
+    const startY = INVENTORY_CONFIG.gridStartY;
     
     // Find which slot is being hovered
     for (let row = 0; row < this.config.inventoryGridSize; row++) {

@@ -166,7 +166,7 @@ const EntityRenderer = {
         let sprite = null;
         let canvasImage = null;
         if (currentEffectiveType === 'sprite') {
-          const spriteAndMeta = this.entityRenderer.getCachedImage(this.cacheKey);
+          let spriteAndMeta = this.entityRenderer.getCachedImage(this.cacheKey);
           sprite = (spriteAndMeta || {}).image;
           if (!sprite) {
             const svg = this.entityModule.generateSVG(this.config);
@@ -190,11 +190,11 @@ const EntityRenderer = {
             this.drawShape(ctx, 0, 0);
           }
         } else if (currentEffectiveType === 'shape') {
-          const canvasImageAndMeta = this.entityRenderer.getCachedCanvas(this.cacheKey);
+          let canvasImageAndMeta = this.entityRenderer.getCachedCanvas(this.cacheKey);
           canvasImage = (canvasImageAndMeta || {}).image;
           if (!canvasImage) {
             const drawFunction = this.entityModule.generateCanvasDraw(this.config);
-            const canvasImageAndMeta = this.entityRenderer.createAndCacheCanvas(this.cacheKey, drawFunction, this.config.size, this.config);
+            canvasImageAndMeta = this.entityRenderer.createAndCacheCanvas(this.cacheKey, drawFunction, this.config.size, this.config);
             canvasImage = (canvasImageAndMeta || {}).image;
           }
           if (canvasImage && canvasImage.complete && canvasImage.naturalWidth > 0) {

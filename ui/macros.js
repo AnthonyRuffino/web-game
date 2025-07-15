@@ -1,11 +1,50 @@
 // ui/macros.js
 // Macro management system
 
+// --- Macro Config ---
+const MACRO_CONFIG = {
+  storageKey: 'ui_macros',
+  icon: {
+    width: 48,
+    height: 48,
+    colors: [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+      '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+    ],
+    minShapes: 2,
+    maxShapes: 4,
+    minShapeSize: 10,
+    maxShapeSize: 30
+  },
+  grid: {
+    rows: 4,
+    cols: 4,
+    cellHeight: 80,
+    cellWidth: 40,
+    cellRadius: 8,
+    cellGap: 16,
+    gridWidth: 400,
+    gridMaxWidth: '80vw',
+    gridPadding: '24px 0 12px 0',
+    gridMargin: '24px 0 12px 0'
+  },
+  modal: {
+    minWidth: '480px',
+    maxWidth: '95vw',
+    padding: '32px 40px',
+    color: '#fff',
+    background: '#222',
+    borderRadius: '12px',
+    boxShadow: '0 4px 32px rgba(0,0,0,0.7)'
+  }
+};
+// --- End Macro Config ---
+
 // Ensure UI object exists
 // Macro Management System
 window.UI.macroManager = {
   // Storage keys
-  storageKey: 'ui_macros',
+  storageKey: MACRO_CONFIG.storageKey,
   
   // Macro data
   macros: {}, // { macroName: { name, command, created } }
@@ -76,18 +115,15 @@ window.UI.macroManager = {
   generateMacroIcon(macroName) {
     // Create a temporary canvas for icon generation
     const canvas = document.createElement('canvas');
-    canvas.width = 48;
-    canvas.height = 48;
+    canvas.width = MACRO_CONFIG.icon.width;
+    canvas.height = MACRO_CONFIG.icon.height;
     const ctx = canvas.getContext('2d');
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Generate random colors
-    const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-      '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
-    ];
+    const colors = MACRO_CONFIG.icon.colors;
     const bgColor = colors[Math.floor(Math.random() * colors.length)];
     const shapeColor = colors[Math.floor(Math.random() * colors.length)];
     
@@ -96,14 +132,14 @@ window.UI.macroManager = {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Draw random shapes
-    const shapeCount = Math.floor(Math.random() * 3) + 2; // 2-4 shapes
+    const shapeCount = Math.floor(Math.random() * (MACRO_CONFIG.icon.maxShapes - MACRO_CONFIG.icon.minShapes + 1)) + MACRO_CONFIG.icon.minShapes;
     for (let i = 0; i < shapeCount; i++) {
       ctx.fillStyle = shapeColor;
       const shapeType = Math.floor(Math.random() * 3); // 0=circle, 1=rect, 2=triangle
       
       const x = Math.random() * canvas.width;
       const y = Math.random() * canvas.height;
-      const size = Math.random() * 20 + 10;
+      const size = Math.random() * (MACRO_CONFIG.icon.maxShapeSize - MACRO_CONFIG.icon.minShapeSize) + MACRO_CONFIG.icon.minShapeSize;
       
       switch (shapeType) {
         case 0: // Circle

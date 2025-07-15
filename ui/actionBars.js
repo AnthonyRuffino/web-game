@@ -1,6 +1,53 @@
 // ui/actionBars.js
 // Action bar system with multiple configurable bars
 
+// --- Action Bar Config ---
+const ACTION_BAR_CONFIG = {
+  defaultSlots: 10,
+  defaultSlotSize: 60,
+  defaultSpacing: 4,
+  defaultZIndex: 998,
+  defaultOpacity: 0.95,
+  defaultColors: {
+    background: 'rgba(20,20,20,0.95)',
+    border: '#666',
+    slot: 'rgba(40,40,40,0.6)',
+    slotHover: 'rgba(60,60,60,0.9)',
+    slotActive: 'rgba(80,80,80,0.9)',
+    label: '#fff'
+  },
+  defaultPadding: 40,
+  defaultBorderRadius: 8,
+  defaultBoxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+  defaultSlotIconSize: 40,
+  defaultSlotLabelFont: 'bold 16px sans-serif',
+  defaultSlotLabelOutline: 'rgba(0,0,0,0.7)',
+  defaultSlotLabelOutlineWidth: 3,
+  defaultEmptyLabel: 'Empty',
+  defaultEmptyLabelColor: 'rgba(136,136,136,0.4)',
+  defaultEmptyLabelFont: '10px sans-serif',
+  defaultSlotNumberFont: '12px sans-serif',
+  defaultSlotNumberColor: '#aaa',
+  defaultSlotNumberYOffset: 20,
+  defaultSlotBorderWidth: 1,
+  defaultSlotBorderRadius: 8,
+  defaultSlotBoxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+  defaultSlotPadding: 20,
+  defaultSlotStart: 20,
+  defaultSlotY: 10,
+  defaultSlotX: 10,
+  defaultSlotHeight: 20,
+  defaultSlotWidth: 20,
+  defaultSlotLabelYOffset: 20,
+  defaultSlotLabelFontSize: 10,
+  defaultSlotLabelTextAlign: 'center',
+  defaultSlotLabelTextBaseline: 'middle',
+  defaultSlotLabelColor: '#fff',
+  defaultSlotLabelOutlineColor: 'rgba(0,0,0,0.7)',
+  defaultSlotLabelOutlineWidth: 3
+};
+// --- End Action Bar Config ---
+
 // Only declare ActionBar if it doesn't already exist
 if (!window.ActionBar) {
   class ActionBar {
@@ -8,19 +55,12 @@ if (!window.ActionBar) {
       this.name = config.name;
       this.orientation = config.orientation || 'horizontal';
       this.position = config.position || { left: 0, bottom: 0 };
-      this.slots = config.slots || 10;
-      this.slotSize = config.slotSize || 60;
-      this.spacing = config.spacing || 4;
-      this.zIndex = config.zIndex || 998;
-      this.opacity = config.opacity || 0.95;
-      this.colors = Object.assign({
-        background: 'rgba(20,20,20,0.95)',
-        border: '#666',
-        slot: 'rgba(40,40,40,0.6)',
-        slotHover: 'rgba(60,60,60,0.9)',
-        slotActive: 'rgba(80,80,80,0.9)',
-        label: '#fff'
-      }, config.colors || {});
+      this.slots = config.slots || ACTION_BAR_CONFIG.defaultSlots;
+      this.slotSize = config.slotSize || ACTION_BAR_CONFIG.defaultSlotSize;
+      this.spacing = config.spacing || ACTION_BAR_CONFIG.defaultSpacing;
+      this.zIndex = config.zIndex || ACTION_BAR_CONFIG.defaultZIndex;
+      this.opacity = config.opacity || ACTION_BAR_CONFIG.defaultOpacity;
+      this.colors = Object.assign({}, ACTION_BAR_CONFIG.defaultColors, config.colors || {});
       this.keyBindings = config.keyBindings || [];
       this.macroBindings = config.macroBindings || {}; // { slotIndex: macroName }
       this.visible = true;
@@ -77,12 +117,12 @@ if (!window.ActionBar) {
       const count = this.slots;
       const slot = this.slotSize;
       const spacing = this.spacing;
-      const padding = 40;
+      const padding = ACTION_BAR_CONFIG.defaultPadding;
       if (this.orientation === 'horizontal') {
         this.canvas.width = count * slot + (count - 1) * spacing + padding;
-        this.canvas.height = slot + 20;
+        this.canvas.height = slot + ACTION_BAR_CONFIG.defaultSlotHeight;
       } else {
-        this.canvas.width = slot + 20;
+        this.canvas.width = slot + ACTION_BAR_CONFIG.defaultSlotWidth;
         this.canvas.height = count * slot + (count - 1) * spacing + padding;
       }
       this.scale = 1.0;
@@ -137,15 +177,15 @@ if (!window.ActionBar) {
       this.render();
     }
     _slotPosition(i) {
-      const start = 20;
+      const start = ACTION_BAR_CONFIG.defaultSlotStart;
       if (this.orientation === 'horizontal') {
         return {
           slotX: start + i * (this.slotSize + this.spacing),
-          slotY: 10
+          slotY: ACTION_BAR_CONFIG.defaultSlotY
         };
       } else {
         return {
-          slotX: 10,
+          slotX: ACTION_BAR_CONFIG.defaultSlotX,
           slotY: start + i * (this.slotSize + this.spacing)
         };
       }
@@ -169,7 +209,7 @@ if (!window.ActionBar) {
         ctx.fillRect(slotX, slotY, this.slotSize, this.slotSize);
         ctx.globalAlpha = 1.0;
         ctx.strokeStyle = this.colors.border;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = ACTION_BAR_CONFIG.defaultSlotBorderWidth;
         ctx.strokeRect(slotX, slotY, this.slotSize, this.slotSize);
         const macroName = this.macroBindings[i];
         // --- Macro Icon Drawing ---
@@ -187,19 +227,19 @@ if (!window.ActionBar) {
           if (img.complete && img.naturalWidth > 0) {
             ctx.drawImage(
               img,
-              slotX + (this.slotSize - 40) / 2,
-              slotY + (this.slotSize - 40) / 2,
-              40, 40
+              slotX + (this.slotSize - ACTION_BAR_CONFIG.defaultSlotIconSize) / 2,
+              slotY + (this.slotSize - ACTION_BAR_CONFIG.defaultSlotIconSize) / 2,
+              ACTION_BAR_CONFIG.defaultSlotIconSize, ACTION_BAR_CONFIG.defaultSlotIconSize
             );
           }
         }
         // --- Key Label Drawing (always on top) ---
         ctx.fillStyle = this.colors.label;
-        ctx.font = 'bold 16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-        ctx.lineWidth = 3;
+        ctx.font = ACTION_BAR_CONFIG.defaultSlotLabelFont;
+        ctx.textAlign = ACTION_BAR_CONFIG.defaultSlotLabelTextAlign;
+        ctx.textBaseline = ACTION_BAR_CONFIG.defaultSlotLabelTextBaseline;
+        ctx.strokeStyle = ACTION_BAR_CONFIG.defaultSlotLabelOutlineColor;
+        ctx.lineWidth = ACTION_BAR_CONFIG.defaultSlotLabelOutlineWidth;
         // Draw outline for better contrast
         ctx.strokeText(
           this._slotLabel(i),
@@ -212,9 +252,9 @@ if (!window.ActionBar) {
           slotY + this.slotSize / 2
         );
         if (!macroName) {
-          ctx.fillStyle = 'rgba(136,136,136,0.4)';
-          ctx.font = '10px sans-serif';
-          ctx.fillText('Empty', slotX + this.slotSize / 2, slotY + this.slotSize / 2 + 20);
+          ctx.fillStyle = ACTION_BAR_CONFIG.defaultEmptyLabelColor;
+          ctx.font = ACTION_BAR_CONFIG.defaultEmptyLabelFont;
+          ctx.fillText(ACTION_BAR_CONFIG.defaultEmptyLabel, slotX + this.slotSize / 2, slotY + this.slotSize / 2 + ACTION_BAR_CONFIG.defaultSlotLabelYOffset);
         }
       }
     }

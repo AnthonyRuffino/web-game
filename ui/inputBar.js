@@ -1,9 +1,38 @@
+// --- Input Bar Config ---
+const INPUT_BAR_CONFIG = {
+  maxHistorySize: 20,
+  storageKey: 'ui_command_history',
+  style: {
+    position: 'fixed',
+    left: '50%',
+    bottom: '40px',
+    transform: 'translateX(-50%)',
+    width: '50vw',
+    maxWidth: '700px',
+    minWidth: '200px',
+    padding: '12px 16px',
+    fontSize: '1.2rem',
+    border: '2px solid #888',
+    borderRadius: '8px',
+    background: 'rgba(30,30,30,0.98)',
+    color: '#fff',
+    outline: 'none',
+    zIndex: 1000,
+    display: 'none',
+    boxShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    letterSpacing: '0.02em',
+    fontFamily: 'inherit'
+  },
+  minHistorySize: 1,
+  maxHistoryLimit: 100
+};
+// --- End Input Bar Config ---
 // Input Bar System
 window.UI.inputBar = {
   // Configuration
   config: {
-    maxHistorySize: 20, // Configurable history size
-    storageKey: 'ui_command_history'
+    maxHistorySize: INPUT_BAR_CONFIG.maxHistorySize,
+    storageKey: INPUT_BAR_CONFIG.storageKey
   },
 
   // State
@@ -31,25 +60,7 @@ window.UI.inputBar = {
     input.placeholder = 'Type /command or say something...';
     input.autocomplete = 'off';
     input.spellcheck = false;
-    input.style.position = 'fixed';
-    input.style.left = '50%';
-    input.style.bottom = '40px';
-    input.style.transform = 'translateX(-50%)';
-    input.style.width = '50vw';
-    input.style.maxWidth = '700px';
-    input.style.minWidth = '200px';
-    input.style.padding = '12px 16px';
-    input.style.fontSize = '1.2rem';
-    input.style.border = '2px solid #888';
-    input.style.borderRadius = '8px';
-    input.style.background = 'rgba(30,30,30,0.98)';
-    input.style.color = '#fff';
-    input.style.outline = 'none';
-    input.style.zIndex = '1000';
-    input.style.display = 'none';
-    input.style.boxShadow = '0 2px 16px rgba(0,0,0,0.4)';
-    input.style.letterSpacing = '0.02em';
-    input.style.fontFamily = 'inherit';
+    Object.entries(INPUT_BAR_CONFIG.style).forEach(([k, v]) => { input.style[k] = v; });
     document.body.appendChild(input);
     this.inputElement = input;
   },
@@ -159,7 +170,7 @@ window.UI.inputBar = {
 
   // Set maximum history size
   setMaxHistorySize(size) {
-    if (size > 0 && size <= 100) {
+    if (size >= INPUT_BAR_CONFIG.minHistorySize && size <= INPUT_BAR_CONFIG.maxHistoryLimit) {
       this.config.maxHistorySize = size;
       // Trim history if it's now larger than the new limit
       while (this.commandHistory.length > this.config.maxHistorySize) {
@@ -168,7 +179,7 @@ window.UI.inputBar = {
       this.saveCommandHistory();
       console.log(`[UI] Command history size set to ${size}`);
     } else {
-      console.error('[UI] Invalid history size. Must be between 1 and 100.');
+      console.error(`[UI] Invalid history size. Must be between ${INPUT_BAR_CONFIG.minHistorySize} and ${INPUT_BAR_CONFIG.maxHistoryLimit}.`);
     }
   },
 

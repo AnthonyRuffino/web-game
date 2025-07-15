@@ -4,6 +4,207 @@
 // Ensure UI object exists
 if (!window.UI) window.UI = {};
 
+// --- Skins Config ---
+const SKINS_CONFIG = {
+  imagePreviewSize: 64,
+  borderRadius: 6,
+  background: '#444',
+  objectFit: 'cover',
+  font: {
+    main: 'inherit',
+    title: '24px',
+    section: '18px',
+    label: '14px',
+    meta: '10px',
+    empty: 'italic 14px',
+    button: 'bold 14px',
+    tab: 'bold 13px',
+    slot: '12px',
+    input: '1rem',
+  },
+  color: {
+    text: '#fff',
+    faded: '#aaa',
+    highlight: '#4ECDC4',
+    error: '#FF6B6B',
+    warning: '#ffeaa7',
+    meta: '#6ec6ff',
+    background: '#222',
+    overlay: 'rgba(0,0,0,0.5)',
+    overlayStrong: 'rgba(0,0,0,0.6)',
+    border: '#444',
+    inputBg: '#23232b',
+    inputBorder: '#444',
+    inputFocus: '#4ECDC4',
+    previewBg: '#444',
+    previewBorder: '#444',
+    plus: '#aaa',
+    plusBg: '#333',
+    plusHover: '#444',
+    slotBg: '#333',
+    slotHover: '#444',
+    slotSelected: '#4ECDC4',
+    slotSelectedText: '#222',
+    slotEmpty: 'rgba(136,136,136,0.4)',
+  },
+  modal: {
+    minWidth: '900px',
+    maxWidth: '95vw',
+    maxHeight: '85vh',
+    padding: '24px 32px',
+    color: '#fff',
+    background: '#222',
+    borderRadius: '12px',
+    boxShadow: '0 4px 32px rgba(0,0,0,0.7)'
+  },
+  tab: {
+    padding: '12px 20px',
+    borderRadius: '6px 6px 0 0',
+    fontWeight: 'bold',
+    marginRight: '4px',
+    activeBg: '#4ECDC4',
+    activeColor: '#222',
+    inactiveBg: 'transparent',
+    inactiveColor: '#fff',
+  },
+  grid: {
+    cols: 6,
+    cellHeight: 90,
+    cellPadding: 8,
+    cellRadius: 4,
+    cellGap: 12,
+    metaFont: '10px',
+    metaColor: '#6ec6ff',
+    keyFont: '10px',
+    keyColor: '#aaa',
+    editBtn: {
+      background: '#4ECDC4',
+      color: '#222',
+      border: 'none',
+      borderRadius: '4px',
+      width: '36px',
+      height: '20px',
+      fontSize: '10px',
+      cursor: 'pointer',
+      position: 'absolute',
+      bottom: '2px',
+      right: '2px',
+    },
+    deleteBtn: {
+      background: '#FF6B6B',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '50%',
+      width: '16px',
+      height: '16px',
+      fontSize: '12px',
+      cursor: 'pointer',
+      position: 'absolute',
+      top: '2px',
+      right: '2px',
+      display: 'none',
+    },
+    cellBg: '#333',
+    cellHoverBg: '#444',
+    cellSelectedBg: '#4ECDC4',
+    cellSelectedText: '#222',
+    cellEmptyPlus: '+',
+    cellEmptyPlusFont: '32px',
+    cellEmptyPlusColor: '#aaa',
+  },
+  button: {
+    background: '#4ECDC4',
+    color: '#222',
+    border: 'none',
+    borderRadius: '5px',
+    padding: '7px 18px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    marginRight: '8px',
+    fontSize: '14px',
+  },
+  deleteButton: {
+    background: '#FF6B6B',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '50%',
+    width: '16px',
+    height: '16px',
+    fontSize: '12px',
+    cursor: 'pointer',
+  },
+  closeButton: {
+    background: '#444',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    padding: '6px 14px',
+    cursor: 'pointer',
+    position: 'absolute',
+    top: '16px',
+    right: '16px',
+  },
+  overlay: {
+    zIndex: 2000,
+    strongZIndex: 2100,
+    background: 'rgba(0,0,0,0.5)',
+    strongBackground: 'rgba(0,0,0,0.6)',
+    align: 'center',
+    justify: 'center',
+  },
+  dialog: {
+    minWidth: '400px',
+    maxWidth: '95vw',
+    padding: '32px 32px 24px 32px',
+    borderRadius: '10px',
+    boxShadow: '0 4px 32px rgba(0,0,0,0.8)',
+    color: '#fff',
+    background: '#23232b',
+    margin: '8px auto 16px auto',
+  },
+  input: {
+    width: '100%',
+    margin: '4px 0 12px 0',
+    fontSize: '1rem',
+    padding: '6px',
+    borderRadius: '4px',
+    border: '1px solid #444',
+  },
+  preview: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '6px',
+    background: '#444',
+    display: 'block',
+    margin: '8px auto 16px auto',
+    objectFit: 'cover',
+  },
+  plus: {
+    fontSize: '32px',
+    color: '#aaa',
+    userSelect: 'none',
+  },
+  transition: {
+    short: 0.2,
+    long: 0.4,
+  },
+  misc: {
+    minGridWidth: '480px',
+    maxGridWidth: '80vw',
+    minModalWidth: '340px',
+    maxModalWidth: '95vw',
+    minDialogWidth: '340px',
+    maxDialogWidth: '95vw',
+    minDialogHeight: '400px',
+    maxDialogHeight: '95vh',
+  },
+  durations: {
+    slotActive: 150,
+    fade: 200,
+  },
+};
+// --- End Skins Config ---
+
 // Skins Management System
 window.UI.skinsManager = {
   // Storage keys (matching EntityRenderer)
@@ -309,8 +510,8 @@ window.UI.skinsManager = {
     overlay.style.left = '0';
     overlay.style.width = '100vw';
     overlay.style.height = '100vh';
-    overlay.style.background = 'rgba(0,0,0,0.5)';
-    overlay.style.zIndex = '2000';
+    overlay.style.background = SKINS_CONFIG.overlay.background;
+    overlay.style.zIndex = SKINS_CONFIG.overlay.zIndex;
     overlay.style.display = 'flex';
     overlay.style.alignItems = 'center';
     overlay.style.justifyContent = 'center';
@@ -339,14 +540,14 @@ window.UI.skinsManager = {
           const def = window.TreeEntity.defaultConfig;
           return { width: def.size, height: def.imageHeight };
         }
-        return { width: 64, height: 64 };
+        return { width: SKINS_CONFIG.imagePreviewSize, height: SKINS_CONFIG.imagePreviewSize };
       }
       function getGrassTargetSize() {
         if (window.TreeEntity) {
           const def = window.GrassEntity.defaultConfig;
           return { width: def.size, height: def.size };
         }
-        return { width: 32, height: 32 };
+        return { width: SKINS_CONFIG.imagePreviewSize, height: SKINS_CONFIG.imagePreviewSize };
       }
       function resizeImageToTarget(img, width, height, callback) {
         const canvas = document.createElement('canvas');
@@ -367,31 +568,31 @@ window.UI.skinsManager = {
       dialogOverlay.style.left = '0';
       dialogOverlay.style.width = '100vw';
       dialogOverlay.style.height = '100vh';
-      dialogOverlay.style.background = 'rgba(0,0,0,0.6)';
-      dialogOverlay.style.zIndex = '2100';
+      dialogOverlay.style.background = SKINS_CONFIG.overlay.strongBackground;
+      dialogOverlay.style.zIndex = SKINS_CONFIG.overlay.strongZIndex;
       dialogOverlay.style.display = 'flex';
       dialogOverlay.style.alignItems = 'center';
       dialogOverlay.style.justifyContent = 'center';
       const dialog = document.createElement('div');
-      dialog.style.background = '#23232b';
-      dialog.style.borderRadius = '10px';
-      dialog.style.boxShadow = '0 4px 32px rgba(0,0,0,0.8)';
-      dialog.style.padding = '32px 32px 24px 32px';
-      dialog.style.minWidth = '400px';
-      dialog.style.maxWidth = '95vw';
-      dialog.style.color = '#fff';
+      dialog.style.background = SKINS_CONFIG.dialog.background;
+      dialog.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
+      dialog.style.boxShadow = SKINS_CONFIG.dialog.boxShadow;
+      dialog.style.padding = SKINS_CONFIG.dialog.padding;
+      dialog.style.minWidth = SKINS_CONFIG.misc.minDialogWidth;
+      dialog.style.maxWidth = SKINS_CONFIG.misc.maxDialogWidth;
+      dialog.style.color = SKINS_CONFIG.dialog.color;
       dialog.style.position = 'relative';
       dialog.innerHTML = `<h3 style='margin-top:0'>Edit Skin: ${cacheKey}</h3>
-        <p style='color:#aaa;margin-bottom:20px'>Replace image for: ${cacheKey}</p>`;
+        <p style='color:${SKINS_CONFIG.color.faded};margin-bottom:20px'>Replace image for: ${cacheKey}</p>`;
       // Current image preview
       const currentPreview = document.createElement('img');
-      currentPreview.style.width = '64px';
-      currentPreview.style.height = '64px';
-      currentPreview.style.borderRadius = '6px';
-      currentPreview.style.background = '#444';
+      currentPreview.style.width = SKINS_CONFIG.preview.width;
+      currentPreview.style.height = SKINS_CONFIG.preview.height;
+      currentPreview.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
+      currentPreview.style.background = SKINS_CONFIG.preview.background;
       currentPreview.style.display = 'block';
       currentPreview.style.margin = '8px auto 16px auto';
-      currentPreview.style.objectFit = 'cover';
+      currentPreview.style.objectFit = SKINS_CONFIG.preview.objectFit;
       currentPreview.alt = 'Current Image';
       const currentCache = isCanvas ? this.canvasCache : this.imageCache;
       if (currentCache[cacheKey] && currentCache[cacheKey].dataUrl) {
@@ -402,13 +603,13 @@ window.UI.skinsManager = {
       dialog.appendChild(currentPreview);
       // New image preview (hidden until file is uploaded)
       const newPreview = document.createElement('img');
-      newPreview.style.width = '64px';
-      newPreview.style.height = '64px';
-      newPreview.style.borderRadius = '6px';
-      newPreview.style.background = '#444';
+      newPreview.style.width = SKINS_CONFIG.preview.width;
+      newPreview.style.height = SKINS_CONFIG.preview.height;
+      newPreview.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
+      newPreview.style.background = SKINS_CONFIG.preview.background;
       newPreview.style.display = 'none';
       newPreview.style.margin = '8px auto 16px auto';
-      newPreview.style.objectFit = 'cover';
+      newPreview.style.objectFit = SKINS_CONFIG.preview.objectFit;
       newPreview.alt = 'New Image';
       dialog.appendChild(newPreview);
       // Offset and angle controls
@@ -423,18 +624,39 @@ window.UI.skinsManager = {
       offsetXInput.placeholder = 'Offset X';
       offsetXInput.style.width = '60px';
       offsetXInput.title = 'drawOffsetX';
+      offsetXInput.style.fontSize = SKINS_CONFIG.font.input;
+      offsetXInput.style.padding = '6px';
+      offsetXInput.style.borderRadius = '4px';
+      offsetXInput.style.border = '1px solid ' + SKINS_CONFIG.color.inputBorder;
+      offsetXInput.style.background = SKINS_CONFIG.color.inputBg;
+      offsetXInput.style.color = SKINS_CONFIG.color.text;
+      offsetXInput.style.textAlign = 'center';
       // Offset Y
       const offsetYInput = document.createElement('input');
       offsetYInput.type = 'number';
       offsetYInput.placeholder = 'Offset Y';
       offsetYInput.style.width = '60px';
       offsetYInput.title = 'drawOffsetY';
+      offsetYInput.style.fontSize = SKINS_CONFIG.font.input;
+      offsetYInput.style.padding = '6px';
+      offsetYInput.style.borderRadius = '4px';
+      offsetYInput.style.border = '1px solid ' + SKINS_CONFIG.color.inputBorder;
+      offsetYInput.style.background = SKINS_CONFIG.color.inputBg;
+      offsetYInput.style.color = SKINS_CONFIG.color.text;
+      offsetYInput.style.textAlign = 'center';
       // Fixed Angle
       const angleInput = document.createElement('input');
       angleInput.type = 'number';
       angleInput.placeholder = 'Angle (deg)';
       angleInput.style.width = '80px';
       angleInput.title = 'fixedScreenAngle';
+      angleInput.style.fontSize = SKINS_CONFIG.font.input;
+      angleInput.style.padding = '6px';
+      angleInput.style.borderRadius = '4px';
+      angleInput.style.border = '1px solid ' + SKINS_CONFIG.color.inputBorder;
+      angleInput.style.background = SKINS_CONFIG.color.inputBg;
+      angleInput.style.color = SKINS_CONFIG.color.text;
+      angleInput.style.textAlign = 'center';
       // Pre-fill with current values if present
       if (currentCache[cacheKey]) {
         if (typeof currentCache[cacheKey].drawOffsetX === 'number') offsetXInput.value = currentCache[cacheKey].drawOffsetX;
@@ -454,13 +676,14 @@ window.UI.skinsManager = {
       const uploadBtn = document.createElement('button');
       uploadBtn.textContent = 'Choose Image File';
       uploadBtn.style.marginRight = '8px';
-      uploadBtn.style.background = '#4ECDC4';
-      uploadBtn.style.color = '#222';
+      uploadBtn.style.background = SKINS_CONFIG.button.background;
+      uploadBtn.style.color = SKINS_CONFIG.button.color;
       uploadBtn.style.border = 'none';
       uploadBtn.style.borderRadius = '5px';
       uploadBtn.style.padding = '7px 18px';
       uploadBtn.style.fontWeight = 'bold';
       uploadBtn.style.cursor = 'pointer';
+      uploadBtn.style.fontSize = SKINS_CONFIG.font.button;
       uploadBtn.onclick = () => fileInput.click();
       dialog.appendChild(uploadBtn);
       fileInput.addEventListener('change', function (event) {
@@ -483,7 +706,7 @@ window.UI.skinsManager = {
             const img = new window.Image();
             img.onload = function () {
               const { width, height } = getGrassTargetSize();
-              resizeImageToTarget(img, 32, 32, (resizedImg, dataUrl) => {
+              resizeImageToTarget(img, SKINS_CONFIG.imagePreviewSize, SKINS_CONFIG.imagePreviewSize, (resizedImg, dataUrl) => {
                 newPreview.src = dataUrl;
                 newPreview._pendingDataURL = dataUrl;
                 newPreview.style.display = 'block';
@@ -508,21 +731,23 @@ window.UI.skinsManager = {
       btnRow.style.gap = '12px';
       const saveBtn = document.createElement('button');
       saveBtn.textContent = 'Save';
-      saveBtn.style.background = '#4ECDC4';
-      saveBtn.style.color = '#222';
+      saveBtn.style.background = SKINS_CONFIG.button.background;
+      saveBtn.style.color = SKINS_CONFIG.button.color;
       saveBtn.style.border = 'none';
       saveBtn.style.borderRadius = '5px';
       saveBtn.style.padding = '7px 18px';
       saveBtn.style.fontWeight = 'bold';
       saveBtn.style.cursor = 'pointer';
+      saveBtn.style.fontSize = SKINS_CONFIG.font.button;
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.background = '#444';
-      cancelBtn.style.color = '#fff';
+      cancelBtn.style.background = SKINS_CONFIG.button.background;
+      cancelBtn.style.color = SKINS_CONFIG.button.color;
       cancelBtn.style.border = 'none';
       cancelBtn.style.borderRadius = '5px';
       cancelBtn.style.padding = '7px 18px';
       cancelBtn.style.cursor = 'pointer';
+      cancelBtn.style.fontSize = SKINS_CONFIG.font.button;
       btnRow.appendChild(saveBtn);
       btnRow.appendChild(cancelBtn);
       dialog.appendChild(btnRow);
@@ -564,26 +789,26 @@ window.UI.skinsManager = {
       dialogOverlay.style.left = '0';
       dialogOverlay.style.width = '100vw';
       dialogOverlay.style.height = '100vh';
-      dialogOverlay.style.background = 'rgba(0,0,0,0.6)';
-      dialogOverlay.style.zIndex = '2100';
+      dialogOverlay.style.background = SKINS_CONFIG.overlay.strongBackground;
+      dialogOverlay.style.zIndex = SKINS_CONFIG.overlay.strongZIndex;
       dialogOverlay.style.display = 'flex';
       dialogOverlay.style.alignItems = 'center';
       dialogOverlay.style.justifyContent = 'center';
 
       // Dialog
       const dialog = document.createElement('div');
-      dialog.style.background = '#23232b';
-      dialog.style.borderRadius = '10px';
-      dialog.style.boxShadow = '0 4px 32px rgba(0,0,0,0.8)';
-      dialog.style.padding = '32px 32px 24px 32px';
-      dialog.style.minWidth = '400px';
-      dialog.style.maxWidth = '95vw';
-      dialog.style.color = '#fff';
+      dialog.style.background = SKINS_CONFIG.dialog.background;
+      dialog.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
+      dialog.style.boxShadow = SKINS_CONFIG.dialog.boxShadow;
+      dialog.style.padding = SKINS_CONFIG.dialog.padding;
+      dialog.style.minWidth = SKINS_CONFIG.misc.minDialogWidth;
+      dialog.style.maxWidth = SKINS_CONFIG.misc.maxDialogWidth;
+      dialog.style.color = SKINS_CONFIG.dialog.color;
       dialog.style.position = 'relative';
 
       dialog.innerHTML = `<h3 style='margin-top:0'>Delete Image</h3>
-        <p style='color:#aaa;margin-bottom:20px'>Are you sure you want to delete the image for: ${cacheKey}?</p>
-        <p style='color:#ff6b6b;font-size:14px'>This will force a reload of the original generated image next time it's needed.</p>`;
+        <p style='color:${SKINS_CONFIG.color.faded};margin-bottom:20px'>Are you sure you want to delete the image for: ${cacheKey}?</p>
+        <p style='color:${SKINS_CONFIG.color.error};font-size:14px'>This will force a reload of the original generated image next time it's needed.</p>`;
 
       // Buttons
       const btnRow = document.createElement('div');
@@ -595,21 +820,23 @@ window.UI.skinsManager = {
       
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Delete';
-      deleteBtn.style.background = '#FF6B6B';
-      deleteBtn.style.color = '#fff';
+      deleteBtn.style.background = SKINS_CONFIG.deleteButton.background;
+      deleteBtn.style.color = SKINS_CONFIG.deleteButton.color;
       deleteBtn.style.border = 'none';
       deleteBtn.style.borderRadius = '5px';
       deleteBtn.style.padding = '7px 18px';
       deleteBtn.style.cursor = 'pointer';
+      deleteBtn.style.fontSize = SKINS_CONFIG.font.button;
       
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.background = '#444';
-      cancelBtn.style.color = '#fff';
+      cancelBtn.style.background = SKINS_CONFIG.button.background;
+      cancelBtn.style.color = SKINS_CONFIG.button.color;
       cancelBtn.style.border = 'none';
       cancelBtn.style.borderRadius = '5px';
       cancelBtn.style.padding = '7px 18px';
       cancelBtn.style.cursor = 'pointer';
+      cancelBtn.style.fontSize = SKINS_CONFIG.font.button;
       
       btnRow.appendChild(deleteBtn);
       btnRow.appendChild(cancelBtn);
@@ -633,19 +860,19 @@ window.UI.skinsManager = {
 
     // Create modal content
     const modal = document.createElement('div');
-    modal.style.background = '#222';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 32px rgba(0,0,0,0.7)';
-    modal.style.padding = '24px 32px';
-    modal.style.minWidth = '900px';
-    modal.style.maxWidth = '95vw';
-    modal.style.maxHeight = '85vh';
+    modal.style.background = SKINS_CONFIG.modal.background;
+    modal.style.borderRadius = SKINS_CONFIG.modal.borderRadius + 'px';
+    modal.style.boxShadow = SKINS_CONFIG.modal.boxShadow;
+    modal.style.padding = SKINS_CONFIG.modal.padding;
+    modal.style.minWidth = SKINS_CONFIG.modal.minWidth;
+    modal.style.maxWidth = SKINS_CONFIG.modal.maxWidth;
+    modal.style.maxHeight = SKINS_CONFIG.modal.maxHeight;
     modal.style.overflow = 'hidden';
-    modal.style.color = '#fff';
+    modal.style.color = SKINS_CONFIG.modal.color;
     modal.style.position = 'relative';
     modal.style.display = 'flex';
     modal.style.flexDirection = 'column';
-    modal.innerHTML = `<h2 style="margin-top:0;margin-bottom:20px;font-size:24px">Skins Management</h2>`;
+    modal.innerHTML = `<h2 style="margin-top:0;margin-bottom:20px;font-size:${SKINS_CONFIG.font.title}">Skins Management</h2>`;
 
     // Top buttons row
     const topButtons = document.createElement('div');
@@ -657,20 +884,21 @@ window.UI.skinsManager = {
     // Export button
     const exportBtn = document.createElement('button');
     exportBtn.textContent = 'Export All Skins';
-    exportBtn.style.background = '#45B7D1';
-    exportBtn.style.color = '#fff';
+    exportBtn.style.background = SKINS_CONFIG.button.background;
+    exportBtn.style.color = SKINS_CONFIG.button.color;
     exportBtn.style.border = 'none';
     exportBtn.style.borderRadius = '5px';
     exportBtn.style.padding = '8px 16px';
     exportBtn.style.cursor = 'pointer';
+    exportBtn.style.fontSize = SKINS_CONFIG.font.button;
     exportBtn.onclick = () => this.exportCacheData();
     topButtons.appendChild(exportBtn);
 
     // Import button
     const importBtn = document.createElement('button');
     importBtn.textContent = 'Import Skins';
-    importBtn.style.background = '#96CEB4';
-    importBtn.style.color = '#222';
+    importBtn.style.background = SKINS_CONFIG.button.background;
+    importBtn.style.color = SKINS_CONFIG.button.color;
     importBtn.style.border = 'none';
     importBtn.style.borderRadius = '5px';
     importBtn.style.padding = '8px 16px';
@@ -701,7 +929,7 @@ window.UI.skinsManager = {
     // Tab system
     const tabContainer = document.createElement('div');
     tabContainer.style.display = 'flex';
-    tabContainer.style.borderBottom = '2px solid #444';
+    tabContainer.style.borderBottom = '2px solid ' + SKINS_CONFIG.color.border;
     tabContainer.style.marginBottom = '20px';
 
     // Tab buttons
@@ -714,13 +942,13 @@ window.UI.skinsManager = {
     tabs.forEach(tab => {
       const tabBtn = document.createElement('button');
       tabBtn.textContent = tab.label;
-      tabBtn.style.background = tab.active ? '#4ECDC4' : 'transparent';
-      tabBtn.style.color = tab.active ? '#222' : '#fff';
+      tabBtn.style.background = tab.active ? SKINS_CONFIG.tab.activeBg : 'transparent';
+      tabBtn.style.color = tab.active ? SKINS_CONFIG.tab.activeColor : SKINS_CONFIG.tab.inactiveColor;
       tabBtn.style.border = 'none';
-      tabBtn.style.padding = '12px 20px';
+      tabBtn.style.padding = SKINS_CONFIG.tab.padding;
       tabBtn.style.cursor = 'pointer';
       tabBtn.style.borderRadius = '6px 6px 0 0';
-      tabBtn.style.fontWeight = tab.active ? 'bold' : 'normal';
+      tabBtn.style.fontWeight = tab.active ? SKINS_CONFIG.font.tab : 'normal';
       tabBtn.style.marginRight = '4px';
       tabBtn.onclick = () => switchTab(tab.id);
       tabContainer.appendChild(tabBtn);
@@ -740,9 +968,9 @@ window.UI.skinsManager = {
       const tabButtons = tabContainer.querySelectorAll('button');
       tabs.forEach((tab, index) => {
         tab.active = tab.id === tabId;
-        tabButtons[index].style.background = tab.active ? '#4ECDC4' : 'transparent';
-        tabButtons[index].style.color = tab.active ? '#222' : '#fff';
-        tabButtons[index].style.fontWeight = tab.active ? 'bold' : 'normal';
+        tabButtons[index].style.background = tab.active ? SKINS_CONFIG.tab.activeBg : 'transparent';
+        tabButtons[index].style.color = tab.active ? SKINS_CONFIG.tab.activeColor : SKINS_CONFIG.tab.inactiveColor;
+        tabButtons[index].style.fontWeight = tab.active ? SKINS_CONFIG.font.tab : 'normal';
       });
 
       // Clear content area
@@ -765,11 +993,11 @@ window.UI.skinsManager = {
       preferencesSection.style.background = '#2a2a2a';
       preferencesSection.style.borderRadius = '8px';
       
-      preferencesSection.innerHTML = `<h3 style="margin-top:0;margin-bottom:12px;font-size:18px">Render Mode Preferences</h3>`;
+      preferencesSection.innerHTML = `<h3 style="margin-top:0;margin-bottom:12px;font-size:${SKINS_CONFIG.font.section}">Render Mode Preferences</h3>`;
       
       const entityTypes = Object.keys(this.preferences);
       if (entityTypes.length === 0) {
-        preferencesSection.innerHTML += `<p style="color:#aaa;font-style:italic">No entity types found.</p>`;
+        preferencesSection.innerHTML += `<p style="color:${SKINS_CONFIG.color.faded};font-style:italic">No entity types found.</p>`;
       } else {
         entityTypes.forEach(entityType => {
           const entityDiv = document.createElement('div');
@@ -781,7 +1009,7 @@ window.UI.skinsManager = {
           const label = document.createElement('label');
           label.textContent = `${entityType}:`;
           label.style.minWidth = '80px';
-          label.style.fontSize = '14px';
+          label.style.fontSize = SKINS_CONFIG.font.label;
           entityDiv.appendChild(label);
           
           const modes = ['default', 'sprite', 'shape'];
@@ -797,7 +1025,7 @@ window.UI.skinsManager = {
             radioLabel.textContent = mode;
             radioLabel.style.marginRight = '12px';
             radioLabel.style.cursor = 'pointer';
-            radioLabel.style.fontSize = '13px';
+            radioLabel.style.fontSize = SKINS_CONFIG.font.label;
             radioLabel.onclick = () => radio.click();
             
             entityDiv.appendChild(radio);
@@ -818,34 +1046,34 @@ window.UI.skinsManager = {
         const emptyMsg = document.createElement('div');
         emptyMsg.style.textAlign = 'center';
         emptyMsg.style.padding = '40px';
-        emptyMsg.style.color = '#aaa';
+        emptyMsg.style.color = SKINS_CONFIG.color.faded;
         emptyMsg.style.fontStyle = 'italic';
         emptyMsg.textContent = 'No sprite images found. Sprite images will appear here as they are generated by the game.';
         contentArea.appendChild(emptyMsg);
         return;
       }
-      const gridCols = 6;
+      const gridCols = SKINS_CONFIG.grid.cols;
       const gridRows = Math.ceil(spriteEntries.length / gridCols);
       const grid = document.createElement('div');
       grid.style.display = 'grid';
       grid.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
       grid.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
-      grid.style.gap = '12px';
+      grid.style.gap = SKINS_CONFIG.grid.cellGap + 'px';
       grid.style.margin = '16px 0';
       // Render sprite entries
       spriteEntries.forEach(([key, entry]) => {
         const cell = document.createElement('div');
-        cell.style.background = '#333';
-        cell.style.borderRadius = '6px';
+        cell.style.background = SKINS_CONFIG.grid.cellBg;
+        cell.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
         cell.style.display = 'flex';
         cell.style.flexDirection = 'column';
         cell.style.alignItems = 'center';
         cell.style.justifyContent = 'center';
-        cell.style.height = '90px';
+        cell.style.height = SKINS_CONFIG.grid.cellHeight + 'px';
         cell.style.cursor = 'pointer';
         cell.style.position = 'relative';
-        cell.style.transition = 'background 0.2s';
-        cell.style.padding = '8px';
+        cell.style.transition = 'background ' + SKINS_CONFIG.transition.short + 's';
+        cell.style.padding = SKINS_CONFIG.grid.cellPadding + 'px';
         // Image preview
         const img = document.createElement('img');
         img.src = entry.dataUrl;
@@ -853,14 +1081,14 @@ window.UI.skinsManager = {
         img.style.width = '48px';
         img.style.height = '48px';
         img.style.marginBottom = '6px';
-        img.style.borderRadius = '4px';
-        img.style.objectFit = 'cover';
+        img.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
+        img.style.objectFit = SKINS_CONFIG.preview.objectFit;
         cell.appendChild(img);
         // Meta info
         if (entry.size || entry.fixedScreenAngle || entry.drawOffsetX || entry.drawOffsetY) {
           const metaDiv = document.createElement('div');
-          metaDiv.style.fontSize = '10px';
-          metaDiv.style.color = '#6ec6ff';
+          metaDiv.style.fontSize = SKINS_CONFIG.grid.metaFont;
+          metaDiv.style.color = SKINS_CONFIG.color.meta;
           metaDiv.style.marginBottom = '2px';
           metaDiv.textContent = [
             entry.size ? `size: ${entry.size}` : '',
@@ -873,10 +1101,10 @@ window.UI.skinsManager = {
         // Cache key (truncated)
         const keyLabel = document.createElement('div');
         keyLabel.textContent = key.length > 10 ? key.substring(0, 10) + '...' : key;
-        keyLabel.style.fontSize = '10px';
+        keyLabel.style.fontSize = SKINS_CONFIG.grid.keyFont;
         keyLabel.style.textAlign = 'center';
         keyLabel.style.wordBreak = 'break-all';
-        keyLabel.style.color = '#aaa';
+        keyLabel.style.color = SKINS_CONFIG.color.key;
         cell.appendChild(keyLabel);
         // Edit button
         const editBtn = document.createElement('button');
@@ -884,13 +1112,13 @@ window.UI.skinsManager = {
         editBtn.style.position = 'absolute';
         editBtn.style.bottom = '2px';
         editBtn.style.right = '2px';
-        editBtn.style.background = '#4ECDC4';
-        editBtn.style.color = '#222';
+        editBtn.style.background = SKINS_CONFIG.grid.editBtn.background;
+        editBtn.style.color = SKINS_CONFIG.grid.editBtn.color;
         editBtn.style.border = 'none';
-        editBtn.style.borderRadius = '4px';
-        editBtn.style.width = '36px';
-        editBtn.style.height = '20px';
-        editBtn.style.fontSize = '10px';
+        editBtn.style.borderRadius = SKINS_CONFIG.grid.editBtn.borderRadius;
+        editBtn.style.width = SKINS_CONFIG.grid.editBtn.width;
+        editBtn.style.height = SKINS_CONFIG.grid.editBtn.height;
+        editBtn.style.fontSize = SKINS_CONFIG.grid.editBtn.fontSize;
         editBtn.style.cursor = 'pointer';
         editBtn.onclick = (e) => {
           e.stopPropagation();
@@ -903,13 +1131,13 @@ window.UI.skinsManager = {
         deleteBtn.style.position = 'absolute';
         deleteBtn.style.top = '2px';
         deleteBtn.style.right = '2px';
-        deleteBtn.style.background = '#FF6B6B';
-        deleteBtn.style.color = '#fff';
+        deleteBtn.style.background = SKINS_CONFIG.deleteButton.background;
+        deleteBtn.style.color = SKINS_CONFIG.deleteButton.color;
         deleteBtn.style.border = 'none';
-        deleteBtn.style.borderRadius = '50%';
-        deleteBtn.style.width = '16px';
-        deleteBtn.style.height = '16px';
-        deleteBtn.style.fontSize = '12px';
+        deleteBtn.style.borderRadius = SKINS_CONFIG.deleteButton.borderRadius;
+        deleteBtn.style.width = SKINS_CONFIG.deleteButton.width;
+        deleteBtn.style.height = SKINS_CONFIG.deleteButton.height;
+        deleteBtn.style.fontSize = SKINS_CONFIG.deleteButton.fontSize;
         deleteBtn.style.cursor = 'pointer';
         deleteBtn.style.display = 'none';
         deleteBtn.onclick = (e) => {
@@ -918,11 +1146,11 @@ window.UI.skinsManager = {
         };
         cell.appendChild(deleteBtn);
         cell.onmouseenter = () => {
-          cell.style.background = '#444';
+          cell.style.background = SKINS_CONFIG.grid.cellHoverBg;
           deleteBtn.style.display = 'block';
         };
         cell.onmouseleave = () => {
-          cell.style.background = '#333';
+          cell.style.background = SKINS_CONFIG.grid.cellBg;
           deleteBtn.style.display = 'none';
         };
         cell.onclick = () => openUploadDialog(key, false);
@@ -940,34 +1168,34 @@ window.UI.skinsManager = {
         dialogOverlay.style.left = '0';
         dialogOverlay.style.width = '100vw';
         dialogOverlay.style.height = '100vh';
-        dialogOverlay.style.background = 'rgba(0,0,0,0.6)';
-        dialogOverlay.style.zIndex = '2100';
+        dialogOverlay.style.background = SKINS_CONFIG.overlay.strongBackground;
+        dialogOverlay.style.zIndex = SKINS_CONFIG.overlay.strongZIndex;
         dialogOverlay.style.display = 'flex';
         dialogOverlay.style.alignItems = 'center';
         dialogOverlay.style.justifyContent = 'center';
         // Dialog
         const dialog = document.createElement('div');
-        dialog.style.background = '#23232b';
-        dialog.style.borderRadius = '10px';
-        dialog.style.boxShadow = '0 4px 32px rgba(0,0,0,0.8)';
-        dialog.style.padding = '32px 32px 24px 32px';
-        dialog.style.minWidth = '400px';
-        dialog.style.maxWidth = '95vw';
-        dialog.style.color = '#fff';
+        dialog.style.background = SKINS_CONFIG.dialog.background;
+        dialog.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
+        dialog.style.boxShadow = SKINS_CONFIG.dialog.boxShadow;
+        dialog.style.padding = SKINS_CONFIG.dialog.padding;
+        dialog.style.minWidth = SKINS_CONFIG.misc.minDialogWidth;
+        dialog.style.maxWidth = SKINS_CONFIG.misc.maxDialogWidth;
+        dialog.style.color = SKINS_CONFIG.dialog.color;
         dialog.style.position = 'relative';
         dialog.innerHTML = `<h3 style='margin-top:0'>Edit Skin Metadata</h3>
-          <p style='color:#aaa;margin-bottom:20px'>Edit offset and angle for: ${cacheKey}</p>`;
+          <p style='color:${SKINS_CONFIG.color.faded};margin-bottom:20px'>Edit offset and angle for: ${cacheKey}</p>`;
         // Current image preview
         const currentCache = isCanvas ? this.canvasCache : this.imageCache;
         const entry = currentCache[cacheKey] || {};
         const img = document.createElement('img');
-        img.style.width = '64px';
-        img.style.height = '64px';
-        img.style.borderRadius = '6px';
-        img.style.background = '#444';
+        img.style.width = SKINS_CONFIG.preview.width;
+        img.style.height = SKINS_CONFIG.preview.height;
+        img.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
+        img.style.background = SKINS_CONFIG.preview.background;
         img.style.display = entry.dataUrl ? 'block' : 'none';
         img.style.margin = '8px auto 16px auto';
-        img.style.objectFit = 'cover';
+        img.style.objectFit = SKINS_CONFIG.preview.objectFit;
         img.alt = 'Current Image';
         if (entry.dataUrl) img.src = entry.dataUrl;
         dialog.appendChild(img);
@@ -983,20 +1211,39 @@ window.UI.skinsManager = {
         offsetXInput.placeholder = 'Offset X';
         offsetXInput.style.width = '60px';
         offsetXInput.title = 'drawOffsetX';
-        offsetXInput.value = typeof entry.drawOffsetX === 'number' ? entry.drawOffsetX : 0;
+        offsetXInput.style.fontSize = SKINS_CONFIG.font.input;
+        offsetXInput.style.padding = '6px';
+        offsetXInput.style.borderRadius = '4px';
+        offsetXInput.style.border = '1px solid ' + SKINS_CONFIG.color.inputBorder;
+        offsetXInput.style.background = SKINS_CONFIG.color.inputBg;
+        offsetXInput.style.color = SKINS_CONFIG.color.text;
+        offsetXInput.style.textAlign = 'center';
         // Offset Y
         const offsetYInput = document.createElement('input');
         offsetYInput.type = 'number';
         offsetYInput.placeholder = 'Offset Y';
         offsetYInput.style.width = '60px';
         offsetYInput.title = 'drawOffsetY';
-        offsetYInput.value = typeof entry.drawOffsetY === 'number' ? entry.drawOffsetY : 0;
+        offsetYInput.style.fontSize = SKINS_CONFIG.font.input;
+        offsetYInput.style.padding = '6px';
+        offsetYInput.style.borderRadius = '4px';
+        offsetYInput.style.border = '1px solid ' + SKINS_CONFIG.color.inputBorder;
+        offsetYInput.style.background = SKINS_CONFIG.color.inputBg;
+        offsetYInput.style.color = SKINS_CONFIG.color.text;
+        offsetYInput.style.textAlign = 'center';
         // Fixed Angle
         const angleInput = document.createElement('input');
         angleInput.type = 'number';
         angleInput.placeholder = 'Angle (deg)';
         angleInput.style.width = '80px';
         angleInput.title = 'fixedScreenAngle';
+        angleInput.style.fontSize = SKINS_CONFIG.font.input;
+        angleInput.style.padding = '6px';
+        angleInput.style.borderRadius = '4px';
+        angleInput.style.border = '1px solid ' + SKINS_CONFIG.color.inputBorder;
+        angleInput.style.background = SKINS_CONFIG.color.inputBg;
+        angleInput.style.color = SKINS_CONFIG.color.text;
+        angleInput.style.textAlign = 'center';
         angleInput.value = typeof entry.fixedScreenAngle === 'number' ? entry.fixedScreenAngle : 0;
         metaControls.appendChild(offsetXInput);
         metaControls.appendChild(offsetYInput);
@@ -1011,21 +1258,23 @@ window.UI.skinsManager = {
         btnRow.style.gap = '12px';
         const saveBtn = document.createElement('button');
         saveBtn.textContent = 'Save';
-        saveBtn.style.background = '#4ECDC4';
-        saveBtn.style.color = '#222';
+        saveBtn.style.background = SKINS_CONFIG.button.background;
+        saveBtn.style.color = SKINS_CONFIG.button.color;
         saveBtn.style.border = 'none';
         saveBtn.style.borderRadius = '5px';
         saveBtn.style.padding = '7px 18px';
         saveBtn.style.fontWeight = 'bold';
         saveBtn.style.cursor = 'pointer';
+        saveBtn.style.fontSize = SKINS_CONFIG.font.button;
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = 'Cancel';
-        cancelBtn.style.background = '#444';
-        cancelBtn.style.color = '#fff';
+        cancelBtn.style.background = SKINS_CONFIG.button.background;
+        cancelBtn.style.color = SKINS_CONFIG.button.color;
         cancelBtn.style.border = 'none';
         cancelBtn.style.borderRadius = '5px';
         cancelBtn.style.padding = '7px 18px';
         cancelBtn.style.cursor = 'pointer';
+        cancelBtn.style.fontSize = SKINS_CONFIG.font.button;
         btnRow.appendChild(saveBtn);
         btnRow.appendChild(cancelBtn);
         dialog.appendChild(btnRow);
@@ -1097,33 +1346,33 @@ window.UI.skinsManager = {
         const emptyMsg = document.createElement('div');
         emptyMsg.style.textAlign = 'center';
         emptyMsg.style.padding = '40px';
-        emptyMsg.style.color = '#aaa';
+        emptyMsg.style.color = SKINS_CONFIG.color.faded;
         emptyMsg.style.fontStyle = 'italic';
         emptyMsg.textContent = 'No shape images found. Shape images will appear here as they are generated by the game.';
         contentArea.appendChild(emptyMsg);
         return;
       }
-      const gridCols = 6;
+      const gridCols = SKINS_CONFIG.grid.cols;
       const gridRows = Math.ceil(shapeEntries.length / gridCols);
       const grid = document.createElement('div');
       grid.style.display = 'grid';
       grid.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
       grid.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
-      grid.style.gap = '12px';
+      grid.style.gap = SKINS_CONFIG.grid.cellGap + 'px';
       grid.style.margin = '16px 0';
       shapeEntries.forEach(([key, entry]) => {
         const cell = document.createElement('div');
-        cell.style.background = '#333';
-        cell.style.borderRadius = '6px';
+        cell.style.background = SKINS_CONFIG.grid.cellBg;
+        cell.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
         cell.style.display = 'flex';
         cell.style.flexDirection = 'column';
         cell.style.alignItems = 'center';
         cell.style.justifyContent = 'center';
-        cell.style.height = '90px';
+        cell.style.height = SKINS_CONFIG.grid.cellHeight + 'px';
         cell.style.cursor = 'pointer';
         cell.style.position = 'relative';
-        cell.style.transition = 'background 0.2s';
-        cell.style.padding = '8px';
+        cell.style.transition = 'background ' + SKINS_CONFIG.transition.short + 's';
+        cell.style.padding = SKINS_CONFIG.grid.cellPadding + 'px';
         // Image preview
         const img = document.createElement('img');
         img.src = entry.dataUrl;
@@ -1131,14 +1380,14 @@ window.UI.skinsManager = {
         img.style.width = '48px';
         img.style.height = '48px';
         img.style.marginBottom = '6px';
-        img.style.borderRadius = '4px';
-        img.style.objectFit = 'cover';
+        img.style.borderRadius = SKINS_CONFIG.borderRadius + 'px';
+        img.style.objectFit = SKINS_CONFIG.preview.objectFit;
         cell.appendChild(img);
         // Meta info
         if (entry.size || entry.fixedScreenAngle || entry.drawOffsetX || entry.drawOffsetY) {
           const metaDiv = document.createElement('div');
-          metaDiv.style.fontSize = '10px';
-          metaDiv.style.color = '#6ec6ff';
+          metaDiv.style.fontSize = SKINS_CONFIG.grid.metaFont;
+          metaDiv.style.color = SKINS_CONFIG.color.meta;
           metaDiv.style.marginBottom = '2px';
           metaDiv.textContent = [
             entry.size ? `size: ${entry.size}` : '',
@@ -1151,10 +1400,10 @@ window.UI.skinsManager = {
         // Cache key (truncated)
         const keyLabel = document.createElement('div');
         keyLabel.textContent = key.length > 10 ? key.substring(0, 10) + '...' : key;
-        keyLabel.style.fontSize = '10px';
+        keyLabel.style.fontSize = SKINS_CONFIG.grid.keyFont;
         keyLabel.style.textAlign = 'center';
         keyLabel.style.wordBreak = 'break-all';
-        keyLabel.style.color = '#aaa';
+        keyLabel.style.color = SKINS_CONFIG.color.key;
         cell.appendChild(keyLabel);
         // Delete button (small X)
         const deleteBtn = document.createElement('button');
@@ -1162,13 +1411,13 @@ window.UI.skinsManager = {
         deleteBtn.style.position = 'absolute';
         deleteBtn.style.top = '2px';
         deleteBtn.style.right = '2px';
-        deleteBtn.style.background = '#FF6B6B';
-        deleteBtn.style.color = '#fff';
+        deleteBtn.style.background = SKINS_CONFIG.deleteButton.background;
+        deleteBtn.style.color = SKINS_CONFIG.deleteButton.color;
         deleteBtn.style.border = 'none';
-        deleteBtn.style.borderRadius = '50%';
-        deleteBtn.style.width = '16px';
-        deleteBtn.style.height = '16px';
-        deleteBtn.style.fontSize = '12px';
+        deleteBtn.style.borderRadius = SKINS_CONFIG.deleteButton.borderRadius;
+        deleteBtn.style.width = SKINS_CONFIG.deleteButton.width;
+        deleteBtn.style.height = SKINS_CONFIG.deleteButton.height;
+        deleteBtn.style.fontSize = SKINS_CONFIG.deleteButton.fontSize;
         deleteBtn.style.cursor = 'pointer';
         deleteBtn.style.display = 'none';
         deleteBtn.onclick = (e) => {
@@ -1177,11 +1426,11 @@ window.UI.skinsManager = {
         };
         cell.appendChild(deleteBtn);
         cell.onmouseenter = () => {
-          cell.style.background = '#444';
+          cell.style.background = SKINS_CONFIG.grid.cellHoverBg;
           deleteBtn.style.display = 'block';
         };
         cell.onmouseleave = () => {
-          cell.style.background = '#333';
+          cell.style.background = SKINS_CONFIG.grid.cellBg;
           deleteBtn.style.display = 'none';
         };
         cell.onclick = () => openUploadDialog(key, true);
@@ -1202,12 +1451,13 @@ window.UI.skinsManager = {
     closeBtn.style.position = 'absolute';
     closeBtn.style.top = '16px';
     closeBtn.style.right = '16px';
-    closeBtn.style.background = '#444';
-    closeBtn.style.color = '#fff';
+    closeBtn.style.background = SKINS_CONFIG.closeButton.background;
+    closeBtn.style.color = SKINS_CONFIG.closeButton.color;
     closeBtn.style.border = 'none';
-    closeBtn.style.borderRadius = '6px';
-    closeBtn.style.padding = '6px 14px';
+    closeBtn.style.borderRadius = SKINS_CONFIG.closeButton.borderRadius;
+    closeBtn.style.padding = SKINS_CONFIG.closeButton.padding;
     closeBtn.style.cursor = 'pointer';
+    closeBtn.style.fontSize = SKINS_CONFIG.font.button;
     closeBtn.onclick = () => {
       overlay.remove();
       document.removeEventListener('keydown', handleEscape);
