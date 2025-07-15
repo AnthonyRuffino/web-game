@@ -1,16 +1,51 @@
 // world.js
 // World structure, wrapping, and coordinate management
 
+// --- World Configuration ---
+const WORLD_CONFIG = {
+  seed: 12345, // World seed
+  chunkSize: 64, // Tiles per chunk
+  tileSize: 32, // Pixels per tile
+  chunkCount: 64, // Number of chunks per edge (square world)
+  startingChunkX: 0,
+  startingChunkY: 0,
+  traversalSpeed: 200, // Player speed in pixels/sec for traversal time calc
+  // Biome split (fraction of world width for plains, rest is desert)
+  biomePlainsFraction: 0.5,
+  // Entity placement probabilities and parameters
+  grass: {
+    baseChance: 0.01,
+    hashSalt: 0,
+    variationMod: 200,
+    variationDiv: 1000,
+    minChance: 0.01,
+    maxChance: 1,
+    hashLabel: 'grass'
+  },
+  tree: {
+    baseChance: 0.025,
+    hashSalt: 10000,
+    variationMod: 150,
+    variationDiv: 1000,
+    minChance: 0.01,
+    maxChance: 0.04,
+    hashLabel: 'tree'
+  },
+  rock: {
+    baseChance: 0.015,
+    hashSalt: 20000,
+    variationMod: 100,
+    variationDiv: 1000,
+    minChance: 0.005,
+    maxChance: 0.025,
+    hashLabel: 'rock'
+  },
+  keepDistance: 1 // Chunks to keep loaded around player
+};
+
 const World = {
   // Configuration
-  config: {
-    seed: 12345,
-    chunkSize: 16, // tiles per chunk
-    tileSize: 32, // pixels per tile
-    chunkCount: 64, // number of chunks per edge (square world)
-    startingChunkX: 0,
-    startingChunkY: 0
-  },
+  config: { ...WORLD_CONFIG },
 
   // Chunk cache for performance
   chunkCache: new Map(),
@@ -21,12 +56,13 @@ const World = {
   // initialize the world system and classify all chunks by biome
   init() {
     console.log('[World] Initializing world system...');
-    // Classify all chunks by biome (simple left/right split for now)
+    // Classify all chunks by biome (configurable split)
     this.chunkBiomeMap.clear();
     const chunkCount = this.config.chunkCount;
+    const plainsLimit = Math.floor(chunkCount * this.config.biomePlainsFraction);
     for (let y = 0; y < chunkCount; y++) {
       for (let x = 0; x < chunkCount; x++) {
-        const biome = (x < chunkCount / 2) ? 'plains' : 'desert';
+        const biome = (x < plainsLimit) ? 'plains' : 'desert';
         this.chunkBiomeMap.set(this.getChunkKey(x, y), biome);
       }
     }
@@ -46,7 +82,7 @@ const World = {
 
   // Calculate approximate traversal time based on player speed
   calculateTraversalTime() {
-    const playerSpeed = 200; // pixels per second (default)
+    const playerSpeed = this.config.traversalSpeed;
     const traversalDistance = Math.min(this.width, this.height);
     return Math.round(traversalDistance / playerSpeed);
   },
@@ -294,50 +330,28 @@ const World = {
 
   // Determine if grass should be placed at a given tile position
   shouldPlaceGrass(tileX, tileY) {
-    // All magic numbers are now parameters:
-    // baseChance, hashSalt, variationMod, variationDiv, minChance, maxChance
+    const g = this.config.grass;
     return this.shouldPlaceEntity(
-      tileX,
-      tileY,
-      0.01,         // baseChance
-      0,            // hashSalt (can be 0 for grass)
-      200,          // variationMod (was 200)
-      1000,         // variationDiv (was 1000)
-      0.01,         // minChance
-      1,            // maxChance
-      'grass'       // hashLabel
+      tileX, tileY,
+      g.baseChance, g.hashSalt, g.variationMod, g.variationDiv, g.minChance, g.maxChance, g.hashLabel
     );
   },
 
   // Determine if a tree should be placed at a given tile position
   shouldPlaceTree(tileX, tileY) {
-    // Use the common helper for entity placement
+    const t = this.config.tree;
     return this.shouldPlaceEntity(
-      tileX,
-      tileY,
-      0.025,        // baseChance (was 0.025)
-      10000,        // hashSalt (unique for trees)
-      150,          // variationMod (was 150)
-      1000,         // variationDiv (was 1000)
-      0.01,         // minChance (was 0.01)
-      0.04,         // maxChance (was 0.04)
-      'tree'        // hashLabel
+      tileX, tileY,
+      t.baseChance, t.hashSalt, t.variationMod, t.variationDiv, t.minChance, t.maxChance, t.hashLabel
     );
   },
 
   // Determine if a rock should be placed at a given tile position
   shouldPlaceRock(tileX, tileY) {
-    // Use the common helper for entity placement
+    const r = this.config.rock;
     return this.shouldPlaceEntity(
-      tileX,
-      tileY,
-      0.015,        // baseChance (was 0.015)
-      20000,        // hashSalt (unique for rocks)
-      100,          // variationMod (was 100)
-      1000,         // variationDiv (was 1000)
-      0.005,        // minChance (was 0.005)
-      0.025,        // maxChance (was 0.025)
-      'rock'        // hashLabel
+      tileX, tileY,
+      r.baseChance, r.hashSalt, r.variationMod, r.variationDiv, r.minChance, r.maxChance, r.hashLabel
     );
   },
 
@@ -547,7 +561,7 @@ const World = {
     ctx.strokeRect(0, 0, this.width, this.height);
 
     // Only load and render chunks within keepDistance of the player
-    const keepDistance = 5; // or make this configurable
+    const keepDistance = this.config.keepDistance;
     const chunksToLoad = this.getChunksInRadius(cameraX, cameraY, keepDistance);
     const keepChunkKeys = new Set();
     for (const {x, y} of chunksToLoad) {
