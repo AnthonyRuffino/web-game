@@ -1,12 +1,38 @@
 // gameEngine.js
 // Core game logic and state management
 
+// --- Game Engine Config ---
+const GAME_ENGINE_CONFIG = {
+  perspectiveModes: ['fixed-north', 'player-perspective'],
+  defaultPerspective: 'fixed-north',
+  zoom: {
+    initial: 1.0,
+    min: 0.5,
+    max: 3.0,
+    step: 1.1 // zoom in/out multiplier
+  },
+  player: {
+    speed: 400, // pixels per second
+    rotSpeed: Math.PI * 0.8, // radians per second
+    size: 30, // triangle size
+    renderType: 'shape', // 'shape' or 'sprite'
+    color: '#ffeb3b',
+    stroke: '#333',
+    strokeWidth: 3
+  },
+  hoveredGridCellHighlight: {
+    color: 'yellow',
+    opacity: 0.35
+  }
+};
+// --- End Game Engine Config ---
+
 // Perspective mode: 'fixed-north' or 'player-perspective'
-let PERSPECTIVE_MODE = 'fixed-north'; // default
+let PERSPECTIVE_MODE = GAME_ENGINE_CONFIG.defaultPerspective; // default
 
 // Update perspective mode functions to use console system
 window.setPerspectiveMode = function(mode) {
-  if (mode === 'fixed-north' || mode === 'player-perspective') {
+  if (GAME_ENGINE_CONFIG.perspectiveModes.includes(mode)) {
     PERSPECTIVE_MODE = mode;
     console.log('[Game] Perspective mode set to', mode);
   } else {
@@ -15,25 +41,25 @@ window.setPerspectiveMode = function(mode) {
 };
 
 window.togglePerspectiveMode = function() {
-  PERSPECTIVE_MODE = (PERSPECTIVE_MODE === 'fixed-north') ? 'player-perspective' : 'fixed-north';
+  PERSPECTIVE_MODE = (PERSPECTIVE_MODE === GAME_ENGINE_CONFIG.perspectiveModes[0]) ? GAME_ENGINE_CONFIG.perspectiveModes[1] : GAME_ENGINE_CONFIG.perspectiveModes[0];
   console.log('[Game] Perspective mode toggled to', PERSPECTIVE_MODE);
 };
 
 // --- Zoom support ---
-window.ZOOM = 1.0;
-window.ZOOM_MIN = 0.5;
-window.ZOOM_MAX = 3.0;
+window.ZOOM = GAME_ENGINE_CONFIG.zoom.initial;
+window.ZOOM_MIN = GAME_ENGINE_CONFIG.zoom.min;
+window.ZOOM_MAX = GAME_ENGINE_CONFIG.zoom.max;
 
 window.setZoom = function(z) {
   window.ZOOM = Math.max(window.ZOOM_MIN, Math.min(window.ZOOM_MAX, z));
 };
 
 window.zoomIn = function() { 
-  window.setZoom(window.ZOOM * 1.1); 
+  window.setZoom(window.ZOOM * GAME_ENGINE_CONFIG.zoom.step); 
 };
 
 window.zoomOut = function() { 
-  window.setZoom(window.ZOOM / 1.1); 
+  window.setZoom(window.ZOOM / GAME_ENGINE_CONFIG.zoom.step); 
 };
 
 // Attach wheel event to canvas (after DOM loaded)
@@ -43,9 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       if (e.deltaY < 0) {
-        window.setZoom(window.ZOOM * 1.1);
+        window.setZoom(window.ZOOM * GAME_ENGINE_CONFIG.zoom.step);
       } else if (e.deltaY > 0) {
-        window.setZoom(window.ZOOM / 1.1);
+        window.setZoom(window.ZOOM / GAME_ENGINE_CONFIG.zoom.step);
       }
     }, { passive: false });
   }
@@ -57,10 +83,10 @@ const Player = {
   x: 0, // Will be set by world system
   y: 0, // Will be set by world system
   angle: 0, // radians, 0 = up
-  speed: 400, // pixels per second
-  rotSpeed: Math.PI * 0.8, // radians per second (20% slower)
-  size: 30, // triangle size
-  renderType: 'shape', // 'shape' or 'sprite'
+  speed: GAME_ENGINE_CONFIG.player.speed,
+  rotSpeed: GAME_ENGINE_CONFIG.player.rotSpeed,
+  size: GAME_ENGINE_CONFIG.player.size,
+  renderType: GAME_ENGINE_CONFIG.player.renderType,
   sprite: null, // Image object for sprite rendering
 
   update(input, delta) {
@@ -73,7 +99,7 @@ const Player = {
     let moveX = 0;
     let moveY = 0;
     // Rotation
-    const rotationSpeed = (input.backward ? .5 : 1 ) * Player.rotSpeed;
+    const rotationSpeed = (input.backward ? 0.5 : 1 ) * Player.rotSpeed;
     if (input.left) Player.angle -= rotationSpeed * delta;
     if (input.right) Player.angle += rotationSpeed * delta;
     // Forward/backward
@@ -151,9 +177,9 @@ const Player = {
       ctx.lineTo(Player.size * 0.6, Player.size * 0.8); // right base
       ctx.lineTo(-Player.size * 0.6, Player.size * 0.8); // left base
       ctx.closePath();
-      ctx.fillStyle = '#ffeb3b';
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 3;
+      ctx.fillStyle = GAME_ENGINE_CONFIG.player.color;
+      ctx.strokeStyle = GAME_ENGINE_CONFIG.player.stroke;
+      ctx.lineWidth = GAME_ENGINE_CONFIG.player.strokeWidth;
       ctx.fill();
       ctx.stroke();
     }
@@ -228,8 +254,8 @@ const GameEngine = {
       const cellX = tileX * tileSize;
       const cellY = tileY * tileSize;
       ctx.save();
-      ctx.globalAlpha = 0.35;
-      ctx.fillStyle = 'yellow';
+      ctx.globalAlpha = GAME_ENGINE_CONFIG.hoveredGridCellHighlight.opacity;
+      ctx.fillStyle = GAME_ENGINE_CONFIG.hoveredGridCellHighlight.color;
       ctx.fillRect(cellX, cellY, tileSize, tileSize);
       ctx.globalAlpha = 1.0;
       ctx.restore();
