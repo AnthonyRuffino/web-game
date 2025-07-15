@@ -15,10 +15,23 @@ const World = {
   // Chunk cache for performance
   chunkCache: new Map(),
 
-  // Initialize the world system
+  // Map of chunkKey -> biome (e.g., 'plains', 'desert')
+  chunkBiomeMap: new Map(),
+
+  // initialize the world system and classify all chunks by biome
   init() {
     console.log('[World] Initializing world system...');
-    // Initialize EntityRenderer if available
+    // Classify all chunks by biome (simple left/right split for now)
+    this.chunkBiomeMap.clear();
+    const chunkCount = this.config.chunkCount;
+    for (let y = 0; y < chunkCount; y++) {
+      for (let x = 0; x < chunkCount; x++) {
+        const biome = (x < chunkCount / 2) ? 'plains' : 'desert';
+        this.chunkBiomeMap.set(this.getChunkKey(x, y), biome);
+      }
+    }
+    console.log('[World] Biome classification complete.');
+    // (Other world init logic can go here)
     console.log(`[World] World initialized with seed: ${this.config.seed}`);
   },
 
@@ -109,8 +122,8 @@ const World = {
     const chunk = {
       x: chunkX,
       y: chunkY,
-      worldX: chunkX * this.config.chunkSize,
-      worldY: chunkY * this.config.chunkSize,
+      worldX: chunkX * this.config.chunkSize * this.config.tileSize,
+      worldY: chunkY * this.config.chunkSize * this.config.tileSize,
       tiles: [],
       objects: [],
       entities: [],
@@ -356,19 +369,7 @@ const World = {
     // Add all visible chunks (including wrapped ones)
     for (let chunkY = topChunk; chunkY <= bottomChunk; chunkY++) {
       for (let chunkX = leftChunk; chunkX <= rightChunk; chunkX++) {
-        // Handle wrapping for chunks
-        let wrappedChunkX = chunkX;
-        let wrappedChunkY = chunkY;
-        
-        // Wrap X coordinates
-        while (wrappedChunkX < 0) wrappedChunkX += chunkCount.x;
-        while (wrappedChunkX >= chunkCount.x) wrappedChunkX -= chunkCount.x;
-        
-        // Wrap Y coordinates
-        while (wrappedChunkY < 0) wrappedChunkY += chunkCount.y;
-        while (wrappedChunkY >= chunkCount.y) wrappedChunkY -= chunkCount.y;
-        
-        chunks.add(this.getChunkKey(wrappedChunkX, wrappedChunkY));
+        chunks.add(this.getChunkKey(chunkX, chunkY));
       }
     }
     
@@ -686,6 +687,28 @@ const World = {
 
   // Render a single chunk
   renderChunk(ctx, chunk, playerAngle) {
+    // --- Render biome background ---
+    const biome = this.chunkBiomeMap.get(this.getChunkKey(chunk.x, chunk.y)) || 'plains';
+    const bgKey = `background-${biome}`;
+    const bgEntry = EntityRenderer.getCachedImage(bgKey);
+    if (bgEntry && bgEntry.image && bgEntry.image.complete) {
+      const chunkPixelSize = this.config.chunkSize * this.config.tileSize;
+      // Center of chunk in world coordinates
+      const chunkCenterX = chunk.worldX + chunkPixelSize / 2;
+      const chunkCenterY = chunk.worldY + chunkPixelSize / 2;
+      // Draw at world coordinates (camera transform already applied in GameEngine.render)
+      ctx.save();
+      ctx.translate(chunkCenterX, chunkCenterY);
+      ctx.drawImage(
+        bgEntry.image,
+        -chunkPixelSize / 2, -chunkPixelSize / 2,
+        chunkPixelSize, chunkPixelSize
+      );
+      ctx.restore();
+    } else {
+      //console.warn('No background image for chunk', chunk.x, chunk.y, 'biome:', biome, 'bgEntry:', bgEntry);
+    }
+    // --- End biome background ---
     // Render chunk objects only (no X marker here anymore)
     if (chunk.entities && Array.isArray(chunk.entities)) {
       // Sort entities for correct render order:
@@ -695,10 +718,7 @@ const World = {
       const grassEntities = chunk.entities.filter(e => e.type === 'grass');
       const fixedAngleEntities = chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined);
       const otherEntities = chunk.entities.filter(e => e.type !== 'grass' && (e.fixedScreenAngle === null || e.fixedScreenAngle === undefined));
-      
-      // Sort fixedAngleEntities by Y position (descending - higher Y renders on top)
       fixedAngleEntities.sort((a, b) => b.y - a.y);
-      
       const renderOrder = grassEntities.concat(otherEntities, fixedAngleEntities);
       renderOrder.forEach(entity => {
         entity.draw(ctx, playerAngle);

@@ -194,6 +194,19 @@ const EntityRenderer = {
     
     // Ensure all entity types have default preferences
     this.ensureDefaultPreferences();
+
+    // --- Add default biome backgrounds if not present ---
+    const plainsKey = 'background-plains';
+    const desertKey = 'background-desert';
+    if (!this.imageCache.has(plainsKey)) {
+      const plainsSVG = `<svg width="640" height="640" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg"><rect width="640" height="640" fill="#3cb043"/><rect x="40" y="80" width="40" height="40" fill="#4fdc5a"/><rect x="120" y="200" width="40" height="40" fill="#2e8b3d"/><rect x="320" y="320" width="40" height="40" fill="#4fdc5a"/><rect x="480" y="560" width="40" height="40" fill="#2e8b3d"/><rect x="600" y="40" width="40" height="40" fill="#4fdc5a"/><rect x="200" y="400" width="40" height="40" fill="#2e8b3d"/><rect x="560" y="320" width="40" height="40" fill="#4fdc5a"/><rect x="80" y="600" width="40" height="40" fill="#2e8b3d"/></svg>`;
+      await this.createAndCacheImage(plainsKey, plainsSVG, {});
+    }
+    if (!this.imageCache.has(desertKey)) {
+      const desertSVG = `<svg width="640" height="640" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg"><rect width="640" height="640" fill="#f7e9a0"/><rect x="40" y="80" width="40" height="40" fill="#e6d17a"/><rect x="120" y="200" width="40" height="40" fill="#fff7c0"/><rect x="320" y="320" width="40" height="40" fill="#e6d17a"/><rect x="480" y="560" width="40" height="40" fill="#fff7c0"/><rect x="600" y="40" width="40" height="40" fill="#e6d17a"/><rect x="200" y="400" width="40" height="40" fill="#fff7c0"/><rect x="560" y="320" width="40" height="40" fill="#e6d17a"/><rect x="80" y="600" width="40" height="40" fill="#fff7c0"/></svg>`;
+      await this.createAndCacheImage(desertKey, desertSVG, {});
+    }
+    // --- End biome backgrounds ---
     
     // Pre-generate all images for all entity types and render modes
     await this.preGenerateAllImages();
