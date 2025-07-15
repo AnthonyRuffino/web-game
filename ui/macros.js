@@ -26,17 +26,253 @@ const MACRO_CONFIG = {
     gridWidth: 400,
     gridMaxWidth: '80vw',
     gridPadding: '24px 0 12px 0',
-    gridMargin: '24px 0 12px 0'
+    gridMargin: '24px 0 12px 0',
+    cellBg: '#333',
+    cellHoverBg: '#444',
+    cellSelectedBg: '#4ECDC4',
+    cellSelectedText: '#222',
+    cellEmptyPlus: '+',
+    cellEmptyPlusFont: '32px',
+    cellEmptyPlusColor: '#aaa',
+    metaFont: '10px',
+    metaColor: '#6ec6ff',
+    keyFont: '10px',
+    keyColor: '#aaa',
+    editBtn: {
+      background: '#4ECDC4',
+      color: '#222',
+      border: 'none',
+      borderRadius: '4px',
+      width: '36px',
+      height: '20px',
+      fontSize: '10px',
+      cursor: 'pointer',
+      position: 'absolute',
+      bottom: '2px',
+      right: '2px',
+    },
+    deleteBtn: {
+      background: '#FF6B6B',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '50%',
+      width: '16px',
+      height: '16px',
+      fontSize: '12px',
+      cursor: 'pointer',
+      position: 'absolute',
+      top: '2px',
+      right: '2px',
+      display: 'none',
+    },
+    cellPadding: 8,
+    cellMargin: '8px',
+    cellBoxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+    cellTransition: 'background 0.2s',
+    cellFont: '14px sans-serif',
+    cellTitleFont: 'bold 14px sans-serif',
+    cellTitleColor: '#fff',
+    cellEmptyFont: 'italic 14px sans-serif',
+    cellEmptyColor: '#aaa',
+    cellPlusFont: '32px',
+    cellPlusColor: '#aaa',
+    cellHeightPx: '80px',
+    cellWidthPx: '40px',
+    cellMarginBottom: '6px',
+    cellImgWidth: '40px',
+    cellImgHeight: '40px',
+    cellImgBorderRadius: '6px',
+    cellEmptyMsgPadding: '40px',
+    cellEmptyMsgFontStyle: 'italic',
+    cellEmptyMsgColor: '#aaa',
   },
   modal: {
     minWidth: '480px',
     maxWidth: '95vw',
+    minHeight: '340px',
+    maxHeight: '95vh',
     padding: '32px 40px',
     color: '#fff',
     background: '#222',
     borderRadius: '12px',
-    boxShadow: '0 4px 32px rgba(0,0,0,0.7)'
-  }
+    boxShadow: '0 4px 32px rgba(0,0,0,0.7)',
+    zIndex: 2000,
+    titleFont: '24px',
+    sectionFont: '18px',
+    labelFont: '14px',
+    metaFont: '10px',
+    fadedColor: '#aaa',
+    errorColor: '#FF6B6B',
+    warningColor: '#ffeaa7',
+    border: '2px solid #444',
+    margin: '24px 0 12px 0',
+    closeBtn: {
+      background: '#444',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '6px',
+      padding: '6px 14px',
+      cursor: 'pointer',
+      position: 'absolute',
+      top: '16px',
+      right: '16px',
+      fontSize: '14px',
+      zIndex: 2100,
+    },
+    overlay: {
+      background: 'rgba(0,0,0,0.5)',
+      strongBackground: 'rgba(0,0,0,0.6)',
+      zIndex: 2000,
+      strongZIndex: 2100,
+      align: 'center',
+      justify: 'center',
+    },
+    button: {
+      background: '#4ECDC4',
+      color: '#222',
+      border: 'none',
+      borderRadius: '5px',
+      padding: '7px 18px',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      marginRight: '8px',
+      fontSize: '14px',
+    },
+    deleteButton: {
+      background: '#FF6B6B',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '5px',
+      padding: '7px 18px',
+      cursor: 'pointer',
+      fontSize: '14px',
+    },
+    input: {
+      width: '100%',
+      margin: '4px 0 12px 0',
+      fontSize: '1rem',
+      padding: '6px',
+      borderRadius: '4px',
+      border: '1px solid #444',
+      background: '#23232b',
+      color: '#fff',
+      textAlign: 'left',
+    },
+    preview: {
+      width: '48px',
+      height: '48px',
+      borderRadius: '6px',
+      background: '#444',
+      display: 'block',
+      margin: '8px auto 8px auto',
+      objectFit: 'cover',
+    },
+    plus: {
+      fontSize: '32px',
+      color: '#aaa',
+      userSelect: 'none',
+    },
+    transition: {
+      short: 0.2,
+      long: 0.4,
+    },
+    durations: {
+      slotActive: 150,
+      fade: 200,
+    },
+    barSelect: {
+      width: '100%',
+      margin: '4px 0 8px 0',
+    },
+    slotSelect: {
+      width: '100%',
+      margin: '4px 0 8px 0',
+    },
+    btnRow: {
+      marginTop: '18px',
+      textAlign: 'right',
+      display: 'flex',
+      justifyContent: 'flex-end',
+      gap: '12px',
+    },
+    label: {
+      display: 'block',
+      marginTop: '8px',
+    },
+    barLabel: {
+      display: 'block',
+      marginTop: '16px',
+    },
+    h3: {
+      marginTop: '0',
+    },
+    h2: {
+      marginTop: '0',
+    },
+  },
+  tab: {
+    padding: '12px 20px',
+    borderRadius: '6px 6px 0 0',
+    fontWeight: 'bold',
+    marginRight: '4px',
+    activeBg: '#4ECDC4',
+    activeColor: '#222',
+    inactiveBg: 'transparent',
+    inactiveColor: '#fff',
+    fontSize: '13px',
+  },
+  section: {
+    marginBottom: '20px',
+    padding: '16px',
+    background: '#2a2a2a',
+    borderRadius: '8px',
+    labelFont: '14px',
+    labelColor: '#fff',
+    radioMarginRight: '12px',
+    radioFontSize: '13px',
+    radioLabelFont: '13px',
+    radioLabelColor: '#fff',
+    radioLabelActiveColor: '#4ECDC4',
+  },
+  row: {
+    gap: '12px',
+    marginBottom: '8px',
+    alignItems: 'center',
+    display: 'flex',
+  },
+  col: {
+    minWidth: '80px',
+    fontSize: '14px',
+    color: '#fff',
+  },
+  slot: {
+    fontSize: '12px',
+    color: '#fff',
+    emptyFont: '10px',
+    emptyColor: 'rgba(136,136,136,0.4)',
+    labelYOffset: 20,
+  },
+  preview: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '6px',
+    background: '#444',
+    display: 'block',
+    margin: '8px auto 8px auto',
+    objectFit: 'cover',
+  },
+  animation: {
+    fadeIn: 200,
+    fadeOut: 200,
+  },
+  timeout: {
+    slotActive: 150,
+    modal: 300,
+  },
+  transition: {
+    short: 0.2,
+    long: 0.4,
+  },
 };
 // --- End Macro Config ---
 
@@ -310,8 +546,8 @@ window.UI.macroManager = {
     overlay.style.left = '0';
     overlay.style.width = '100vw';
     overlay.style.height = '100vh';
-    overlay.style.background = 'rgba(0,0,0,0.5)';
-    overlay.style.zIndex = '2000';
+    overlay.style.background = MACRO_CONFIG.modal.overlay.background;
+    overlay.style.zIndex = MACRO_CONFIG.modal.overlay.zIndex;
     overlay.style.display = 'flex';
     overlay.style.alignItems = 'center';
     overlay.style.justifyContent = 'center';
@@ -345,21 +581,21 @@ window.UI.macroManager = {
       dialogOverlay.style.left = '0';
       dialogOverlay.style.width = '100vw';
       dialogOverlay.style.height = '100vh';
-      dialogOverlay.style.background = 'rgba(0,0,0,0.6)';
-      dialogOverlay.style.zIndex = '2100';
+      dialogOverlay.style.background = MACRO_CONFIG.modal.overlay.strongBackground;
+      dialogOverlay.style.zIndex = MACRO_CONFIG.modal.overlay.strongZIndex;
       dialogOverlay.style.display = 'flex';
       dialogOverlay.style.alignItems = 'center';
       dialogOverlay.style.justifyContent = 'center';
 
       // Dialog
       const dialog = document.createElement('div');
-      dialog.style.background = '#23232b';
+      dialog.style.background = MACRO_CONFIG.modal.background;
       dialog.style.borderRadius = '10px';
       dialog.style.boxShadow = '0 4px 32px rgba(0,0,0,0.8)';
       dialog.style.padding = '32px 32px 24px 32px';
       dialog.style.minWidth = '340px';
       dialog.style.maxWidth = '95vw';
-      dialog.style.color = '#fff';
+      dialog.style.color = MACRO_CONFIG.modal.color;
       dialog.style.position = 'relative';
 
       dialog.innerHTML = `<h3 style='margin-top:0'>Create Macro</h3>`;
@@ -373,7 +609,7 @@ window.UI.macroManager = {
       nameInput.type = 'text';
       nameInput.style.width = '100%';
       nameInput.style.margin = '4px 0 12px 0';
-      nameInput.style.fontSize = '1rem';
+      nameInput.style.fontSize = MACRO_CONFIG.modal.input.fontSize;
       nameInput.style.padding = '6px';
       nameInput.style.borderRadius = '4px';
       nameInput.style.border = '1px solid #444';
@@ -394,7 +630,7 @@ window.UI.macroManager = {
       cmdInput.type = 'text';
       cmdInput.style.width = '100%';
       cmdInput.style.margin = '4px 0 12px 0';
-      cmdInput.style.fontSize = '1rem';
+      cmdInput.style.fontSize = MACRO_CONFIG.modal.input.fontSize;
       cmdInput.style.padding = '6px';
       cmdInput.style.borderRadius = '4px';
       cmdInput.style.border = '1px solid #444';
@@ -412,7 +648,7 @@ window.UI.macroManager = {
       iconPreview.style.width = '48px';
       iconPreview.style.height = '48px';
       iconPreview.style.borderRadius = '6px';
-      iconPreview.style.background = '#444';
+      iconPreview.style.background = MACRO_CONFIG.modal.preview.background;
       iconPreview.style.display = 'block';
       iconPreview.style.margin = '8px auto 8px auto';
       iconPreview.style.objectFit = 'cover';
@@ -463,8 +699,8 @@ window.UI.macroManager = {
       btnRow.style.gap = '12px';
       const saveBtn = document.createElement('button');
       saveBtn.textContent = 'Save';
-      saveBtn.style.background = '#4ECDC4';
-      saveBtn.style.color = '#222';
+      saveBtn.style.background = MACRO_CONFIG.modal.button.background;
+      saveBtn.style.color = MACRO_CONFIG.modal.button.color;
       saveBtn.style.border = 'none';
       saveBtn.style.borderRadius = '5px';
       saveBtn.style.padding = '7px 18px';
@@ -538,21 +774,21 @@ window.UI.macroManager = {
       dialogOverlay.style.left = '0';
       dialogOverlay.style.width = '100vw';
       dialogOverlay.style.height = '100vh';
-      dialogOverlay.style.background = 'rgba(0,0,0,0.6)';
-      dialogOverlay.style.zIndex = '2100';
+      dialogOverlay.style.background = MACRO_CONFIG.modal.overlay.strongBackground;
+      dialogOverlay.style.zIndex = MACRO_CONFIG.modal.overlay.strongZIndex;
       dialogOverlay.style.display = 'flex';
       dialogOverlay.style.alignItems = 'center';
       dialogOverlay.style.justifyContent = 'center';
 
       // Dialog
       const dialog = document.createElement('div');
-      dialog.style.background = '#23232b';
+      dialog.style.background = MACRO_CONFIG.modal.background;
       dialog.style.borderRadius = '10px';
       dialog.style.boxShadow = '0 4px 32px rgba(0,0,0,0.8)';
       dialog.style.padding = '32px 32px 24px 32px';
       dialog.style.minWidth = '340px';
       dialog.style.maxWidth = '95vw';
-      dialog.style.color = '#fff';
+      dialog.style.color = MACRO_CONFIG.modal.color;
       dialog.style.position = 'relative';
       dialog.innerHTML = `<h3 style='margin-top:0'>Edit Macro</h3>`;
 
@@ -566,7 +802,7 @@ window.UI.macroManager = {
       nameInput.value = macro.name;
       nameInput.style.width = '100%';
       nameInput.style.margin = '4px 0 12px 0';
-      nameInput.style.fontSize = '1rem';
+      nameInput.style.fontSize = MACRO_CONFIG.modal.input.fontSize;
       nameInput.style.padding = '6px';
       nameInput.style.borderRadius = '4px';
       nameInput.style.border = '1px solid #444';
@@ -588,7 +824,7 @@ window.UI.macroManager = {
       cmdInput.value = macro.command;
       cmdInput.style.width = '100%';
       cmdInput.style.margin = '4px 0 12px 0';
-      cmdInput.style.fontSize = '1rem';
+      cmdInput.style.fontSize = MACRO_CONFIG.modal.input.fontSize;
       cmdInput.style.padding = '6px';
       cmdInput.style.borderRadius = '4px';
       cmdInput.style.border = '1px solid #444';
@@ -606,7 +842,7 @@ window.UI.macroManager = {
       iconPreview.style.width = '48px';
       iconPreview.style.height = '48px';
       iconPreview.style.borderRadius = '6px';
-      iconPreview.style.background = '#444';
+      iconPreview.style.background = MACRO_CONFIG.modal.preview.background;
       iconPreview.style.display = 'block';
       iconPreview.style.margin = '8px auto 8px auto';
       iconPreview.style.objectFit = 'cover';
@@ -707,8 +943,8 @@ window.UI.macroManager = {
       btnRow.style.gap = '12px';
       const saveBtn = document.createElement('button');
       saveBtn.textContent = 'Save';
-      saveBtn.style.background = '#4ECDC4';
-      saveBtn.style.color = '#222';
+      saveBtn.style.background = MACRO_CONFIG.modal.button.background;
+      saveBtn.style.color = MACRO_CONFIG.modal.button.color;
       saveBtn.style.border = 'none';
       saveBtn.style.borderRadius = '5px';
       saveBtn.style.padding = '7px 18px';
@@ -724,8 +960,8 @@ window.UI.macroManager = {
       bindBtn.style.cursor = 'pointer';
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Delete';
-      deleteBtn.style.background = '#FF6B6B';
-      deleteBtn.style.color = '#fff';
+      deleteBtn.style.background = MACRO_CONFIG.modal.deleteButton.background;
+      deleteBtn.style.color = MACRO_CONFIG.modal.deleteButton.color;
       deleteBtn.style.border = 'none';
       deleteBtn.style.borderRadius = '5px';
       deleteBtn.style.padding = '7px 18px';
@@ -818,13 +1054,13 @@ window.UI.macroManager = {
 
     // Create modal content
     const modal = document.createElement('div');
-    modal.style.background = '#222';
+    modal.style.background = MACRO_CONFIG.modal.background;
     modal.style.borderRadius = '12px';
     modal.style.boxShadow = '0 4px 32px rgba(0,0,0,0.7)';
     modal.style.padding = '32px 40px';
     modal.style.minWidth = '480px';
     modal.style.maxWidth = '95vw';
-    modal.style.color = '#fff';
+    modal.style.color = MACRO_CONFIG.modal.color;
     modal.style.position = 'relative';
     modal.innerHTML = `<h2 style="margin-top:0">Macro Management</h2>`;
 
@@ -847,7 +1083,7 @@ window.UI.macroManager = {
     // Render slots
     for (let i = 0; i < totalSlots; i++) {
       const cell = document.createElement('div');
-      cell.style.background = '#333';
+      cell.style.background = MACRO_CONFIG.grid.cellBg;
       cell.style.borderRadius = '8px';
       cell.style.display = 'flex';
       cell.style.flexDirection = 'column';
@@ -857,8 +1093,8 @@ window.UI.macroManager = {
       cell.style.cursor = 'pointer';
       cell.style.position = 'relative';
       cell.style.transition = 'background 0.2s';
-      cell.onmouseenter = () => cell.style.background = '#444';
-      cell.onmouseleave = () => cell.style.background = '#333';
+      cell.onmouseenter = () => cell.style.background = MACRO_CONFIG.grid.cellHoverBg;
+      cell.onmouseleave = () => cell.style.background = MACRO_CONFIG.grid.cellBg;
 
       if (macroNames[i]) {
         // Filled cell: show icon and name
@@ -876,7 +1112,7 @@ window.UI.macroManager = {
         }
         const name = document.createElement('div');
         name.textContent = macro.name;
-        name.style.fontSize = '14px';
+        name.style.fontSize = MACRO_CONFIG.grid.cellFont;
         name.style.textAlign = 'center';
         name.style.wordBreak = 'break-all';
         cell.appendChild(name);
@@ -884,9 +1120,9 @@ window.UI.macroManager = {
       } else {
         // Empty cell: show plus
         const plus = document.createElement('div');
-        plus.textContent = '+';
-        plus.style.fontSize = '32px';
-        plus.style.color = '#aaa';
+        plus.textContent = MACRO_CONFIG.grid.cellEmptyPlus;
+        plus.style.fontSize = MACRO_CONFIG.grid.cellEmptyPlusFont;
+        plus.style.color = MACRO_CONFIG.grid.cellEmptyPlusColor;
         plus.style.userSelect = 'none';
         cell.appendChild(plus);
         cell.onclick = () => openCreateDialog(i);
@@ -902,8 +1138,8 @@ window.UI.macroManager = {
     closeBtn.style.position = 'absolute';
     closeBtn.style.top = '16px';
     closeBtn.style.right = '16px';
-    closeBtn.style.background = '#444';
-    closeBtn.style.color = '#fff';
+    closeBtn.style.background = MACRO_CONFIG.modal.closeBtn.background;
+    closeBtn.style.color = MACRO_CONFIG.modal.closeBtn.color;
     closeBtn.style.border = 'none';
     closeBtn.style.borderRadius = '6px';
     closeBtn.style.padding = '6px 14px';
