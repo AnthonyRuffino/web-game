@@ -205,6 +205,27 @@ if (!window.ActionBar) {
       }
       this.scale = 1.0;
     }
+    
+    _syncPositionWithCanvas() {
+      // Get the actual current position of the canvas on screen
+      const rect = this.canvas.getBoundingClientRect();
+      const winH = window.innerHeight;
+      
+      // Update the position object to match the actual canvas position
+      this.position.left = rect.left;
+      
+      // Determine if we should use top or bottom positioning
+      if (this.orientation === 'horizontal' && rect.top > winH / 2) {
+        // Horizontal bar in bottom half - use bottom positioning with menuBarOffset
+        delete this.position.top;
+        this.position.bottom = winH - rect.bottom - ACTION_BAR_CONFIG.menuBarOffset;
+      } else {
+        // Use top positioning
+        this.position.top = rect.top;
+        delete this.position.bottom;
+      }
+    }
+    
     _setupListeners() {
       this.canvas.addEventListener('mousemove', (e) => this._handleMouseMove(e));
       this.canvas.addEventListener('click', (e) => this._handleClick(e));
@@ -367,6 +388,8 @@ if (!window.ActionBar) {
         
         this._updateSize();
         this.render();
+        // Sync the position object with the actual canvas position before saving
+        this._syncPositionWithCanvas();
         if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
         e.preventDefault();
         e.stopPropagation();
