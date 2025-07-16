@@ -1032,20 +1032,30 @@ window.UI.console = {
 
         case 'create':
           if (args.length < 2) {
-            console.error('[Console] Usage: minimap create <name>');
+            console.error('[Console] Usage: minimap create <name> [corner]');
+            console.log('[Console] Corners: bottomLeft (default), topRight');
             return;
           }
           if (UI.minimapManager) {
             try {
-              UI.minimapManager.createMinimap({
+              const corner = args[2] || 'bottomLeft';
+              const config = {
                 name: args[1],
                 width: 200,
                 height: 150,
                 position: { right: 20, top: 20 },
                 zIndex: 997,
                 opacity: 0.9
-              });
-              console.log(`[Console] Created minimap '${args[1]}'`);
+              };
+              
+              // Add corner-specific configuration
+              if (corner === 'topRight') {
+                config.handleCorner = 'topRight';
+                config.handlePosition = { dx: 4, dy: 4 }; // top right corner
+              }
+              
+              UI.minimapManager.createMinimap(config);
+              console.log(`[Console] Created minimap '${args[1]}' with handle in ${corner} corner`);
             } catch (error) {
               console.error(`[Console] Failed to create minimap: ${error.message}`);
             }

@@ -70,6 +70,7 @@ if (!window.Minimap) {
       this._handleLockedShadow = config.handleLockedShadow || MINIMAP_CONFIG.handleLockedShadow;
       this._handleEditableShadow = config.handleEditableShadow || MINIMAP_CONFIG.handleEditableShadow;
       this._handlePosition = config.handlePosition || MINIMAP_CONFIG.handlePosition;
+      this._handleCorner = config.handleCorner || 'bottomLeft'; // 'bottomLeft', 'topRight', etc.
       this._borderThreshold = config.borderThreshold || MINIMAP_CONFIG.borderThreshold;
       this._handleActive = config.handleActive !== undefined ? config.handleActive : false; // true if dot is green (unlocked)
       this._jsonPopup = null; // reference to popup DOM
@@ -179,9 +180,17 @@ if (!window.Minimap) {
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      // Bottom left for handle
-      const handleX = this._handlePosition.dx + this._handleSize / 2;
-      const handleY = this.canvas.height - this._handlePosition.dy - this._handleSize / 2;
+      
+      // Calculate handle position based on corner
+      let handleX, handleY;
+      if (this._handleCorner === 'topRight') {
+        handleX = this.canvas.width - this._handlePosition.dx - this._handleSize / 2;
+        handleY = this._handlePosition.dy + this._handleSize / 2;
+      } else {
+        // Default: bottom left
+        handleX = this._handlePosition.dx + this._handleSize / 2;
+        handleY = this.canvas.height - this._handlePosition.dy - this._handleSize / 2;
+      }
       
       if (
         x >= handleX - this._handleSize / 2 && x <= handleX + this._handleSize / 2 &&
@@ -282,10 +291,17 @@ if (!window.Minimap) {
         ctx.fillText(text, canvas.width - this.padding, canvas.height - this.padding);
       }
       
-      // Draw draggable handle (dot) in bottom left - always on top
+      // Draw draggable handle (dot) - always on top
       ctx.save();
-      const handleDotX = this._handlePosition.dx + this._handleSize / 2;
-      const handleDotY = canvas.height - this._handlePosition.dy - this._handleSize / 2;
+      let handleDotX, handleDotY;
+      if (this._handleCorner === 'topRight') {
+        handleDotX = canvas.width - this._handlePosition.dx - this._handleSize / 2;
+        handleDotY = this._handlePosition.dy + this._handleSize / 2;
+      } else {
+        // Default: bottom left
+        handleDotX = this._handlePosition.dx + this._handleSize / 2;
+        handleDotY = canvas.height - this._handlePosition.dy - this._handleSize / 2;
+      }
       ctx.beginPath();
       ctx.arc(
         handleDotX,
@@ -436,6 +452,7 @@ if (!window.Minimap) {
         handleLockedShadow: this._handleLockedShadow,
         handleEditableShadow: this._handleEditableShadow,
         handlePosition: this._handlePosition,
+        handleCorner: this._handleCorner,
         borderThreshold: this._borderThreshold,
         handleActive: this._handleActive
       };
