@@ -1038,7 +1038,7 @@ window.UI.console = {
           }
           if (UI.minimapManager) {
             try {
-              const corner = args[2] || 'bottomLeft';
+              const corner = args[2] || 'topRight';
               const config = {
                 name: args[1],
                 width: 200,
