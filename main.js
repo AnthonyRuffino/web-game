@@ -85,7 +85,7 @@ async function startGame() {
 
   // Initialize persistence system (loads saved state if available)
   if (typeof Persistence !== 'undefined' && Persistence.init) {
-    // Persistence.init() is called automatically when DOM loads
+    Persistence.init();
     // It will load saved state and override the default starting position if needed
     console.log('[Main] Persistence system will initialize automatically');
   }
