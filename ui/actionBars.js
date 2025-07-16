@@ -108,6 +108,7 @@ if (!window.ActionBar) {
       this._dotPositions = config.dotPositions || ACTION_BAR_CONFIG.dotPositions;
       this._handleActive = config.handleActive || false; // true if dot is green (unlocked)
       this._dotGap = config.dotGap || ACTION_BAR_CONFIG.dotGap;
+      this._jsonPopup = null; // reference to popup DOM
       this._createCanvas();
       this._setupListeners();
       this.render();
@@ -290,6 +291,13 @@ if (!window.ActionBar) {
         x >= handleX - this._handleSize / 2 && x <= handleX + this._handleSize / 2 &&
         y >= handleY - this._handleSize / 2 && y <= handleY + this._handleSize / 2
       ) {
+        // Ctrl+Click on green dot: show JSON popup
+        if (this._handleActive && e.ctrlKey) {
+          this._showJsonPopup();
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         // Toggle handle active state (red <-> green)
         this._handleActive = !this._handleActive;
         this.render();
@@ -526,6 +534,141 @@ if (!window.ActionBar) {
     hide() {
       this.visible = false;
       this.canvas.style.display = 'none';
+    }
+    _showJsonPopup() {
+      if (this._jsonPopup) return; // already open
+      // Create popup elements
+      const popup = document.createElement('div');
+      popup.style.position = 'fixed';
+      popup.style.left = '50%';
+      popup.style.top = '50%';
+      popup.style.transform = 'translate(-50%, -50%)';
+      popup.style.background = '#222';
+      popup.style.color = '#fff';
+      popup.style.padding = '20px';
+      popup.style.borderRadius = '8px';
+      popup.style.zIndex = 9999;
+      popup.style.boxShadow = '0 4px 32px #000a';
+      popup.style.minWidth = '400px';
+      popup.style.maxWidth = '90vw';
+      popup.style.maxHeight = '80vh';
+      popup.style.overflow = 'auto';
+
+      const label = document.createElement('div');
+      label.textContent = 'Edit Action Bar JSON:';
+      label.style.marginBottom = '8px';
+      popup.appendChild(label);
+
+      const textarea = document.createElement('textarea');
+      textarea.style.width = '100%';
+      textarea.style.height = '200px';
+      textarea.style.background = '#111';
+      textarea.style.color = '#fff';
+      textarea.style.fontFamily = 'monospace';
+      textarea.style.fontSize = '14px';
+      textarea.value = JSON.stringify(this._getSerializableConfig(), null, 2);
+      popup.appendChild(textarea);
+
+      const errorDiv = document.createElement('div');
+      errorDiv.style.color = '#ff5252';
+      errorDiv.style.margin = '8px 0';
+      popup.appendChild(errorDiv);
+
+      const btnRow = document.createElement('div');
+      btnRow.style.display = 'flex';
+      btnRow.style.justifyContent = 'flex-end';
+      btnRow.style.gap = '8px';
+
+      const submitBtn = document.createElement('button');
+      submitBtn.textContent = 'Save';
+      submitBtn.style.background = '#43a047';
+      submitBtn.style.color = '#fff';
+      submitBtn.style.border = 'none';
+      submitBtn.style.padding = '6px 16px';
+      submitBtn.style.borderRadius = '4px';
+      submitBtn.style.cursor = 'pointer';
+      btnRow.appendChild(submitBtn);
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.background = '#e53935';
+      cancelBtn.style.color = '#fff';
+      cancelBtn.style.border = 'none';
+      cancelBtn.style.padding = '6px 16px';
+      cancelBtn.style.borderRadius = '4px';
+      cancelBtn.style.cursor = 'pointer';
+      btnRow.appendChild(cancelBtn);
+
+      popup.appendChild(btnRow);
+
+      document.body.appendChild(popup);
+      this._jsonPopup = popup;
+
+      cancelBtn.onclick = () => {
+        document.body.removeChild(popup);
+        this._jsonPopup = null;
+      };
+
+      submitBtn.onclick = () => {
+        try {
+          const newConfig = JSON.parse(textarea.value);
+          // Update this bar with new config
+          this._applyConfig(newConfig);
+          if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
+          document.body.removeChild(popup);
+          this._jsonPopup = null;
+          this.render();
+        } catch (err) {
+          errorDiv.textContent = 'Invalid JSON: ' + err.message;
+        }
+      };
+    }
+    _getSerializableConfig() {
+      // Return the config as saved in saveAllBars
+      return {
+        name: this.name,
+        orientation: this.orientation,
+        position: this.position,
+        slots: this.slots,
+        slotSize: this.slotSize,
+        spacing: this.spacing,
+        zIndex: this.zIndex,
+        opacity: this.opacity,
+        colors: this.colors,
+        keyBindings: this.keyBindings,
+        macroBindings: this.macroBindings,
+        handleSize: this._handleSize,
+        toggleSize: this._toggleSize,
+        handleLockedColor: this._handleLockedColor,
+        handleEditableColor: this._handleEditableColor,
+        handleLockedShadow: this._handleLockedShadow,
+        handleEditableShadow: this._handleEditableShadow,
+        toggleDotColor: this._toggleDotColor,
+        toggleDotShadow: this._toggleDotShadow,
+        toggleIconColor: this._toggleIconColor,
+        dotPositions: this._dotPositions,
+        dotGap: this._dotGap,
+        handleActive: this._handleActive
+      };
+    }
+    _applyConfig(newConfig) {
+      // Apply config fields to this bar
+      for (const k in newConfig) {
+        if (k in this) {
+          this[k] = newConfig[k];
+        } else if (k.startsWith('_') && (k.slice(1) in this)) {
+          this[k] = newConfig[k];
+        } else {
+          // For private fields
+          this['_' + k] = newConfig[k];
+        }
+      }
+      // Special: update dot positions and sizes
+      this._handleSize = newConfig.handleSize || this._handleSize;
+      this._toggleSize = newConfig.toggleSize || this._toggleSize;
+      this._dotGap = newConfig.dotGap || this._dotGap;
+      this._dotPositions = newConfig.dotPositions || this._dotPositions;
+      this._updateSize();
     }
   }
   window.ActionBar = ActionBar;
