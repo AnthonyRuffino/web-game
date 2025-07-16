@@ -183,13 +183,24 @@ if (!window.Minimap) {
       
       // Calculate handle position based on corner
       let handleX, handleY;
-      if (this._handleCorner === 'topRight') {
-        handleX = this.canvas.width - this._handlePosition.dx - this._handleSize / 2;
-        handleY = this._handlePosition.dy + this._handleSize / 2;
-      } else {
-        // Default: bottom left
-        handleX = this._handlePosition.dx + this._handleSize / 2;
-        handleY = this.canvas.height - this._handlePosition.dy - this._handleSize / 2;
+      switch (this._handleCorner) {
+        case 'topRight':
+          handleX = this.canvas.width - this._handlePosition.dx - this._handleSize / 2;
+          handleY = this._handlePosition.dy + this._handleSize / 2;
+          break;
+        case 'topLeft':
+          handleX = this._handlePosition.dx + this._handleSize / 2;
+          handleY = this._handlePosition.dy + this._handleSize / 2;
+          break;
+        case 'bottomRight':
+          handleX = this.canvas.width - this._handlePosition.dx - this._handleSize / 2;
+          handleY = this.canvas.height - this._handlePosition.dy - this._handleSize / 2;
+          break;
+        case 'bottomLeft':
+        default:
+          handleX = this._handlePosition.dx + this._handleSize / 2;
+          handleY = this.canvas.height - this._handlePosition.dy - this._handleSize / 2;
+          break;
       }
       
       if (
@@ -294,13 +305,24 @@ if (!window.Minimap) {
       // Draw draggable handle (dot) - always on top
       ctx.save();
       let handleDotX, handleDotY;
-      if (this._handleCorner === 'topRight') {
-        handleDotX = canvas.width - this._handlePosition.dx - this._handleSize / 2;
-        handleDotY = this._handlePosition.dy + this._handleSize / 2;
-      } else {
-        // Default: bottom left
-        handleDotX = this._handlePosition.dx + this._handleSize / 2;
-        handleDotY = canvas.height - this._handlePosition.dy - this._handleSize / 2;
+      switch (this._handleCorner) {
+        case 'topRight':
+          handleDotX = canvas.width - this._handlePosition.dx - this._handleSize / 2;
+          handleDotY = this._handlePosition.dy + this._handleSize / 2;
+          break;
+        case 'topLeft':
+          handleDotX = this._handlePosition.dx + this._handleSize / 2;
+          handleDotY = this._handlePosition.dy + this._handleSize / 2;
+          break;
+        case 'bottomRight':
+          handleDotX = canvas.width - this._handlePosition.dx - this._handleSize / 2;
+          handleDotY = canvas.height - this._handlePosition.dy - this._handleSize / 2;
+          break;
+        case 'bottomLeft':
+        default:
+          handleDotX = this._handlePosition.dx + this._handleSize / 2;
+          handleDotY = canvas.height - this._handlePosition.dy - this._handleSize / 2;
+          break;
       }
       ctx.beginPath();
       ctx.arc(

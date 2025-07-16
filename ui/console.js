@@ -1033,7 +1033,7 @@ window.UI.console = {
         case 'create':
           if (args.length < 2) {
             console.error('[Console] Usage: minimap create <name> [corner]');
-            console.log('[Console] Corners: bottomLeft (default), topRight');
+            console.log('[Console] Corners: bottomLeft (default), topLeft, topRight, bottomRight');
             return;
           }
           if (UI.minimapManager) {
@@ -1049,9 +1049,9 @@ window.UI.console = {
               };
               
               // Add corner-specific configuration
-              if (corner === 'topRight') {
-                config.handleCorner = 'topRight';
-                config.handlePosition = { dx: 4, dy: 4 }; // top right corner
+              if (['topLeft', 'topRight', 'bottomLeft', 'bottomRight'].includes(corner)) {
+                config.handleCorner = corner;
+                config.handlePosition = { dx: 4, dy: 4 }; // 4px padding from corner
               }
               
               UI.minimapManager.createMinimap(config);
