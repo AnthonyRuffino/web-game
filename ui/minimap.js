@@ -585,6 +585,8 @@ function createDefaultMinimap() {
   if (!window.UI.minimapManager.getMinimap('mainMinimap')) {
     window.UI.minimapManager.createMinimap({
       name: 'mainMinimap',
+      handleCorner: 'topRight',
+      handlePosition: { dx: 4, dy: 4 },
       width: 200,
       height: 150,
       position: { right: 20, top: 20 },
