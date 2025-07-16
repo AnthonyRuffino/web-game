@@ -1008,6 +1008,7 @@ window.UI.console = {
         console.log('  minimap remove <name> - Remove minimap');
         console.log('  minimap config <name> - Show minimap configuration');
         console.log('  minimap togglechunks <name> - Toggle chunk display on minimap');
+        console.log('  minimap togglebiomes <name> - Toggle biome tile display on minimap');
         return;
       }
 
@@ -1107,6 +1108,26 @@ window.UI.console = {
               minimap.render();
               UI.minimapManager.saveAllMinimaps();
               console.log(`[Console] Minimap '${args[1]}' chunks display is now ${minimap.showChunks ? 'ON' : 'OFF'}`);
+            } else {
+              console.error(`[Console] Minimap '${args[1]}' not found`);
+            }
+          } else {
+            console.error('[Console] Minimap manager not available');
+          }
+          break;
+
+        case 'togglebiomes':
+          if (args.length < 2) {
+            console.error('[Console] Usage: minimap togglebiomes <name>');
+            return;
+          }
+          if (UI.minimapManager) {
+            const minimap = UI.minimapManager.getMinimap(args[1]);
+            if (minimap) {
+              minimap.showBiomeTiles = !minimap.showBiomeTiles;
+              minimap.render();
+              UI.minimapManager.saveAllMinimaps();
+              console.log(`[Console] Minimap '${args[1]}' biome display is now ${minimap.showBiomeTiles ? 'ON' : 'OFF'}`);
             } else {
               console.error(`[Console] Minimap '${args[1]}' not found`);
             }

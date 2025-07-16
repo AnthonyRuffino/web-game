@@ -30,6 +30,9 @@ const MINIMAP_CONFIG = {
   defaultChunkColor: 'rgba(255,255,255,0.1)',
   defaultChunkBorderColor: 'rgba(255,255,255,0.2)',
   defaultChunkBorderWidth: 1,
+  // Biome tile display config
+  defaultShowBiomeTiles: true,
+  defaultBiomeTileOpacity: 0.6,
   // Drag handle config
   handleSize: 7,
   handleLockedColor: '#e53935',
@@ -66,6 +69,8 @@ if (!window.Minimap) {
       this.chunkColor = config.chunkColor || MINIMAP_CONFIG.defaultChunkColor;
       this.chunkBorderColor = config.chunkBorderColor || MINIMAP_CONFIG.defaultChunkBorderColor;
       this.chunkBorderWidth = config.chunkBorderWidth || MINIMAP_CONFIG.defaultChunkBorderWidth;
+      this.showBiomeTiles = config.showBiomeTiles !== undefined ? config.showBiomeTiles : MINIMAP_CONFIG.defaultShowBiomeTiles;
+      this.biomeTileOpacity = config.biomeTileOpacity || MINIMAP_CONFIG.defaultBiomeTileOpacity;
       this.visible = config.visible !== undefined ? config.visible : true;
       
       // State
@@ -388,6 +393,14 @@ if (!window.Minimap) {
           const chunkKey = World.getChunkKey(chunkX, chunkY);
           const isLoaded = World.chunkCache.has(chunkKey);
           
+          // Get biome for this chunk
+          const biome = World.chunkBiomeMap.get(chunkKey) || 'plains';
+          
+          // Draw biome tile if enabled
+          if (this.showBiomeTiles && typeof EntityRenderer !== 'undefined') {
+            this._drawBiomeTile(ctx, chunkMinimapX, chunkMinimapY, chunkWidth, chunkHeight, biome);
+          }
+          
           // Draw chunk background
           ctx.fillStyle = isLoaded ? this.chunkColor : 'rgba(100,100,100,0.05)';
           ctx.fillRect(chunkMinimapX, chunkMinimapY, chunkWidth, chunkHeight);
@@ -397,6 +410,49 @@ if (!window.Minimap) {
           ctx.lineWidth = this.chunkBorderWidth;
           ctx.strokeRect(chunkMinimapX, chunkMinimapY, chunkWidth, chunkHeight);
         }
+      }
+    }
+    
+    _drawBiomeTile(ctx, x, y, width, height, biome) {
+      if (typeof EntityRenderer === 'undefined') return;
+      
+      // Get biome background image from cache
+      const bgKey = `background-${biome}`;
+      const bgEntry = EntityRenderer.getCachedImage(bgKey);
+      
+      if (bgEntry && bgEntry.image && bgEntry.image.complete) {
+        ctx.save();
+        ctx.globalAlpha = this.biomeTileOpacity;
+        
+        // Draw the biome background image scaled to chunk size
+        ctx.drawImage(
+          bgEntry.image,
+          x, y,
+          width, height
+        );
+        
+        ctx.restore();
+      } else {
+        // Fallback: draw biome color if image not available
+        ctx.save();
+        ctx.globalAlpha = this.biomeTileOpacity;
+        
+        let biomeColor;
+        switch (biome) {
+          case 'plains':
+            biomeColor = '#3cb043';
+            break;
+          case 'desert':
+            biomeColor = '#f7e9a0';
+            break;
+          default:
+            biomeColor = '#666666';
+        }
+        
+        ctx.fillStyle = biomeColor;
+        ctx.fillRect(x, y, width, height);
+        
+        ctx.restore();
       }
     }
     
@@ -418,20 +474,35 @@ if (!window.Minimap) {
     _showJsonPopup() {
       if (this._jsonPopup) return; // already open
       
-      // Create toggle chunks button configuration
-      const buttons = [{
-        text: this.showChunks ? 'Hide Chunks' : 'Show Chunks',
-        style: {
-          background: this.showChunks ? '#ff9800' : '#4caf50',
-          color: '#fff',
-          border: 'none',
-          padding: '6px 16px',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          marginLeft: '8px'
+      // Create toggle buttons configuration
+      const buttons = [
+        {
+          text: this.showChunks ? 'Hide Chunks' : 'Show Chunks',
+          style: {
+            background: this.showChunks ? '#ff9800' : '#4caf50',
+            color: '#fff',
+            border: 'none',
+            padding: '6px 16px',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            marginLeft: '8px'
+          },
+          onClick: () => this._toggleChunks()
         },
-        onClick: () => this._toggleChunks()
-      }];
+        {
+          text: this.showBiomeTiles ? 'Hide Biomes' : 'Show Biomes',
+          style: {
+            background: this.showBiomeTiles ? '#ff9800' : '#4caf50',
+            color: '#fff',
+            border: 'none',
+            padding: '6px 16px',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            marginLeft: '8px'
+          },
+          onClick: () => this._toggleBiomeTiles()
+        }
+      ];
       
       // Create and show the JSON popup
       this._jsonPopup = new this._JsonPopupClass({
@@ -461,10 +532,25 @@ if (!window.Minimap) {
       
       // Update the button text in the popup
       if (this._jsonPopup && this._jsonPopup.popup) {
-        const button = this._jsonPopup.popup.querySelector('button');
-        if (button) {
-          button.textContent = this.showChunks ? 'Hide Chunks' : 'Show Chunks';
-          button.style.background = this.showChunks ? '#ff9800' : '#4caf50';
+        const buttons = this._jsonPopup.popup.querySelectorAll('button');
+        if (buttons[0]) {
+          buttons[0].textContent = this.showChunks ? 'Hide Chunks' : 'Show Chunks';
+          buttons[0].style.background = this.showChunks ? '#ff9800' : '#4caf50';
+        }
+      }
+    }
+    
+    _toggleBiomeTiles() {
+      this.showBiomeTiles = !this.showBiomeTiles;
+      this.render();
+      if (window.UI && window.UI.minimapManager) window.UI.minimapManager.saveAllMinimaps();
+      
+      // Update the button text in the popup
+      if (this._jsonPopup && this._jsonPopup.popup) {
+        const buttons = this._jsonPopup.popup.querySelectorAll('button');
+        if (buttons[1]) {
+          buttons[1].textContent = this.showBiomeTiles ? 'Hide Biomes' : 'Show Biomes';
+          buttons[1].style.background = this.showBiomeTiles ? '#ff9800' : '#4caf50';
         }
       }
     }
@@ -492,6 +578,8 @@ if (!window.Minimap) {
         chunkColor: this.chunkColor,
         chunkBorderColor: this.chunkBorderColor,
         chunkBorderWidth: this.chunkBorderWidth,
+        showBiomeTiles: this.showBiomeTiles,
+        biomeTileOpacity: this.biomeTileOpacity,
         visible: this.visible,
         handleSize: this._handleSize,
         handleLockedColor: this._handleLockedColor,
@@ -621,6 +709,8 @@ function createDefaultMinimap() {
       chunkColor: 'rgba(255,255,255,0.1)',
       chunkBorderColor: 'rgba(255,255,255,0.2)',
       chunkBorderWidth: 1,
+      showBiomeTiles: true,
+      biomeTileOpacity: 0.6,
       colors: {
         background: 'rgba(0,0,0,0.8)',
         border: '#666',
