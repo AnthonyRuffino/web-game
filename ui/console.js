@@ -999,6 +999,98 @@ window.UI.console = {
       window.cmd('grid');
     });
 
+    // Minimap commands
+    this.register('minimap', 'Minimap management commands', (args) => {
+      if (args.length === 0) {
+        console.log('[Console] Minimap commands:');
+        console.log('  minimap list - List all minimaps');
+        console.log('  minimap create <name> - Create new minimap');
+        console.log('  minimap remove <name> - Remove minimap');
+        console.log('  minimap config <name> - Show minimap configuration');
+        return;
+      }
+
+      const subCommand = args[0].toLowerCase();
+      
+      switch (subCommand) {
+        case 'list':
+          if (UI.minimapManager) {
+            const minimaps = UI.minimapManager.listMinimaps();
+            if (minimaps.length === 0) {
+              console.log('[Console] No minimaps found');
+            } else {
+              console.log('[Console] Minimaps:');
+              minimaps.forEach(name => {
+                const minimap = UI.minimapManager.getMinimap(name);
+                console.log(`  ${name}: ${minimap.width}x${minimap.height}, position: ${JSON.stringify(minimap.position)}`);
+              });
+            }
+          } else {
+            console.error('[Console] Minimap manager not available');
+          }
+          break;
+
+        case 'create':
+          if (args.length < 2) {
+            console.error('[Console] Usage: minimap create <name>');
+            return;
+          }
+          if (UI.minimapManager) {
+            try {
+              UI.minimapManager.createMinimap({
+                name: args[1],
+                width: 200,
+                height: 150,
+                position: { right: 20, top: 20 },
+                zIndex: 997,
+                opacity: 0.9
+              });
+              console.log(`[Console] Created minimap '${args[1]}'`);
+            } catch (error) {
+              console.error(`[Console] Failed to create minimap: ${error.message}`);
+            }
+          } else {
+            console.error('[Console] Minimap manager not available');
+          }
+          break;
+
+        case 'remove':
+          if (args.length < 2) {
+            console.error('[Console] Usage: minimap remove <name>');
+            return;
+          }
+          if (UI.minimapManager) {
+            UI.minimapManager.removeMinimap(args[1]);
+            console.log(`[Console] Removed minimap '${args[1]}'`);
+          } else {
+            console.error('[Console] Minimap manager not available');
+          }
+          break;
+
+        case 'config':
+          if (args.length < 2) {
+            console.error('[Console] Usage: minimap config <name>');
+            return;
+          }
+          if (UI.minimapManager) {
+            const minimap = UI.minimapManager.getMinimap(args[1]);
+            if (minimap) {
+              console.log(`[Console] Minimap '${args[1]}' configuration:`, minimap._getSerializableConfig());
+            } else {
+              console.error(`[Console] Minimap '${args[1]}' not found`);
+            }
+          } else {
+            console.error('[Console] Minimap manager not available');
+          }
+          break;
+
+        default:
+          console.error(`[Console] Unknown minimap command: ${subCommand}`);
+          console.log('[Console] Use "minimap" for help');
+          break;
+      }
+    });
+
     console.log('[Console] Console system initialized with', Object.keys(this.commands).length, 'commands');
   }
 };

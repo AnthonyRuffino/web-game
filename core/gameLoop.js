@@ -29,6 +29,17 @@ class GameLoop {
       this.gameEngine.render(this.ctx);
     }
 
+    // Render minimaps
+    if (window.UI && window.UI.minimapManager) {
+      const minimaps = window.UI.minimapManager.minimaps;
+      for (const minimapName in minimaps) {
+        const minimap = minimaps[minimapName];
+        if (minimap && minimap.visible) {
+          minimap.render();
+        }
+      }
+    }
+
     requestAnimationFrame(this.loop.bind(this));
   }
 }

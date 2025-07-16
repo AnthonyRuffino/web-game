@@ -6,7 +6,7 @@ const WORLD_CONFIG = {
   seed: 12345, // World seed
   chunkSize: 64, // Tiles per chunk
   tileSize: 32, // Pixels per tile
-  chunkCount: 64, // Number of chunks per edge (square world)
+  chunkCount: 8, // Number of chunks per edge (square world)
   startingChunkX: 0,
   startingChunkY: 0,
   traversalSpeed: 200, // Player speed in pixels/sec for traversal time calc

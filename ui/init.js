@@ -16,7 +16,8 @@ const UI = {
     { name: 'inventory', file: 'ui/inventory.js', dependencies: [] },
     { name: 'inputBar', file: 'ui/inputBar.js', dependencies: [] },
     { name: 'skins', file: 'ui/skins.js', dependencies: [] },
-    { name: 'menuBar', file: 'ui/menuBar.js', dependencies: ['actionBars'] }
+    { name: 'menuBar', file: 'ui/menuBar.js', dependencies: ['actionBars'] },
+    { name: 'minimap', file: 'ui/minimap.js', dependencies: [] }
   ],
   
   // Load a single module
@@ -144,6 +145,14 @@ const UI = {
       window.UI.menuBar.init();
     }
 
+    // Initialize minimap
+    if (window.UI.minimapManager) {
+      console.log('[UI] Minimap manager ready');
+      // Minimaps are created automatically via DOMContentLoaded event
+    } else {
+      console.warn('[UI] Minimap manager not found');
+    }
+
     // Preload all action bar icons after all modules are loaded and initialized
     if (window.UI.actionBarManager && typeof window.UI.actionBarManager.preloadAllIcons === 'function') {
       window.UI.actionBarManager.preloadAllIcons();
@@ -171,6 +180,10 @@ const UI = {
   
   get skinsManager() {
     return window.UI.skinsManager;
+  },
+  
+  get minimapManager() {
+    return window.UI.minimapManager;
   },
   
   get console() {
