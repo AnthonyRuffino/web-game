@@ -18,7 +18,7 @@ const UI = {
     { name: 'inputBar', file: 'ui/inputBar.js', dependencies: [] },
     { name: 'skins', file: 'ui/skins.js', dependencies: [] },
     { name: 'menuBar', file: 'ui/menuBar.js', dependencies: ['actionBars'] },
-    { name: 'minimap', file: 'ui/minimap.js', dependencies: [] }
+    { name: 'minimap', file: 'ui/minimap.js', dependencies: ['jsonPopup'] }
   ],
   
   // Load a single module

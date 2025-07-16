@@ -74,6 +74,7 @@ if (!window.Minimap) {
       this._borderThreshold = config.borderThreshold || MINIMAP_CONFIG.borderThreshold;
       this._handleActive = config.handleActive !== undefined ? config.handleActive : false; // true if dot is green (unlocked)
       this._jsonPopup = null; // reference to popup DOM
+      this._JsonPopupClass = config.JsonPopupClass || window.JsonPopup;
       
       this._createCanvas();
       this._setupListeners();
@@ -361,91 +362,26 @@ if (!window.Minimap) {
     
     _showJsonPopup() {
       if (this._jsonPopup) return; // already open
-      // Create popup elements
-      const popup = document.createElement('div');
-      popup.style.position = 'fixed';
-      popup.style.left = '50%';
-      popup.style.top = '50%';
-      popup.style.transform = 'translate(-50%, -50%)';
-      popup.style.background = '#222';
-      popup.style.color = '#fff';
-      popup.style.padding = '20px';
-      popup.style.borderRadius = '8px';
-      popup.style.zIndex = 9999;
-      popup.style.boxShadow = '0 4px 32px #000a';
-      popup.style.minWidth = '400px';
-      popup.style.maxWidth = '90vw';
-      popup.style.maxHeight = '80vh';
-      popup.style.overflow = 'auto';
-
-      const label = document.createElement('div');
-      label.textContent = 'Edit Minimap JSON:';
-      label.style.marginBottom = '8px';
-      popup.appendChild(label);
-
-      const textarea = document.createElement('textarea');
-      textarea.style.width = '100%';
-      textarea.style.height = '200px';
-      textarea.style.background = '#111';
-      textarea.style.color = '#fff';
-      textarea.style.fontFamily = 'monospace';
-      textarea.style.fontSize = '14px';
-      textarea.value = JSON.stringify(this._getSerializableConfig(), null, 2);
-      popup.appendChild(textarea);
-
-      const errorDiv = document.createElement('div');
-      errorDiv.style.color = '#ff5252';
-      errorDiv.style.margin = '8px 0';
-      popup.appendChild(errorDiv);
-
-      const btnRow = document.createElement('div');
-      btnRow.style.display = 'flex';
-      btnRow.style.justifyContent = 'flex-end';
-      btnRow.style.gap = '8px';
-
-      const submitBtn = document.createElement('button');
-      submitBtn.textContent = 'Save';
-      submitBtn.style.background = '#43a047';
-      submitBtn.style.color = '#fff';
-      submitBtn.style.border = 'none';
-      submitBtn.style.padding = '6px 16px';
-      submitBtn.style.borderRadius = '4px';
-      submitBtn.style.cursor = 'pointer';
-      btnRow.appendChild(submitBtn);
-
-      const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.background = '#e53935';
-      cancelBtn.style.color = '#fff';
-      cancelBtn.style.border = 'none';
-      cancelBtn.style.padding = '6px 16px';
-      cancelBtn.style.borderRadius = '4px';
-      cancelBtn.style.cursor = 'pointer';
-      btnRow.appendChild(cancelBtn);
-
-      popup.appendChild(btnRow);
-
-      document.body.appendChild(popup);
-      this._jsonPopup = popup;
-
-      cancelBtn.onclick = () => {
-        document.body.removeChild(popup);
-        this._jsonPopup = null;
-      };
-
-      submitBtn.onclick = () => {
-        try {
-          const newConfig = JSON.parse(textarea.value);
-          // Update this minimap with new config
+      
+      // Create and show the JSON popup
+      this._jsonPopup = new this._JsonPopupClass({
+        title: `Edit Minimap: ${this.name}`,
+        jsonData: this._getSerializableConfig(),
+        onSave: (newConfig) => {
           this._applyConfig(newConfig);
           if (window.UI && window.UI.minimapManager) window.UI.minimapManager.saveAllMinimaps();
-          document.body.removeChild(popup);
-          this._jsonPopup = null;
           this.render();
-        } catch (err) {
-          errorDiv.textContent = 'Invalid JSON: ' + err.message;
-        }
-      };
+        },
+        onCancel: () => {
+          // onCancel is called by the popup's handleCancel method, which already calls close()
+        },
+        onClose: () => {
+          this._jsonPopup = null;
+        },
+        buttons: [] // No custom buttons for minimap currently
+      });
+      
+      this._jsonPopup.show();
     }
     
     _getSerializableConfig() {
