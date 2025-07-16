@@ -42,6 +42,7 @@ class JsonPopup {
     this.jsonData = config.jsonData || {};
     this.onSave = config.onSave || (() => {});
     this.onCancel = config.onCancel || (() => {});
+    this.onClose = config.onClose || (() => {});
     this.buttons = config.buttons || [];
     this.popup = null;
     this.textarea = null;
@@ -146,6 +147,7 @@ class JsonPopup {
       this.popup = null;
       this.textarea = null;
       this.errorDiv = null;
+      this.onClose();
     }
   }
 
@@ -823,6 +825,9 @@ if (!window.ActionBar) {
           this.render();
         },
         onCancel: () => {
+          // onCancel is called by the popup's handleCancel method, which already calls close()
+        },
+        onClose: () => {
           this._jsonPopup = null;
         },
         buttons: buttons
