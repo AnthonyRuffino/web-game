@@ -410,16 +410,16 @@ window.UI.macroManager = {
     
     // Parse bar-slot format (e.g., "mainBar-0", "secondaryBar-3")
     const parts = barSlot.split('-');
-    if (parts.length !== 2) {
+    if (parts.length < 2) {
       console.error('[UI] Invalid bar-slot format. Use "barName-slotIndex" (e.g., "mainBar-0", "secondaryBar-3")');
       return false;
     }
     
-    const barName = parts[0];
-    const slotIndex = parseInt(parts[1], 10);
+    const barName = parts.slice(0, -1).join('-');
+    const slotIndex = parseInt(parts[parts.length - 1], 10);
     
     if (isNaN(slotIndex) || slotIndex < 0) {
-      console.error('[UI] Invalid slot index. Must be a non-negative number.');
+      console.error('[UI] Invalid slot index. Must be a non-negative number.', slotIndex);
       return false;
     }
     
@@ -446,13 +446,13 @@ window.UI.macroManager = {
   removeMacro(barSlot) {
     // Parse bar-slot format
     const parts = barSlot.split('-');
-    if (parts.length !== 2) {
+    if (parts.length < 2) {
       console.error('[UI] Invalid bar-slot format. Use "barName-slotIndex"');
       return false;
     }
     
-    const barName = parts[0];
-    const slotIndex = parseInt(parts[1], 10);
+    const barName = parts.slice(0, -1).join('-');
+    const slotIndex = parseInt(parts[parts.length - 1], 10);
     
     if (isNaN(slotIndex) || slotIndex < 0) {
       console.error('[UI] Invalid slot index');

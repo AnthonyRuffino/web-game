@@ -279,12 +279,12 @@ if (!window.ActionBar) {
     assignMacro(slotIndex, macroName) {
       this.macroBindings[slotIndex] = macroName;
       this.render();
-      if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveBindings();
+      if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
     }
     removeMacro(slotIndex) {
       delete this.macroBindings[slotIndex];
       this.render();
-      if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveBindings();
+      if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
     }
     updateConfig(newConfig) {
       Object.assign(this, newConfig);
@@ -324,36 +324,48 @@ window.UI.actionBarManager = {
   bars: {},
   keyBindingMap: {}, // Maps key codes to { barName, slotIndex }
 
-  bindingsStorageKey: 'ui_actionBarBindings',
+  barsStorageKey: 'ui_actionBars',
 
-  saveBindings() {
-    const bindings = {};
+  saveAllBars() {
+    // Serialize all action bars (full config, not just macroBindings)
+    const barsData = {};
     for (const barName in this.bars) {
       const bar = this.bars[barName];
-      bindings[barName] = { ...bar.macroBindings };
+      barsData[barName] = {
+        name: bar.name,
+        orientation: bar.orientation,
+        position: bar.position,
+        slots: bar.slots,
+        slotSize: bar.slotSize,
+        spacing: bar.spacing,
+        zIndex: bar.zIndex,
+        opacity: bar.opacity,
+        colors: bar.colors,
+        keyBindings: bar.keyBindings,
+        macroBindings: bar.macroBindings
+      };
     }
     try {
-      localStorage.setItem(this.bindingsStorageKey, JSON.stringify(bindings));
+      localStorage.setItem(this.barsStorageKey, JSON.stringify(barsData));
     } catch (e) {
-      console.warn('[UI] Failed to save action bar bindings:', e);
+      console.warn('[UI] Failed to save action bars:', e);
     }
   },
 
-  loadBindings() {
+  loadAllBars() {
     try {
-      const raw = localStorage.getItem(this.bindingsStorageKey);
+      const raw = localStorage.getItem(this.barsStorageKey);
       if (!raw) return;
-      const bindings = JSON.parse(raw);
-      for (const barName in bindings) {
-        const bar = this.getActionBar(barName);
-        if (bar && bindings[barName]) {
-          bar.macroBindings = { ...bindings[barName] };
-          // bar.preloadIcons(); // <-- Remove this line for Option 1
-          bar.render();
+      const barsData = JSON.parse(raw);
+      for (const barName in barsData) {
+        const config = barsData[barName];
+        // Avoid duplicate creation
+        if (!this.bars[barName]) {
+          this.createActionBar(config);
         }
       }
     } catch (e) {
-      console.warn('[UI] Failed to load action bar bindings:', e);
+      console.warn('[UI] Failed to load action bars:', e);
     }
   },
 
@@ -369,6 +381,7 @@ window.UI.actionBarManager = {
     const bar = new ActionBar(config);
     this.bars[config.name] = bar;
     this._rebuildKeyBindingMap();
+    this.saveAllBars(); // Save all bars after creation
     return bar;
   },
 
@@ -378,6 +391,7 @@ window.UI.actionBarManager = {
       bar.canvas.remove();
       delete this.bars[name];
       this._rebuildKeyBindingMap();
+      this.saveAllBars(); // Save all bars after removal
     }
   },
 
@@ -481,12 +495,13 @@ function createDefaultActionBars() {
   }
 }
 
+// On UI startup, load all bars from storage and render them
 if (document.readyState === 'loading') {
   window.addEventListener('DOMContentLoaded', () => {
+    window.UI.actionBarManager.loadAllBars();
     createDefaultActionBars();
-    window.UI.actionBarManager.loadBindings();
   });
 } else {
+  window.UI.actionBarManager.loadAllBars();
   createDefaultActionBars();
-  window.UI.actionBarManager.loadBindings();
 }
