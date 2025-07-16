@@ -232,12 +232,12 @@ if (!window.ActionBar) {
       }
     }
     
-    _applyPositionFromHandle(handleX, handleY) {
+    _applyPositionFromBottomLeft(bottomLeftX, bottomLeftY) {
       const winH = window.innerHeight;
       
-      // Calculate the new top-left position based on the handle position
-      const newLeft = handleX;
-      const newTop = handleY - this.canvas.height;
+      // Calculate the new top-left position based on the bottom-left corner
+      const newLeft = bottomLeftX;
+      const newTop = bottomLeftY - this.canvas.height;
       
       // Update the position object
       this.position.left = newLeft;
@@ -246,7 +246,7 @@ if (!window.ActionBar) {
       if (this.orientation === 'horizontal' && newTop > winH / 2) {
         // Horizontal bar in bottom half - use bottom positioning with menuBarOffset
         delete this.position.top;
-        this.position.bottom = winH - handleY - ACTION_BAR_CONFIG.menuBarOffset;
+        this.position.bottom = winH - bottomLeftY - ACTION_BAR_CONFIG.menuBarOffset;
       } else {
         // Use top positioning
         this.position.top = newTop;
@@ -414,10 +414,17 @@ if (!window.ActionBar) {
         x >= toggleX - this._toggleSize / 2 && x <= toggleX + this._toggleSize / 2 &&
         y >= toggleY - this._toggleSize / 2 && y <= toggleY + this._toggleSize / 2
       ) {
-        // Capture the current position before any changes
+        // Capture the current bottom-left corner position before any changes
         const rect = this.canvas.getBoundingClientRect();
-        const handleX = rect.left;
-        const handleY = rect.bottom;
+        let bottomLeftX = rect.left;
+        let bottomLeftY = rect.bottom;
+        
+        // If this is a horizontal bar positioned at bottom, we need to account for menuBarOffset
+        if (this.orientation === 'horizontal' && 'bottom' in this.position) {
+          // The rect.bottom includes the menuBarOffset, so we need to get the actual position
+          // Try a smaller offset to account for the exact positioning
+          bottomLeftY = rect.bottom - (ACTION_BAR_CONFIG.menuBarOffset / 4);
+        }
         
         // Toggle orientation and layout
         const newOrientation = this.orientation === 'horizontal' ? 'vertical' : 'horizontal';
@@ -435,8 +442,8 @@ if (!window.ActionBar) {
         
         this._updateSize();
         
-        // Apply the captured position to maintain the handle location
-        this._applyPositionFromHandle(handleX, handleY);
+        // Apply the captured position to maintain the bottom-left corner location
+        this._applyPositionFromBottomLeft(bottomLeftX, bottomLeftY);
         
         this.render();
         if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
