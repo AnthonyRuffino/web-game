@@ -64,35 +64,65 @@ class JsonPopup {
     this.popup.style.borderRadius = '8px';
     this.popup.style.zIndex = 9999;
     this.popup.style.boxShadow = '0 4px 32px #000a';
+    this.popup.style.width = '600px'; // 50% bigger than original 400px
+    this.popup.style.height = '450px'; // 50% bigger than original 300px
     this.popup.style.minWidth = '400px';
+    this.popup.style.minHeight = '300px';
     this.popup.style.maxWidth = '90vw';
     this.popup.style.maxHeight = '80vh';
-    this.popup.style.overflow = 'auto';
+    this.popup.style.overflow = 'hidden';
+    this.popup.style.resize = 'both';
+    this.popup.style.cursor = 'default';
+
+    // Create content container for scrolling
+    const contentContainer = document.createElement('div');
+    contentContainer.style.position = 'absolute';
+    contentContainer.style.top = '20px';
+    contentContainer.style.left = '20px';
+    contentContainer.style.right = '20px';
+    contentContainer.style.bottom = '80px'; // Leave space for buttons
+    contentContainer.style.overflow = 'auto';
+    contentContainer.style.paddingRight = '10px'; // Space for scrollbar
+    contentContainer.style.display = 'flex';
+    contentContainer.style.flexDirection = 'column';
 
     const label = document.createElement('div');
     label.textContent = this.title + ':';
     label.style.marginBottom = '8px';
-    this.popup.appendChild(label);
+    label.style.flexShrink = '0';
+    contentContainer.appendChild(label);
 
     this.textarea = document.createElement('textarea');
     this.textarea.style.width = '100%';
-    this.textarea.style.height = '200px';
+    this.textarea.style.flex = '1';
+    this.textarea.style.minHeight = '200px';
     this.textarea.style.background = '#111';
     this.textarea.style.color = '#fff';
     this.textarea.style.fontFamily = 'monospace';
     this.textarea.style.fontSize = '14px';
+    this.textarea.style.border = '1px solid #444';
+    this.textarea.style.borderRadius = '4px';
+    this.textarea.style.padding = '8px';
+    this.textarea.style.resize = 'none'; // Disable textarea resize since popup is resizable
     this.textarea.value = JSON.stringify(this.jsonData, null, 2);
-    this.popup.appendChild(this.textarea);
+    contentContainer.appendChild(this.textarea);
 
     this.errorDiv = document.createElement('div');
     this.errorDiv.style.color = '#ff5252';
     this.errorDiv.style.margin = '8px 0';
-    this.popup.appendChild(this.errorDiv);
+    this.errorDiv.style.flexShrink = '0';
+    contentContainer.appendChild(this.errorDiv);
+
+    this.popup.appendChild(contentContainer);
 
     const btnRow = document.createElement('div');
     btnRow.style.display = 'flex';
     btnRow.style.justifyContent = 'flex-end';
     btnRow.style.gap = '8px';
+    btnRow.style.position = 'absolute';
+    btnRow.style.bottom = '20px';
+    btnRow.style.right = '20px';
+    btnRow.style.left = '20px';
 
     // Add custom buttons first
     this.buttons.forEach(buttonConfig => {
@@ -122,7 +152,20 @@ class JsonPopup {
     cancelBtn.onclick = () => this.handleCancel();
     btnRow.appendChild(cancelBtn);
 
+    // Add resize handle
+    const resizeHandle = document.createElement('div');
+    resizeHandle.style.position = 'absolute';
+    resizeHandle.style.bottom = '0';
+    resizeHandle.style.right = '0';
+    resizeHandle.style.width = '20px';
+    resizeHandle.style.height = '20px';
+    resizeHandle.style.cursor = 'nw-resize';
+    resizeHandle.style.background = 'linear-gradient(135deg, transparent 0%, transparent 50%, #666 50%, #666 100%)';
+    resizeHandle.style.borderRadius = '0 0 8px 0';
+    resizeHandle.title = 'Drag to resize';
+    
     this.popup.appendChild(btnRow);
+    this.popup.appendChild(resizeHandle);
     document.body.appendChild(this.popup);
   }
 
