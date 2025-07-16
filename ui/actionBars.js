@@ -210,19 +210,61 @@ if (!window.ActionBar) {
       // Get the actual current position of the canvas on screen
       const rect = this.canvas.getBoundingClientRect();
       const winH = window.innerHeight;
+      const winW = window.innerWidth;
+      
+      // The handle is in the bottom-left corner, so we want to keep that point stationary
+      // Calculate the bottom-left corner position (handle position)
+      const handleX = rect.left;
+      const handleY = rect.bottom;
       
       // Update the position object to match the actual canvas position
-      this.position.left = rect.left;
+      this.position.left = handleX;
       
       // Determine if we should use top or bottom positioning
-      if (this.orientation === 'horizontal' && rect.top > winH / 2) {
+      if (this.orientation === 'horizontal' && handleY > winH / 2) {
         // Horizontal bar in bottom half - use bottom positioning with menuBarOffset
         delete this.position.top;
-        this.position.bottom = winH - rect.bottom - ACTION_BAR_CONFIG.menuBarOffset;
+        this.position.bottom = winH - handleY - ACTION_BAR_CONFIG.menuBarOffset;
       } else {
         // Use top positioning
-        this.position.top = rect.top;
+        this.position.top = handleY - this.canvas.height;
         delete this.position.bottom;
+      }
+    }
+    
+    _applyPositionFromHandle(handleX, handleY) {
+      const winH = window.innerHeight;
+      
+      // Calculate the new top-left position based on the handle position
+      const newLeft = handleX;
+      const newTop = handleY - this.canvas.height;
+      
+      // Update the position object
+      this.position.left = newLeft;
+      
+      // Determine if we should use top or bottom positioning
+      if (this.orientation === 'horizontal' && newTop > winH / 2) {
+        // Horizontal bar in bottom half - use bottom positioning with menuBarOffset
+        delete this.position.top;
+        this.position.bottom = winH - handleY - ACTION_BAR_CONFIG.menuBarOffset;
+      } else {
+        // Use top positioning
+        this.position.top = newTop;
+        delete this.position.bottom;
+      }
+      
+      // Update canvas style
+      this.canvas.style.left = `${this.position.left}px`;
+      if ('top' in this.position) {
+        this.canvas.style.top = `${this.position.top}px`;
+        this.canvas.style.bottom = '';
+      } else {
+        if (this.orientation === 'horizontal') {
+          this.canvas.style.bottom = `${this.position.bottom + ACTION_BAR_CONFIG.menuBarOffset}px`;
+        } else {
+          this.canvas.style.bottom = `${this.position.bottom}px`;
+        }
+        this.canvas.style.top = '';
       }
     }
     
@@ -372,6 +414,11 @@ if (!window.ActionBar) {
         x >= toggleX - this._toggleSize / 2 && x <= toggleX + this._toggleSize / 2 &&
         y >= toggleY - this._toggleSize / 2 && y <= toggleY + this._toggleSize / 2
       ) {
+        // Capture the current position before any changes
+        const rect = this.canvas.getBoundingClientRect();
+        const handleX = rect.left;
+        const handleY = rect.bottom;
+        
         // Toggle orientation and layout
         const newOrientation = this.orientation === 'horizontal' ? 'vertical' : 'horizontal';
         this.orientation = newOrientation;
@@ -387,9 +434,11 @@ if (!window.ActionBar) {
         }
         
         this._updateSize();
+        
+        // Apply the captured position to maintain the handle location
+        this._applyPositionFromHandle(handleX, handleY);
+        
         this.render();
-        // Sync the position object with the actual canvas position before saving
-        this._syncPositionWithCanvas();
         if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
         e.preventDefault();
         e.stopPropagation();
