@@ -74,6 +74,15 @@ window.UI.responsiveCanvas = {
     this.canvas.addEventListener('wheel', window._zoomScrollHandler, { passive: false });
   },
 
+  getUIScale() {
+    const { referenceWidth, referenceHeight, minScale, maxScale } = ACTION_BAR_CONFIG;
+    const scaleW = window.innerWidth / referenceWidth;
+    const scaleH = window.innerHeight / referenceHeight;
+    let scale = Math.min(scaleW, scaleH);
+    scale = Math.max(minScale, Math.min(maxScale, scale));
+    return scale;
+  },
+
   // Setup event listeners for responsive behavior
   setupEventListeners() {
     // Window resize event

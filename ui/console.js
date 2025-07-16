@@ -1043,7 +1043,7 @@ window.UI.console = {
                 name: args[1],
                 width: 200,
                 height: 150,
-                position: { right: 20, top: 20 },
+                position: { right: 400, top: 400 },
                 zIndex: 997,
                 opacity: 0.9
               };
