@@ -16,7 +16,7 @@ const ACTION_BAR_CONFIG = {
     slotActive: 'rgba(80,80,80,0.9)',
     label: '#fff'
   },
-  defaultPadding: 40,
+  defaultPadding: 0,
   defaultBorderRadius: 8,
   defaultBoxShadow: '0 4px 20px rgba(0,0,0,0.6)',
   defaultSlotIconSize: 40,
@@ -88,9 +88,10 @@ if (!window.ActionBar) {
       this.rows = config.rows || (this.layout === 'grid' ? (config.rows || ACTION_BAR_CONFIG.defaultRows) : (this.layout === 'vertical' ? (config.slots || ACTION_BAR_CONFIG.defaultSlots) : 1));
       this.columns = config.columns || (this.layout === 'grid' ? (config.columns || ACTION_BAR_CONFIG.defaultColumns) : (this.layout === 'vertical' ? 1 : (config.slots || ACTION_BAR_CONFIG.defaultSlots)));
       this.slots = this.rows * this.columns;
-      this.slotSize = config.slotSize || ACTION_BAR_CONFIG.defaultSlotSize;
-      this.spacing = config.spacing || ACTION_BAR_CONFIG.defaultSpacing;
-      this.zIndex = config.zIndex || ACTION_BAR_CONFIG.defaultZIndex;
+              this.slotSize = config.slotSize || ACTION_BAR_CONFIG.defaultSlotSize;
+        this.spacing = config.spacing || ACTION_BAR_CONFIG.defaultSpacing;
+        this.padding = config.padding || ACTION_BAR_CONFIG.defaultPadding;
+        this.zIndex = config.zIndex || ACTION_BAR_CONFIG.defaultZIndex;
       this.opacity = config.opacity || ACTION_BAR_CONFIG.defaultOpacity;
       this.colors = Object.assign({}, ACTION_BAR_CONFIG.defaultColors, config.colors || {});
       this.position = config.position || { left: 0, bottom: 0 };
@@ -189,19 +190,19 @@ if (!window.ActionBar) {
       }
     }
     _updateSize() {
-      const slot = this.slotSize;
-      const spacing = this.spacing;
-      const padding = ACTION_BAR_CONFIG.defaultPadding;
+              const slot = this.slotSize;
+        const spacing = this.spacing;
+        const padding = this.padding;
       if (this.layout === 'grid') {
-        this.canvas.width = this.columns * slot + (this.columns - 1) * spacing + padding;
-        this.canvas.height = this.rows * slot + (this.rows - 1) * spacing + padding;
+        this.canvas.width = this.columns * slot + (this.columns - 1) * spacing + padding * 2;
+        this.canvas.height = this.rows * slot + (this.rows - 1) * spacing + padding * 2;
       } else if (this.layout === 'horizontal') {
-        this.canvas.width = this.columns * slot + (this.columns - 1) * spacing + padding;
-        this.canvas.height = slot + ACTION_BAR_CONFIG.defaultSlotHeight;
+        this.canvas.width = this.columns * slot + (this.columns - 1) * spacing + padding * 2;
+        this.canvas.height = slot + padding * 2;
       } else {
         // vertical
-        this.canvas.width = slot + ACTION_BAR_CONFIG.defaultSlotWidth;
-        this.canvas.height = this.rows * slot + (this.rows - 1) * spacing + padding;
+        this.canvas.width = slot + padding * 2;
+        this.canvas.height = this.rows * slot + (this.rows - 1) * spacing + padding * 2;
       }
       this.scale = 1.0;
     }
@@ -473,7 +474,7 @@ if (!window.ActionBar) {
       this.render();
     }
     _slotPosition(i) {
-      const start = ACTION_BAR_CONFIG.defaultSlotStart;
+      const start = this.padding;
       if (this.layout === 'grid') {
         const row = Math.floor(i / this.columns);
         const col = i % this.columns;
@@ -485,13 +486,13 @@ if (!window.ActionBar) {
       } else if (this.layout === 'horizontal') {
         return {
           slotX: start + i * (this.slotSize + this.spacing),
-          slotY: ACTION_BAR_CONFIG.defaultSlotY,
+          slotY: start,
           row: 0, col: i
         };
       } else {
         // vertical
         return {
-          slotX: ACTION_BAR_CONFIG.defaultSlotX,
+          slotX: start,
           slotY: start + i * (this.slotSize + this.spacing),
           row: i, col: 0
         };
