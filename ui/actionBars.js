@@ -74,7 +74,9 @@ if (!window.ActionBar) {
       this._iconCache = {}; // Cache for loaded macro icons
       this._dragging = false;
       this._dragOffset = { x: 0, y: 0 };
-      this._handleSize = 16; // px, for blue dot
+      this._handleSize = 10; // px, for handle dot (smaller)
+      this._handleActive = false; // true if dot is green (unlocked)
+      this._toggleSize = 10; // px, for orientation toggle dot
       this._createCanvas();
       this._setupListeners();
       this.render();
@@ -145,7 +147,7 @@ if (!window.ActionBar) {
       });
     }
     _handleDragStart(e) {
-      // Only start drag if mouse is on the blue dot handle
+      // Only start drag if mouse is on the handle dot and dot is green (active)
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -153,7 +155,8 @@ if (!window.ActionBar) {
       const handleY = 4;
       if (
         x >= handleX && x <= handleX + this._handleSize &&
-        y >= handleY && y <= handleY + this._handleSize
+        y >= handleY && y <= handleY + this._handleSize &&
+        this._handleActive
       ) {
         this._dragging = true;
         // Calculate offset from mouse to top-left of bar
@@ -232,6 +235,46 @@ if (!window.ActionBar) {
       this.render();
     }
     _handleClick(e) {
+      // Check if click is on the handle dot
+      const rect = this.canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const handleX = this.canvas.width - this._handleSize - 4;
+      const handleY = 4;
+      let toggleX, toggleY;
+      if (this.orientation === 'horizontal') {
+        toggleX = handleX;
+        toggleY = handleY + this._handleSize + 4;
+      } else {
+        toggleX = handleX - this._toggleSize - 4;
+        toggleY = handleY;
+      }
+      if (
+        x >= handleX && x <= handleX + this._handleSize &&
+        y >= handleY && y <= handleY + this._handleSize
+      ) {
+        // Toggle handle active state (red <-> green)
+        this._handleActive = !this._handleActive;
+        this.render();
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      // Check if click is on the orientation toggle dot (only if handle is green)
+      if (this._handleActive &&
+        x >= toggleX && x <= toggleX + this._toggleSize &&
+        y >= toggleY && y <= toggleY + this._toggleSize
+      ) {
+        // Toggle orientation
+        this.orientation = this.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+        this._updateSize();
+        this.render();
+        if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      // Otherwise, normal slot click
       if (this.hoveredSlot === null) return;
       this.activeSlot = this.hoveredSlot;
       this.render();
@@ -275,7 +318,7 @@ if (!window.ActionBar) {
       ctx.fillStyle = this.colors.background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.globalAlpha = 1.0;
-      // Draw draggable handle (blue dot) in top-right
+      // Draw draggable handle (dot) in top-right
       ctx.save();
       ctx.beginPath();
       ctx.arc(
@@ -284,11 +327,49 @@ if (!window.ActionBar) {
         this._handleSize / 2,
         0, 2 * Math.PI
       );
-      ctx.fillStyle = '#2196f3';
-      ctx.shadowColor = '#1976d2';
-      ctx.shadowBlur = 4;
+      if (this._handleActive) {
+        ctx.fillStyle = '#43a047'; // green when active
+        ctx.shadowColor = '#1b5e20';
+        ctx.shadowBlur = 4;
+      } else {
+        ctx.fillStyle = '#e53935'; // red when locked
+        ctx.shadowColor = '#b71c1c';
+        ctx.shadowBlur = 2;
+      }
       ctx.fill();
       ctx.restore();
+      // Draw orientation toggle dot (pivot) only if handle is green
+      if (this._handleActive) {
+        let toggleDotX, toggleDotY;
+        if (this.orientation === 'horizontal') {
+          toggleDotX = canvas.width - this._toggleSize / 2 - 4;
+          toggleDotY = this._handleSize + this._toggleSize / 2 + 8;
+        } else {
+          toggleDotX = canvas.width - this._handleSize - this._toggleSize / 2 - 8;
+          toggleDotY = this._handleSize / 2 + 4;
+        }
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(
+          toggleDotX,
+          toggleDotY,
+          this._toggleSize / 2,
+          0, 2 * Math.PI
+        );
+        ctx.fillStyle = this.colors.background;
+        ctx.shadowColor = 'rgba(0,0,0,0.2)';
+        ctx.shadowBlur = 1;
+        ctx.fill();
+        ctx.restore();
+        // Draw ⟳ icon in the center of the toggle dot
+        ctx.save();
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#444';
+        ctx.fillText('⟳', toggleDotX, toggleDotY);
+        ctx.restore();
+      }
       for (let i = 0; i < this.slots; i++) {
         const { slotX, slotY } = this._slotPosition(i);
         let bgColor = this.colors.slot;
