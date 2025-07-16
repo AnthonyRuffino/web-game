@@ -499,9 +499,13 @@ function createDefaultActionBars() {
 if (document.readyState === 'loading') {
   window.addEventListener('DOMContentLoaded', () => {
     window.UI.actionBarManager.loadAllBars();
-    createDefaultActionBars();
+    if (!localStorage.getItem('ui_actionBars')) {
+      createDefaultActionBars();
+    }
   });
 } else {
   window.UI.actionBarManager.loadAllBars();
-  createDefaultActionBars();
+  if (!localStorage.getItem('ui_actionBars')) {
+    createDefaultActionBars();
+  }
 }
