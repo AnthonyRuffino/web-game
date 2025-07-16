@@ -945,7 +945,8 @@ function createDefaultActionBars() {
       zIndex: 998,
       opacity: 0.95,
       keyBindings: [
-        ['Shift+Digit1']
+        ['KeyF', "KeyG"],
+        ["KeyH", "KeyI"]
       ]
     });
   }
