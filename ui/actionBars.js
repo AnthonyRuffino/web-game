@@ -44,7 +44,8 @@ const ACTION_BAR_CONFIG = {
   defaultSlotLabelTextBaseline: 'middle',
   defaultSlotLabelColor: '#fff',
   defaultSlotLabelOutlineColor: 'rgba(0,0,0,0.7)',
-  defaultSlotLabelOutlineWidth: 3
+  defaultSlotLabelOutlineWidth: 3,
+  menuBarOffset: 32
 };
 // --- End Action Bar Config ---
 
@@ -71,6 +72,9 @@ if (!window.ActionBar) {
       this.activeSlot = null;
       this.scale = 1.0;
       this._iconCache = {}; // Cache for loaded macro icons
+      this._dragging = false;
+      this._dragOffset = { x: 0, y: 0 };
+      this._handleSize = 16; // px, for blue dot
       this._createCanvas();
       this._setupListeners();
       this.render();
@@ -97,9 +101,9 @@ if (!window.ActionBar) {
       canvas.id = `ui-action-bar-${this.name}`;
       canvas.style.position = 'fixed';
       for (const [k, v] of Object.entries(this.position)) {
-        // If this is a horizontal bar and positioned at the bottom, shift up by 32px for the menu bar
+        // If this is a horizontal bar and positioned at the bottom, shift up by menuBarOffset for the menu bar
         if (k === 'bottom' && this.orientation === 'horizontal') {
-          canvas.style[k] = typeof v === 'number' ? `${v + 32}px` : `calc(${v} + 32px)`;
+          canvas.style[k] = typeof v === 'number' ? `${v + ACTION_BAR_CONFIG.menuBarOffset}px` : `calc(${v} + ${ACTION_BAR_CONFIG.menuBarOffset}px)`;
         } else {
           canvas.style[k] = typeof v === 'number' ? `${v}px` : v;
         }
@@ -131,10 +135,82 @@ if (!window.ActionBar) {
       this.canvas.addEventListener('mousemove', (e) => this._handleMouseMove(e));
       this.canvas.addEventListener('click', (e) => this._handleClick(e));
       this.canvas.addEventListener('mouseleave', () => this._handleMouseLeave());
+      // Drag handle events
+      this.canvas.addEventListener('mousedown', (e) => this._handleDragStart(e));
+      window.addEventListener('mousemove', (e) => this._handleDragMove(e));
+      window.addEventListener('mouseup', (e) => this._handleDragEnd(e));
       window.addEventListener('resize', () => {
         this._updateSize();
         this.render();
       });
+    }
+    _handleDragStart(e) {
+      // Only start drag if mouse is on the blue dot handle
+      const rect = this.canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const handleX = this.canvas.width - this._handleSize - 4;
+      const handleY = 4;
+      if (
+        x >= handleX && x <= handleX + this._handleSize &&
+        y >= handleY && y <= handleY + this._handleSize
+      ) {
+        this._dragging = true;
+        // Calculate offset from mouse to top-left of bar
+        const barRect = this.canvas.getBoundingClientRect();
+        this._dragOffset = {
+          x: e.clientX - barRect.left,
+          y: e.clientY - barRect.top
+        };
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+    _handleDragMove(e) {
+      if (!this._dragging) return;
+      // Restrict to window bounds
+      const winW = window.innerWidth;
+      const winH = window.innerHeight;
+      let newLeft = e.clientX - this._dragOffset.x;
+      let newTop = e.clientY - this._dragOffset.y;
+      // Clamp
+      newLeft = Math.max(0, Math.min(winW - this.canvas.width, newLeft));
+      newTop = Math.max(0, Math.min(winH - this.canvas.height, newTop));
+      // Update position config (prefer left/top, fallback to left/bottom if originally bottom)
+      if ('top' in this.position || !('bottom' in this.position)) {
+        this.position.left = newLeft;
+        this.position.top = newTop;
+        delete this.position.bottom;
+      } else {
+        this.position.left = newLeft;
+        // Subtract menuBarOffset for horizontal bars at bottom
+        if (this.orientation === 'horizontal') {
+          this.position.bottom = winH - (newTop + this.canvas.height) - ACTION_BAR_CONFIG.menuBarOffset;
+        } else {
+          this.position.bottom = winH - (newTop + this.canvas.height);
+        }
+        delete this.position.top;
+      }
+      // Update style
+      this.canvas.style.left = `${this.position.left}px`;
+      if ('top' in this.position) {
+        this.canvas.style.top = `${this.position.top}px`;
+        this.canvas.style.bottom = '';
+      } else {
+        if (this.orientation === 'horizontal') {
+          this.canvas.style.bottom = `${this.position.bottom + ACTION_BAR_CONFIG.menuBarOffset}px`;
+        } else {
+          this.canvas.style.bottom = `${this.position.bottom}px`;
+        }
+        this.canvas.style.top = '';
+      }
+      this.render();
+    }
+    _handleDragEnd(e) {
+      if (this._dragging) {
+        this._dragging = false;
+        if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
+      }
     }
     _handleMouseMove(e) {
       const rect = this.canvas.getBoundingClientRect();
@@ -199,6 +275,20 @@ if (!window.ActionBar) {
       ctx.fillStyle = this.colors.background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.globalAlpha = 1.0;
+      // Draw draggable handle (blue dot) in top-right
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(
+        canvas.width - this._handleSize / 2 - 4,
+        this._handleSize / 2 + 4,
+        this._handleSize / 2,
+        0, 2 * Math.PI
+      );
+      ctx.fillStyle = '#2196f3';
+      ctx.shadowColor = '#1976d2';
+      ctx.shadowBlur = 4;
+      ctx.fill();
+      ctx.restore();
       for (let i = 0; i < this.slots; i++) {
         const { slotX, slotY } = this._slotPosition(i);
         let bgColor = this.colors.slot;
