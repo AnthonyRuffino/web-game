@@ -17,7 +17,9 @@ window.UI.input = {
     backward: false,
     strafeLeft: false,
     strafeRight: false,
-    rightClick: false
+    rightClick: false,
+    cameraLeft: false,
+    cameraRight: false
   },
 
   keyMap: {
@@ -80,6 +82,14 @@ window.UI.input = {
         window.UI.input.state.strafeRight = false;
         handled = true;
       }
+      if (e.code === 'ArrowLeft') {
+        window.UI.input.state.cameraLeft = false;
+        handled = true;
+      }
+      if (e.code === 'ArrowRight') {
+        window.UI.input.state.cameraRight = false;
+        handled = true;
+      }
     } else {
       // Handle key presses with modifiers
       if (window.UI.input.state.rightClick && (e.code === 'KeyA' || e.code === 'KeyD')) {
@@ -102,6 +112,12 @@ window.UI.input = {
           window.UI.input.state.strafeRight = true;
           handled = true;
         }
+      } else if (e.code === 'ArrowLeft') {
+        window.UI.input.state.cameraLeft = true;
+        handled = true;
+      } else if (e.code === 'ArrowRight') {
+        window.UI.input.state.cameraRight = true;
+        handled = true;
       } else if (window.UI.input.keyMap[e.code]) {
         window.UI.input.state[window.UI.input.keyMap[e.code]] = true;
         handled = true;

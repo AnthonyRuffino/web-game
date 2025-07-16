@@ -30,6 +30,12 @@ const GAME_ENGINE_CONFIG = {
 // Perspective mode: 'fixed-north' or 'player-perspective'
 let PERSPECTIVE_MODE = GAME_ENGINE_CONFIG.defaultPerspective; // default
 
+// Camera rotation angle for fixed-north mode (in radians)
+let CAMERA_ROTATION = 0; // 0 = north, positive = clockwise
+
+// Make camera rotation globally accessible for entity rendering
+window.CAMERA_ROTATION = CAMERA_ROTATION;
+
 // Update perspective mode functions to use console system
 window.setPerspectiveMode = function(mode) {
   if (GAME_ENGINE_CONFIG.perspectiveModes.includes(mode)) {
@@ -205,6 +211,15 @@ const GameEngine = {
       Collision.updateSpatialGrid();
     }
     
+    // Update camera rotation in fixed-north mode
+    if (PERSPECTIVE_MODE === 'fixed-north') {
+      const rotationSpeed = Player.rotSpeed * 0.5; // Slower than player rotation
+      if (inputState.cameraLeft) CAMERA_ROTATION -= rotationSpeed * delta;
+      if (inputState.cameraRight) CAMERA_ROTATION += rotationSpeed * delta;
+      // Update global reference for entity rendering
+      window.CAMERA_ROTATION = CAMERA_ROTATION;
+    }
+    
     Player.update(inputState, delta);
   },
   render(ctx) {
@@ -224,7 +239,8 @@ const GameEngine = {
       ctx.rotate(-Player.angle);
       ctx.translate(-Player.x, -Player.y);
     } else {
-      // Fixed north - just translate to follow player
+      // Fixed north - apply camera rotation and translate to follow player
+      ctx.rotate(-CAMERA_ROTATION);
       ctx.translate(-Player.x, -Player.y);
     }
     

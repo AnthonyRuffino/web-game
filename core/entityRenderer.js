@@ -123,9 +123,16 @@ const EntityRenderer = {
   drawAndRotate(_ctx, _image, _x, _y, _playerAngle, _fixedScreenAngle, _w, _h, _offsetX, _offsetY) {
     
     let angle = 0;
-    if (PERSPECTIVE_MODE === "player-perspective" && _fixedScreenAngle !== null && _fixedScreenAngle !== undefined) {
-      // Undo world rotation, then apply fixed angle (in radians)
-      angle = _playerAngle + (typeof _fixedScreenAngle === 'number' ? _fixedScreenAngle * Math.PI / 180 : 0);
+    if (_fixedScreenAngle !== null && _fixedScreenAngle !== undefined) {
+      if (PERSPECTIVE_MODE === "player-perspective") {
+        // Undo world rotation, then apply fixed angle (in radians)
+        angle = _playerAngle + (typeof _fixedScreenAngle === 'number' ? _fixedScreenAngle * Math.PI / 180 : 0);
+      } else if (PERSPECTIVE_MODE === "fixed-north") {
+        // In fixed-north mode, apply camera rotation to respect fixedScreenAngle
+        // Get camera rotation from GameEngine (if available)
+        const cameraRotation = typeof CAMERA_ROTATION !== 'undefined' ? CAMERA_ROTATION : 0;
+        angle = cameraRotation + (typeof _fixedScreenAngle === 'number' ? _fixedScreenAngle * Math.PI / 180 : 0);
+      }
     }
     
     _ctx.save();

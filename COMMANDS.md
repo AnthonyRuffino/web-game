@@ -42,8 +42,13 @@ Set the zoom level of the camera.
 Toggle between camera modes.
 - **Usage:** `cmd("perspective")`
 - **Modes:** 
-  - Fixed North: World stays oriented north
+  - Fixed North: World stays oriented north (use arrow keys to rotate camera)
   - Player Perspective: World rotates with player
+
+### `resetcamera`
+Reset camera rotation to north (0 degrees) in fixed-north mode.
+- **Usage:** `cmd("resetcamera")`
+- **Note:** Only affects fixed-north mode
 
 ## Background Texture Controls
 

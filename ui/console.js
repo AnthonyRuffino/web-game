@@ -99,6 +99,17 @@ window.UI.console = {
       }
     });
 
+    // Reset camera rotation command
+    this.register('resetcamera', 'Reset camera rotation to north (0 degrees)', (args) => {
+      if (typeof CAMERA_ROTATION !== 'undefined') {
+        CAMERA_ROTATION = 0;
+        window.CAMERA_ROTATION = CAMERA_ROTATION;
+        console.log('[Console] Camera rotation reset to north (0 degrees)');
+      } else {
+        console.error('[Console] Camera rotation system not found');
+      }
+    });
+
     // Print player stats
     this.register('stats', 'Display player statistics', (args) => {
       if (typeof Player !== 'undefined') {

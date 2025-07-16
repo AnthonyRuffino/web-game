@@ -49,7 +49,8 @@ const Persistence = {
         game: {
           tick: this.getGameTick(),
           perspective: typeof PERSPECTIVE_MODE !== 'undefined' ? PERSPECTIVE_MODE : 'fixed-north',
-          zoom: typeof ZOOM !== 'undefined' ? ZOOM : 1.0
+          zoom: typeof ZOOM !== 'undefined' ? ZOOM : 1.0,
+          cameraRotation: typeof CAMERA_ROTATION !== 'undefined' ? CAMERA_ROTATION : 0
         }
       };
 
@@ -100,6 +101,11 @@ const Persistence = {
       
       if (typeof ZOOM !== 'undefined' && gameState.game.zoom) {
         ZOOM = gameState.game.zoom;
+      }
+      
+      if (typeof CAMERA_ROTATION !== 'undefined' && gameState.game.cameraRotation !== undefined) {
+        CAMERA_ROTATION = gameState.game.cameraRotation;
+        window.CAMERA_ROTATION = CAMERA_ROTATION;
       }
 
       console.log('[Persistence] Game state loaded successfully');
@@ -193,9 +199,4 @@ const Persistence = {
   getConfig() {
     return { ...this.config };
   }
-};
-
-// Initialize persistence system when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  Persistence.init();
-}); 
+}

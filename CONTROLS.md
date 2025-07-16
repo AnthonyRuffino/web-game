@@ -41,7 +41,9 @@ The game supports two camera perspectives:
 ### Fixed North Mode (Default)
 - The world stays oriented with north always pointing up
 - Your character rotates and moves within the fixed world orientation
+- **Left/Right Arrow Keys** - Rotate the camera view while keeping the world orientation
 - Good for navigation and getting your bearings
+- Entities with fixed screen angles maintain their orientation relative to the camera
 
 ### Player Perspective Mode
 - The world rotates around your character
