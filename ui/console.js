@@ -1007,6 +1007,7 @@ window.UI.console = {
         console.log('  minimap create <name> - Create new minimap');
         console.log('  minimap remove <name> - Remove minimap');
         console.log('  minimap config <name> - Show minimap configuration');
+        console.log('  minimap togglechunks <name> - Toggle chunk display on minimap');
         return;
       }
 
@@ -1086,6 +1087,26 @@ window.UI.console = {
             const minimap = UI.minimapManager.getMinimap(args[1]);
             if (minimap) {
               console.log(`[Console] Minimap '${args[1]}' configuration:`, minimap._getSerializableConfig());
+            } else {
+              console.error(`[Console] Minimap '${args[1]}' not found`);
+            }
+          } else {
+            console.error('[Console] Minimap manager not available');
+          }
+          break;
+
+        case 'togglechunks':
+          if (args.length < 2) {
+            console.error('[Console] Usage: minimap togglechunks <name>');
+            return;
+          }
+          if (UI.minimapManager) {
+            const minimap = UI.minimapManager.getMinimap(args[1]);
+            if (minimap) {
+              minimap.showChunks = !minimap.showChunks;
+              minimap.render();
+              UI.minimapManager.saveAllMinimaps();
+              console.log(`[Console] Minimap '${args[1]}' chunks display is now ${minimap.showChunks ? 'ON' : 'OFF'}`);
             } else {
               console.error(`[Console] Minimap '${args[1]}' not found`);
             }

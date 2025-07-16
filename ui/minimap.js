@@ -25,6 +25,11 @@ const MINIMAP_CONFIG = {
   defaultPlayerDotSize: 6,
   defaultWorldBorderWidth: 1,
   defaultWorldBorderColor: '#333',
+  // Chunk display config
+  defaultShowChunks: true,
+  defaultChunkColor: 'rgba(255,255,255,0.1)',
+  defaultChunkBorderColor: 'rgba(255,255,255,0.2)',
+  defaultChunkBorderWidth: 1,
   // Drag handle config
   handleSize: 7,
   handleLockedColor: '#e53935',
@@ -57,6 +62,10 @@ if (!window.Minimap) {
       this.playerDotSize = config.playerDotSize || MINIMAP_CONFIG.defaultPlayerDotSize;
       this.worldBorderWidth = config.worldBorderWidth || MINIMAP_CONFIG.defaultWorldBorderWidth;
       this.worldBorderColor = config.worldBorderColor || MINIMAP_CONFIG.defaultWorldBorderColor;
+      this.showChunks = config.showChunks !== undefined ? config.showChunks : MINIMAP_CONFIG.defaultShowChunks;
+      this.chunkColor = config.chunkColor || MINIMAP_CONFIG.defaultChunkColor;
+      this.chunkBorderColor = config.chunkBorderColor || MINIMAP_CONFIG.defaultChunkBorderColor;
+      this.chunkBorderWidth = config.chunkBorderWidth || MINIMAP_CONFIG.defaultChunkBorderWidth;
       this.visible = config.visible !== undefined ? config.visible : true;
       
       // State
@@ -251,6 +260,11 @@ if (!window.Minimap) {
       ctx.lineWidth = this.worldBorderWidth;
       ctx.strokeRect(worldMargin, worldMargin, worldWidth, worldHeight);
       
+      // Draw chunks if enabled
+      if (this.showChunks && typeof World !== 'undefined') {
+        this._drawChunks(ctx, worldMargin, worldWidth, worldHeight);
+      }
+      
       // Draw player position (triangle showing direction)
       if (typeof Player !== 'undefined' && typeof World !== 'undefined') {
         const worldBounds = {
@@ -345,6 +359,47 @@ if (!window.Minimap) {
       ctx.restore();
     }
     
+    _drawChunks(ctx, worldMargin, worldWidth, worldHeight) {
+      if (typeof World === 'undefined') return;
+      
+      const worldBounds = {
+        minX: 0,
+        minY: 0,
+        maxX: World.width,
+        maxY: World.height
+      };
+      
+      // Get chunk information
+      const chunkCount = World.getChunkCount();
+      const chunkSize = World.config.chunkSize * World.config.tileSize; // Chunk size in pixels
+      
+      // Calculate chunk dimensions on minimap
+      const chunkWidth = worldWidth / chunkCount.x;
+      const chunkHeight = worldHeight / chunkCount.y;
+      
+      // Draw each chunk
+      for (let chunkY = 0; chunkY < chunkCount.y; chunkY++) {
+        for (let chunkX = 0; chunkX < chunkCount.x; chunkX++) {
+          // Calculate chunk position on minimap
+          const chunkMinimapX = worldMargin + chunkX * chunkWidth;
+          const chunkMinimapY = worldMargin + chunkY * chunkHeight;
+          
+          // Check if chunk is loaded
+          const chunkKey = World.getChunkKey(chunkX, chunkY);
+          const isLoaded = World.chunkCache.has(chunkKey);
+          
+          // Draw chunk background
+          ctx.fillStyle = isLoaded ? this.chunkColor : 'rgba(100,100,100,0.05)';
+          ctx.fillRect(chunkMinimapX, chunkMinimapY, chunkWidth, chunkHeight);
+          
+          // Draw chunk border
+          ctx.strokeStyle = isLoaded ? this.chunkBorderColor : 'rgba(100,100,100,0.1)';
+          ctx.lineWidth = this.chunkBorderWidth;
+          ctx.strokeRect(chunkMinimapX, chunkMinimapY, chunkWidth, chunkHeight);
+        }
+      }
+    }
+    
     updateConfig(newConfig) {
       Object.assign(this, newConfig);
       this.render();
@@ -363,6 +418,21 @@ if (!window.Minimap) {
     _showJsonPopup() {
       if (this._jsonPopup) return; // already open
       
+      // Create toggle chunks button configuration
+      const buttons = [{
+        text: this.showChunks ? 'Hide Chunks' : 'Show Chunks',
+        style: {
+          background: this.showChunks ? '#ff9800' : '#4caf50',
+          color: '#fff',
+          border: 'none',
+          padding: '6px 16px',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          marginLeft: '8px'
+        },
+        onClick: () => this._toggleChunks()
+      }];
+      
       // Create and show the JSON popup
       this._jsonPopup = new this._JsonPopupClass({
         title: `Edit Minimap: ${this.name}`,
@@ -378,10 +448,25 @@ if (!window.Minimap) {
         onClose: () => {
           this._jsonPopup = null;
         },
-        buttons: [] // No custom buttons for minimap currently
+        buttons: buttons
       });
       
       this._jsonPopup.show();
+    }
+    
+    _toggleChunks() {
+      this.showChunks = !this.showChunks;
+      this.render();
+      if (window.UI && window.UI.minimapManager) window.UI.minimapManager.saveAllMinimaps();
+      
+      // Update the button text in the popup
+      if (this._jsonPopup && this._jsonPopup.popup) {
+        const button = this._jsonPopup.popup.querySelector('button');
+        if (button) {
+          button.textContent = this.showChunks ? 'Hide Chunks' : 'Show Chunks';
+          button.style.background = this.showChunks ? '#ff9800' : '#4caf50';
+        }
+      }
     }
     
     _getSerializableConfig() {
@@ -403,6 +488,10 @@ if (!window.Minimap) {
         playerDotSize: this.playerDotSize,
         worldBorderWidth: this.worldBorderWidth,
         worldBorderColor: this.worldBorderColor,
+        showChunks: this.showChunks,
+        chunkColor: this.chunkColor,
+        chunkBorderColor: this.chunkBorderColor,
+        chunkBorderWidth: this.chunkBorderWidth,
         visible: this.visible,
         handleSize: this._handleSize,
         handleLockedColor: this._handleLockedColor,
@@ -528,6 +617,10 @@ function createDefaultMinimap() {
       position: { right: 20, top: 20 },
       zIndex: 997,
       opacity: 0.9,
+      showChunks: true,
+      chunkColor: 'rgba(255,255,255,0.1)',
+      chunkBorderColor: 'rgba(255,255,255,0.2)',
+      chunkBorderWidth: 1,
       colors: {
         background: 'rgba(0,0,0,0.8)',
         border: '#666',
