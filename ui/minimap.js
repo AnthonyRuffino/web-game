@@ -22,14 +22,9 @@ const MINIMAP_CONFIG = {
   defaultTextColor: '#fff',
   defaultTextOutline: 'rgba(0,0,0,0.8)',
   defaultTextOutlineWidth: 2,
-  defaultPlayerDotSize: 6,
+  defaultPlayerDotSize: 3,
   defaultWorldBorderWidth: 1,
   defaultWorldBorderColor: '#333',
-  // Chunk display config
-  defaultShowChunks: true,
-  defaultChunkColor: 'rgba(255,255,255,0.1)',
-  defaultChunkBorderColor: 'rgba(255,255,255,0.2)',
-  defaultChunkBorderWidth: 1,
   // Biome tile display config
   defaultShowBiomeTiles: true,
   defaultBiomeTileOpacity: 0.6,
@@ -65,10 +60,6 @@ if (!window.Minimap) {
       this.playerDotSize = config.playerDotSize || MINIMAP_CONFIG.defaultPlayerDotSize;
       this.worldBorderWidth = config.worldBorderWidth || MINIMAP_CONFIG.defaultWorldBorderWidth;
       this.worldBorderColor = config.worldBorderColor || MINIMAP_CONFIG.defaultWorldBorderColor;
-      this.showChunks = config.showChunks !== undefined ? config.showChunks : MINIMAP_CONFIG.defaultShowChunks;
-      this.chunkColor = config.chunkColor || MINIMAP_CONFIG.defaultChunkColor;
-      this.chunkBorderColor = config.chunkBorderColor || MINIMAP_CONFIG.defaultChunkBorderColor;
-      this.chunkBorderWidth = config.chunkBorderWidth || MINIMAP_CONFIG.defaultChunkBorderWidth;
       this.showBiomeTiles = config.showBiomeTiles !== undefined ? config.showBiomeTiles : MINIMAP_CONFIG.defaultShowBiomeTiles;
       this.biomeTileOpacity = config.biomeTileOpacity || MINIMAP_CONFIG.defaultBiomeTileOpacity;
       this.visible = config.visible !== undefined ? config.visible : true;
@@ -257,18 +248,21 @@ if (!window.Minimap) {
       const worldWidth = canvas.width - worldMargin * 2;
       const worldHeight = canvas.height - worldMargin * 2;
       
-      ctx.fillStyle = this.colors.world;
-      ctx.fillRect(worldMargin, worldMargin, worldWidth, worldHeight);
+      // Draw cached world map
+      const worldMap = window.UI.minimapManager.getWorldMap();
+      if (worldMap && worldMap.complete) {
+        // Draw the cached world map directly (it's already the right size)
+        ctx.drawImage(worldMap, 0, 0, canvas.width, canvas.height);
+      } else {
+        // Fallback: draw black background if world map not ready
+        ctx.fillStyle = this.colors.world;
+        ctx.fillRect(worldMargin, worldMargin, worldWidth, worldHeight);
+      }
       
       // Draw world border
       ctx.strokeStyle = this.worldBorderColor;
       ctx.lineWidth = this.worldBorderWidth;
       ctx.strokeRect(worldMargin, worldMargin, worldWidth, worldHeight);
-      
-      // Draw chunks if enabled
-      if (this.showChunks && typeof World !== 'undefined') {
-        this._drawChunks(ctx, worldMargin, worldWidth, worldHeight);
-      }
       
       // Draw player position (triangle showing direction)
       if (typeof Player !== 'undefined' && typeof World !== 'undefined') {
@@ -364,98 +358,6 @@ if (!window.Minimap) {
       ctx.restore();
     }
     
-    _drawChunks(ctx, worldMargin, worldWidth, worldHeight) {
-      if (typeof World === 'undefined') return;
-      
-      const worldBounds = {
-        minX: 0,
-        minY: 0,
-        maxX: World.width,
-        maxY: World.height
-      };
-      
-      // Get chunk information
-      const chunkCount = World.getChunkCount();
-      const chunkSize = World.config.chunkSize * World.config.tileSize; // Chunk size in pixels
-      
-      // Calculate chunk dimensions on minimap
-      const chunkWidth = worldWidth / chunkCount.x;
-      const chunkHeight = worldHeight / chunkCount.y;
-      
-      // Draw each chunk
-      for (let chunkY = 0; chunkY < chunkCount.y; chunkY++) {
-        for (let chunkX = 0; chunkX < chunkCount.x; chunkX++) {
-          // Calculate chunk position on minimap
-          const chunkMinimapX = worldMargin + chunkX * chunkWidth;
-          const chunkMinimapY = worldMargin + chunkY * chunkHeight;
-          
-          // Check if chunk is loaded
-          const chunkKey = World.getChunkKey(chunkX, chunkY);
-          const isLoaded = World.chunkCache.has(chunkKey);
-          
-          // Get biome for this chunk
-          const biome = World.chunkBiomeMap.get(chunkKey) || 'plains';
-          
-          // Draw biome tile if enabled
-          if (this.showBiomeTiles && typeof EntityRenderer !== 'undefined') {
-            this._drawBiomeTile(ctx, chunkMinimapX, chunkMinimapY, chunkWidth, chunkHeight, biome);
-          }
-          
-          // Draw chunk background
-          ctx.fillStyle = isLoaded ? this.chunkColor : 'rgba(100,100,100,0.05)';
-          ctx.fillRect(chunkMinimapX, chunkMinimapY, chunkWidth, chunkHeight);
-          
-          // Draw chunk border
-          ctx.strokeStyle = isLoaded ? this.chunkBorderColor : 'rgba(100,100,100,0.1)';
-          ctx.lineWidth = this.chunkBorderWidth;
-          ctx.strokeRect(chunkMinimapX, chunkMinimapY, chunkWidth, chunkHeight);
-        }
-      }
-    }
-    
-    _drawBiomeTile(ctx, x, y, width, height, biome) {
-      if (typeof EntityRenderer === 'undefined') return;
-      
-      // Get biome background image from cache
-      const bgKey = `background-${biome}`;
-      const bgEntry = EntityRenderer.getCachedImage(bgKey);
-      
-      if (bgEntry && bgEntry.image && bgEntry.image.complete) {
-        ctx.save();
-        ctx.globalAlpha = this.biomeTileOpacity;
-        
-        // Draw the biome background image scaled to chunk size
-        ctx.drawImage(
-          bgEntry.image,
-          x, y,
-          width, height
-        );
-        
-        ctx.restore();
-      } else {
-        // Fallback: draw biome color if image not available
-        ctx.save();
-        ctx.globalAlpha = this.biomeTileOpacity;
-        
-        let biomeColor;
-        switch (biome) {
-          case 'plains':
-            biomeColor = '#3cb043';
-            break;
-          case 'desert':
-            biomeColor = '#f7e9a0';
-            break;
-          default:
-            biomeColor = '#666666';
-        }
-        
-        ctx.fillStyle = biomeColor;
-        ctx.fillRect(x, y, width, height);
-        
-        ctx.restore();
-      }
-    }
-    
     updateConfig(newConfig) {
       Object.assign(this, newConfig);
       this.render();
@@ -476,19 +378,6 @@ if (!window.Minimap) {
       
       // Create toggle buttons configuration
       const buttons = [
-        {
-          text: this.showChunks ? 'Hide Chunks' : 'Show Chunks',
-          style: {
-            background: this.showChunks ? '#ff9800' : '#4caf50',
-            color: '#fff',
-            border: 'none',
-            padding: '6px 16px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            marginLeft: '8px'
-          },
-          onClick: () => this._toggleChunks()
-        },
         {
           text: this.showBiomeTiles ? 'Hide Biomes' : 'Show Biomes',
           style: {
@@ -525,8 +414,14 @@ if (!window.Minimap) {
       this._jsonPopup.show();
     }
     
-    _toggleChunks() {
-      this.showChunks = !this.showChunks;
+    _toggleBiomeTiles() {
+      this.showBiomeTiles = !this.showBiomeTiles;
+      
+      // Mark world map as dirty so it regenerates with new biome settings
+      if (window.UI && window.UI.minimapManager) {
+        window.UI.minimapManager.markWorldMapDirty();
+      }
+      
       this.render();
       if (window.UI && window.UI.minimapManager) window.UI.minimapManager.saveAllMinimaps();
       
@@ -534,23 +429,8 @@ if (!window.Minimap) {
       if (this._jsonPopup && this._jsonPopup.popup) {
         const buttons = this._jsonPopup.popup.querySelectorAll('button');
         if (buttons[0]) {
-          buttons[0].textContent = this.showChunks ? 'Hide Chunks' : 'Show Chunks';
-          buttons[0].style.background = this.showChunks ? '#ff9800' : '#4caf50';
-        }
-      }
-    }
-    
-    _toggleBiomeTiles() {
-      this.showBiomeTiles = !this.showBiomeTiles;
-      this.render();
-      if (window.UI && window.UI.minimapManager) window.UI.minimapManager.saveAllMinimaps();
-      
-      // Update the button text in the popup
-      if (this._jsonPopup && this._jsonPopup.popup) {
-        const buttons = this._jsonPopup.popup.querySelectorAll('button');
-        if (buttons[1]) {
-          buttons[1].textContent = this.showBiomeTiles ? 'Hide Biomes' : 'Show Biomes';
-          buttons[1].style.background = this.showBiomeTiles ? '#ff9800' : '#4caf50';
+          buttons[0].textContent = this.showBiomeTiles ? 'Hide Biomes' : 'Show Biomes';
+          buttons[0].style.background = this.showBiomeTiles ? '#ff9800' : '#4caf50';
         }
       }
     }
@@ -574,10 +454,6 @@ if (!window.Minimap) {
         playerDotSize: this.playerDotSize,
         worldBorderWidth: this.worldBorderWidth,
         worldBorderColor: this.worldBorderColor,
-        showChunks: this.showChunks,
-        chunkColor: this.chunkColor,
-        chunkBorderColor: this.chunkBorderColor,
-        chunkBorderWidth: this.chunkBorderWidth,
         showBiomeTiles: this.showBiomeTiles,
         biomeTileOpacity: this.biomeTileOpacity,
         visible: this.visible,
@@ -609,6 +485,11 @@ if (!window.Minimap) {
       if (newConfig.width || newConfig.height) {
         this.canvas.width = this.width;
         this.canvas.height = this.height;
+        
+        // Regenerate world map with new dimensions
+        if (window.UI && window.UI.minimapManager) {
+          window.UI.minimapManager.regenerateWorldMapForMinimap(this);
+        }
       }
       // Update positioning
       if (newConfig.position) {
@@ -632,6 +513,9 @@ if (!window.Minimap) {
 window.UI.minimapManager = {
   minimaps: {},
   minimapsStorageKey: 'ui_minimaps',
+  cachedWorldMap: null, // Cached PNG image of the entire world
+  worldMapCanvas: null, // Canvas used to generate the world map
+  worldMapDirty: true, // Flag to indicate if world map needs regeneration
 
   saveAllMinimaps() {
     const minimapsData = {};
@@ -690,6 +574,168 @@ window.UI.minimapManager = {
 
   listMinimaps() {
     return Object.keys(this.minimaps);
+  },
+
+  // Generate the cached world map
+  generateWorldMap() {
+    if (typeof World === 'undefined') return;
+    
+    console.log('[MinimapManager] Generating cached world map...');
+    
+    // Create a canvas for generating the world map
+    if (!this.worldMapCanvas) {
+      this.worldMapCanvas = document.createElement('canvas');
+    }
+    
+    const canvas = this.worldMapCanvas;
+    const ctx = canvas.getContext('2d');
+    
+    // Get minimap dimensions from the first minimap (or use defaults)
+    let minimapWidth = 200;
+    let minimapHeight = 150;
+    const minimapNames = Object.keys(this.minimaps);
+    if (minimapNames.length > 0) {
+      const firstMinimap = this.minimaps[minimapNames[0]];
+      minimapWidth = firstMinimap.width || 200;
+      minimapHeight = firstMinimap.height || 150;
+    }
+    
+    // Set canvas size to match minimap dimensions (not world dimensions)
+    const worldMargin = 10; // padding
+    const worldWidth = minimapWidth - worldMargin * 2;
+    const worldHeight = minimapHeight - worldMargin * 2;
+    canvas.width = minimapWidth;
+    canvas.height = minimapHeight;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw world background
+    ctx.fillStyle = '#000';
+    ctx.fillRect(worldMargin, worldMargin, worldWidth, worldHeight);
+    
+    // Get chunk information
+    const chunkCount = World.getChunkCount();
+    const chunkSize = World.config.chunkSize * World.config.tileSize; // Full world chunk size
+    
+    // Calculate scaled chunk dimensions for minimap
+    const scaledChunkWidth = worldWidth / chunkCount.x;
+    const scaledChunkHeight = worldHeight / chunkCount.y;
+    
+    // Get biome tile opacity from first minimap (or use default)
+    let biomeOpacity = 0.6; // default
+    if (minimapNames.length > 0) {
+      const firstMinimap = this.minimaps[minimapNames[0]];
+      biomeOpacity = firstMinimap.biomeTileOpacity || 0.6;
+    }
+    
+    // Draw all chunks with their biome tiles (scaled down)
+    for (let chunkY = 0; chunkY < chunkCount.y; chunkY++) {
+      for (let chunkX = 0; chunkX < chunkCount.x; chunkX++) {
+        const chunkMinimapX = worldMargin + chunkX * scaledChunkWidth;
+        const chunkMinimapY = worldMargin + chunkY * scaledChunkHeight;
+        
+        // Get biome for this chunk
+        const chunkKey = World.getChunkKey(chunkX, chunkY);
+        const biome = World.chunkBiomeMap.get(chunkKey) || 'plains';
+        
+        // Draw biome tile (scaled down to minimap size)
+        this._drawBiomeTileOnWorldMap(ctx, chunkMinimapX, chunkMinimapY, scaledChunkWidth, scaledChunkHeight, biome, biomeOpacity);
+      }
+    }
+    
+    // Draw chunk grid lines (scaled down)
+    this._drawChunkGridOnWorldMap(ctx, chunkCount, scaledChunkWidth, scaledChunkHeight, worldMargin);
+    
+    // Convert canvas to image
+    this.cachedWorldMap = new Image();
+    this.cachedWorldMap.src = canvas.toDataURL();
+    
+    this.worldMapDirty = false;
+    console.log('[MinimapManager] World map generated and cached');
+  },
+
+  // Draw biome tile on world map (scaled down)
+  _drawBiomeTileOnWorldMap(ctx, x, y, width, height, biome, opacity = 0.6) {
+    if (typeof EntityRenderer === 'undefined') return;
+    
+    // Get biome background image from cache
+    const bgKey = `background-${biome}`;
+    const bgEntry = EntityRenderer.getCachedImage(bgKey);
+    
+    if (bgEntry && bgEntry.image && bgEntry.image.complete) {
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(bgEntry.image, x, y, width, height);
+      ctx.globalAlpha = 1.0;
+    } else {
+      // Fallback: draw biome color if image not available
+      ctx.globalAlpha = opacity;
+      let biomeColor;
+      switch (biome) {
+        case 'plains':
+          biomeColor = '#3cb043';
+          break;
+        case 'desert':
+          biomeColor = '#f7e9a0';
+          break;
+        default:
+          biomeColor = '#666666';
+      }
+      
+      ctx.fillStyle = biomeColor;
+      ctx.fillRect(x, y, width, height);
+      ctx.globalAlpha = 1.0;
+    }
+  },
+
+  // Draw chunk grid on world map (scaled down)
+  _drawChunkGridOnWorldMap(ctx, chunkCount, scaledChunkWidth, scaledChunkHeight, worldMargin) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    
+    // Draw vertical grid lines
+    for (let x = 1; x < chunkCount.x; x++) {
+      const gridX = worldMargin + x * scaledChunkWidth;
+      ctx.beginPath();
+      ctx.moveTo(gridX, worldMargin);
+      ctx.lineTo(gridX, worldMargin + chunkCount.y * scaledChunkHeight);
+      ctx.stroke();
+    }
+    
+    // Draw horizontal grid lines
+    for (let y = 1; y < chunkCount.y; y++) {
+      const gridY = worldMargin + y * scaledChunkHeight;
+      ctx.beginPath();
+      ctx.moveTo(worldMargin, gridY);
+      ctx.lineTo(worldMargin + chunkCount.x * scaledChunkWidth, gridY);
+      ctx.stroke();
+    }
+  },
+
+  // Mark world map as dirty (needs regeneration)
+  markWorldMapDirty() {
+    this.worldMapDirty = true;
+  },
+
+  // Regenerate world map when minimap dimensions change
+  regenerateWorldMapForMinimap(minimap) {
+    // Store the minimap dimensions temporarily
+    const originalMinimaps = this.minimaps;
+    this.minimaps = { temp: minimap };
+    
+    // Generate the world map with the new dimensions
+    this.generateWorldMap();
+    
+    // Restore the original minimaps
+    this.minimaps = originalMinimaps;
+  },
+
+  // Get the cached world map, generating it if needed
+  getWorldMap() {
+    if (this.worldMapDirty || !this.cachedWorldMap) {
+      this.generateWorldMap();
+    }
+    return this.cachedWorldMap;
   }
 };
 
@@ -705,10 +751,6 @@ function createDefaultMinimap() {
       position: { right: 20, top: 20 },
       zIndex: 997,
       opacity: 0.9,
-      showChunks: true,
-      chunkColor: 'rgba(255,255,255,0.1)',
-      chunkBorderColor: 'rgba(255,255,255,0.2)',
-      chunkBorderWidth: 1,
       showBiomeTiles: true,
       biomeTileOpacity: 0.6,
       colors: {
