@@ -45,7 +45,29 @@ const ACTION_BAR_CONFIG = {
   defaultSlotLabelColor: '#fff',
   defaultSlotLabelOutlineColor: 'rgba(0,0,0,0.7)',
   defaultSlotLabelOutlineWidth: 3,
-  menuBarOffset: 32
+  menuBarOffset: 32,
+  handleSize: 7,
+  toggleSize: 10,
+  handleLockedColor: '#e53935',
+  handleEditableColor: '#43a047',
+  handleLockedShadow: '#b71c1c',
+  handleEditableShadow: '#1b5e20',
+  toggleDotColor: 'rgba(20,20,20,0.95)', // default to bar background
+  toggleDotShadow: 'rgba(0,0,0,0.2)',
+  toggleIconColor: '#444',
+  dotGap: 4,
+  // Dot positions (relative offsets)
+  dotPositions: {
+    horizontal: {
+      // dx, dy are offsets from bottom left
+      handle: { dx: 4, dy: 4 }, // bottom left, small padding
+      toggle: { dx: 4, dy: 4 } // will be adjusted in code
+    },
+    vertical: {
+      handle: { dx: 4, dy: 4 }, // bottom left
+      toggle: { dx: 4, dy: 4 } // will be adjusted in code
+    }
+  }
 };
 // --- End Action Bar Config ---
 
@@ -74,9 +96,18 @@ if (!window.ActionBar) {
       this._iconCache = {}; // Cache for loaded macro icons
       this._dragging = false;
       this._dragOffset = { x: 0, y: 0 };
-      this._handleSize = 10; // px, for handle dot (smaller)
-      this._handleActive = false; // true if dot is green (unlocked)
-      this._toggleSize = 10; // px, for orientation toggle dot
+      this._handleSize = config.handleSize || ACTION_BAR_CONFIG.handleSize;
+      this._toggleSize = config.toggleSize || ACTION_BAR_CONFIG.toggleSize;
+      this._handleLockedColor = config.handleLockedColor || ACTION_BAR_CONFIG.handleLockedColor;
+      this._handleEditableColor = config.handleEditableColor || ACTION_BAR_CONFIG.handleEditableColor;
+      this._handleLockedShadow = config.handleLockedShadow || ACTION_BAR_CONFIG.handleLockedShadow;
+      this._handleEditableShadow = config.handleEditableShadow || ACTION_BAR_CONFIG.handleEditableShadow;
+      this._toggleDotColor = config.toggleDotColor || ACTION_BAR_CONFIG.toggleDotColor;
+      this._toggleDotShadow = config.toggleDotShadow || ACTION_BAR_CONFIG.toggleDotShadow;
+      this._toggleIconColor = config.toggleIconColor || ACTION_BAR_CONFIG.toggleIconColor;
+      this._dotPositions = config.dotPositions || ACTION_BAR_CONFIG.dotPositions;
+      this._handleActive = config.handleActive || false; // true if dot is green (unlocked)
+      this._dotGap = config.dotGap || ACTION_BAR_CONFIG.dotGap;
       this._createCanvas();
       this._setupListeners();
       this.render();
@@ -147,16 +178,18 @@ if (!window.ActionBar) {
       });
     }
     _handleDragStart(e) {
-      // Only start drag if mouse is on the handle dot and dot is green (active)
+      // Allow drag from any border if handleActive is true
+      if (!this._handleActive) return;
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      const handleX = this.canvas.width - this._handleSize - 4;
-      const handleY = 4;
+      // Check if near any border (within 8px)
+      const borderThreshold = 8;
       if (
-        x >= handleX && x <= handleX + this._handleSize &&
-        y >= handleY && y <= handleY + this._handleSize &&
-        this._handleActive
+        x <= borderThreshold ||
+        x >= this.canvas.width - borderThreshold ||
+        y <= borderThreshold ||
+        y >= this.canvas.height - borderThreshold
       ) {
         this._dragging = true;
         // Calculate offset from mouse to top-left of bar
@@ -239,31 +272,36 @@ if (!window.ActionBar) {
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      const handleX = this.canvas.width - this._handleSize - 4;
-      const handleY = 4;
+      const pos = this._dotPositions[this.orientation];
+      // Bottom left for handle
+      const handleX = pos.handle.dx + this._handleSize / 2;
+      const handleY = this.canvas.height - pos.handle.dy - this._handleSize / 2;
       let toggleX, toggleY;
       if (this.orientation === 'horizontal') {
+        // Above handle
         toggleX = handleX;
-        toggleY = handleY + this._handleSize + 4;
+        toggleY = handleY - this._handleSize / 2 - this._toggleSize / 2 - this._dotGap;
       } else {
-        toggleX = handleX - this._toggleSize - 4;
+        // To the right of handle
+        toggleX = handleX + this._handleSize / 2 + this._toggleSize / 2 + this._dotGap;
         toggleY = handleY;
       }
       if (
-        x >= handleX && x <= handleX + this._handleSize &&
-        y >= handleY && y <= handleY + this._handleSize
+        x >= handleX - this._handleSize / 2 && x <= handleX + this._handleSize / 2 &&
+        y >= handleY - this._handleSize / 2 && y <= handleY + this._handleSize / 2
       ) {
         // Toggle handle active state (red <-> green)
         this._handleActive = !this._handleActive;
         this.render();
+        if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
         e.preventDefault();
         e.stopPropagation();
         return;
       }
       // Check if click is on the orientation toggle dot (only if handle is green)
       if (this._handleActive &&
-        x >= toggleX && x <= toggleX + this._toggleSize &&
-        y >= toggleY && y <= toggleY + this._toggleSize
+        x >= toggleX - this._toggleSize / 2 && x <= toggleX + this._toggleSize / 2 &&
+        y >= toggleY - this._toggleSize / 2 && y <= toggleY + this._toggleSize / 2
       ) {
         // Toggle orientation
         this.orientation = this.orientation === 'horizontal' ? 'vertical' : 'horizontal';
@@ -318,22 +356,25 @@ if (!window.ActionBar) {
       ctx.fillStyle = this.colors.background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.globalAlpha = 1.0;
-      // Draw draggable handle (dot) in top-right
+      // Draw draggable handle (dot) in bottom left
       ctx.save();
+      const pos = this._dotPositions[this.orientation];
+      const handleDotX = pos.handle.dx + this._handleSize / 2;
+      const handleDotY = canvas.height - pos.handle.dy - this._handleSize / 2;
       ctx.beginPath();
       ctx.arc(
-        canvas.width - this._handleSize / 2 - 4,
-        this._handleSize / 2 + 4,
+        handleDotX,
+        handleDotY,
         this._handleSize / 2,
         0, 2 * Math.PI
       );
       if (this._handleActive) {
-        ctx.fillStyle = '#43a047'; // green when active
-        ctx.shadowColor = '#1b5e20';
+        ctx.fillStyle = this._handleEditableColor;
+        ctx.shadowColor = this._handleEditableShadow;
         ctx.shadowBlur = 4;
       } else {
-        ctx.fillStyle = '#e53935'; // red when locked
-        ctx.shadowColor = '#b71c1c';
+        ctx.fillStyle = this._handleLockedColor;
+        ctx.shadowColor = this._handleLockedShadow;
         ctx.shadowBlur = 2;
       }
       ctx.fill();
@@ -342,11 +383,13 @@ if (!window.ActionBar) {
       if (this._handleActive) {
         let toggleDotX, toggleDotY;
         if (this.orientation === 'horizontal') {
-          toggleDotX = canvas.width - this._toggleSize / 2 - 4;
-          toggleDotY = this._handleSize + this._toggleSize / 2 + 8;
+          // Above handle
+          toggleDotX = handleDotX;
+          toggleDotY = handleDotY - this._handleSize / 2 - this._toggleSize / 2 - this._dotGap;
         } else {
-          toggleDotX = canvas.width - this._handleSize - this._toggleSize / 2 - 8;
-          toggleDotY = this._handleSize / 2 + 4;
+          // To the right of handle
+          toggleDotX = handleDotX + this._handleSize / 2 + this._toggleSize / 2 + this._dotGap;
+          toggleDotY = handleDotY;
         }
         ctx.save();
         ctx.beginPath();
@@ -356,8 +399,8 @@ if (!window.ActionBar) {
           this._toggleSize / 2,
           0, 2 * Math.PI
         );
-        ctx.fillStyle = this.colors.background;
-        ctx.shadowColor = 'rgba(0,0,0,0.2)';
+        ctx.fillStyle = this._toggleDotColor;
+        ctx.shadowColor = this._toggleDotShadow;
         ctx.shadowBlur = 1;
         ctx.fill();
         ctx.restore();
@@ -366,7 +409,7 @@ if (!window.ActionBar) {
         ctx.font = '10px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#444';
+        ctx.fillStyle = this._toggleIconColor;
         ctx.fillText('⟳', toggleDotX, toggleDotY);
         ctx.restore();
       }
@@ -513,7 +556,19 @@ window.UI.actionBarManager = {
         opacity: bar.opacity,
         colors: bar.colors,
         keyBindings: bar.keyBindings,
-        macroBindings: bar.macroBindings
+        macroBindings: bar.macroBindings,
+        handleSize: bar._handleSize,
+        toggleSize: bar._toggleSize,
+        handleLockedColor: bar._handleLockedColor,
+        handleEditableColor: bar._handleEditableColor,
+        handleLockedShadow: bar._handleLockedShadow,
+        handleEditableShadow: bar._handleEditableShadow,
+        toggleDotColor: bar._toggleDotColor,
+        toggleDotShadow: bar._toggleDotShadow,
+        toggleIconColor: bar._toggleIconColor,
+        dotPositions: bar._dotPositions,
+        dotGap: bar._dotGap,
+        handleActive: bar._handleActive
       };
     }
     try {
@@ -533,6 +588,9 @@ window.UI.actionBarManager = {
         // Avoid duplicate creation
         if (!this.bars[barName]) {
           this.createActionBar(config);
+        } else {
+          // Restore handleActive state from config
+          this.bars[barName]._handleActive = config.handleActive;
         }
       }
     } catch (e) {
