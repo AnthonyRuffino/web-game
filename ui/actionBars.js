@@ -1,6 +1,162 @@
 // ui/actionBars.js
 // Action bar system with multiple configurable bars
 
+// --- JSON Popup Classes ---
+class JsonPopupButton {
+  constructor(config) {
+    this.text = config.text || 'Button';
+    this.style = config.style || {
+      background: '#666',
+      color: '#fff',
+      border: 'none',
+      padding: '6px 16px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      marginLeft: '8px'
+    };
+    this.onClick = config.onClick || (() => {});
+    this.enabled = config.enabled !== false;
+  }
+
+  createElement() {
+    const button = document.createElement('button');
+    button.textContent = this.text;
+    
+    // Apply styles
+    Object.assign(button.style, this.style);
+    
+    // Add click handler
+    button.onclick = () => {
+      if (this.enabled) {
+        this.onClick();
+      }
+    };
+    
+    return button;
+  }
+}
+
+class JsonPopup {
+  constructor(config) {
+    this.title = config.title || 'Edit JSON';
+    this.jsonData = config.jsonData || {};
+    this.onSave = config.onSave || (() => {});
+    this.onCancel = config.onCancel || (() => {});
+    this.buttons = config.buttons || [];
+    this.popup = null;
+    this.textarea = null;
+    this.errorDiv = null;
+  }
+
+  show() {
+    if (this.popup) return; // already open
+
+    // Create popup elements
+    this.popup = document.createElement('div');
+    this.popup.style.position = 'fixed';
+    this.popup.style.left = '50%';
+    this.popup.style.top = '50%';
+    this.popup.style.transform = 'translate(-50%, -50%)';
+    this.popup.style.background = '#222';
+    this.popup.style.color = '#fff';
+    this.popup.style.padding = '20px';
+    this.popup.style.borderRadius = '8px';
+    this.popup.style.zIndex = 9999;
+    this.popup.style.boxShadow = '0 4px 32px #000a';
+    this.popup.style.minWidth = '400px';
+    this.popup.style.maxWidth = '90vw';
+    this.popup.style.maxHeight = '80vh';
+    this.popup.style.overflow = 'auto';
+
+    const label = document.createElement('div');
+    label.textContent = this.title + ':';
+    label.style.marginBottom = '8px';
+    this.popup.appendChild(label);
+
+    this.textarea = document.createElement('textarea');
+    this.textarea.style.width = '100%';
+    this.textarea.style.height = '200px';
+    this.textarea.style.background = '#111';
+    this.textarea.style.color = '#fff';
+    this.textarea.style.fontFamily = 'monospace';
+    this.textarea.style.fontSize = '14px';
+    this.textarea.value = JSON.stringify(this.jsonData, null, 2);
+    this.popup.appendChild(this.textarea);
+
+    this.errorDiv = document.createElement('div');
+    this.errorDiv.style.color = '#ff5252';
+    this.errorDiv.style.margin = '8px 0';
+    this.popup.appendChild(this.errorDiv);
+
+    const btnRow = document.createElement('div');
+    btnRow.style.display = 'flex';
+    btnRow.style.justifyContent = 'flex-end';
+    btnRow.style.gap = '8px';
+
+    // Add custom buttons first
+    this.buttons.forEach(buttonConfig => {
+      const button = new JsonPopupButton(buttonConfig);
+      btnRow.appendChild(button.createElement());
+    });
+
+    const submitBtn = document.createElement('button');
+    submitBtn.textContent = 'Save';
+    submitBtn.style.background = '#43a047';
+    submitBtn.style.color = '#fff';
+    submitBtn.style.border = 'none';
+    submitBtn.style.padding = '6px 16px';
+    submitBtn.style.borderRadius = '4px';
+    submitBtn.style.cursor = 'pointer';
+    submitBtn.onclick = () => this.handleSave();
+    btnRow.appendChild(submitBtn);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.background = '#e53935';
+    cancelBtn.style.color = '#fff';
+    cancelBtn.style.border = 'none';
+    cancelBtn.style.padding = '6px 16px';
+    cancelBtn.style.borderRadius = '4px';
+    cancelBtn.style.cursor = 'pointer';
+    cancelBtn.onclick = () => this.handleCancel();
+    btnRow.appendChild(cancelBtn);
+
+    this.popup.appendChild(btnRow);
+    document.body.appendChild(this.popup);
+  }
+
+  handleSave() {
+    try {
+      const newConfig = JSON.parse(this.textarea.value);
+      this.onSave(newConfig);
+      this.close();
+    } catch (err) {
+      this.errorDiv.textContent = 'Invalid JSON: ' + err.message;
+    }
+  }
+
+  handleCancel() {
+    this.onCancel();
+    this.close();
+  }
+
+  close() {
+    if (this.popup) {
+      document.body.removeChild(this.popup);
+      this.popup = null;
+      this.textarea = null;
+      this.errorDiv = null;
+    }
+  }
+
+  updateJsonData(newData) {
+    this.jsonData = newData;
+    if (this.textarea) {
+      this.textarea.value = JSON.stringify(this.jsonData, null, 2);
+    }
+  }
+}
+
 // --- Action Bar Config ---
 const ACTION_BAR_CONFIG = {
   defaultSlots: 10,
@@ -72,6 +228,8 @@ const ACTION_BAR_CONFIG = {
       toggle: { dx: 4, dy: 4 } // will be adjusted in code
     }
   },
+  // Corner placement support
+  defaultHandleCorner: 'bottomLeft', // 'bottomLeft', 'bottomRight', 'topLeft', 'topRight'
   defaultLayout: 'horizontal',
   defaultRows: 1,
   defaultColumns: 10,
@@ -120,7 +278,9 @@ if (!window.ActionBar) {
       this._dotPositions = config.dotPositions || ACTION_BAR_CONFIG.dotPositions;
       this._handleActive = config.handleActive || false; // true if dot is green (unlocked)
       this._dotGap = config.dotGap || ACTION_BAR_CONFIG.dotGap;
+      this._handleCorner = config.handleCorner || ACTION_BAR_CONFIG.defaultHandleCorner;
       this._jsonPopup = null; // reference to popup DOM
+      this._JsonPopupClass = config.JsonPopupClass || JsonPopup;
       this._createCanvas();
       this._setupListeners();
       this.render();
@@ -372,25 +532,55 @@ if (!window.ActionBar) {
       if (!found) this.hoveredSlot = null;
       this.render();
     }
+    
+    _calculateDotPositions() {
+      const pos = this._dotPositions[this.orientation || this.layout];
+      let handleX, handleY;
+      
+      // Calculate handle position based on corner
+      switch (this._handleCorner) {
+        case 'topRight':
+          handleX = this.canvas.width - pos.handle.dx - this._handleSize / 2;
+          handleY = pos.handle.dy + this._handleSize / 2;
+          break;
+        case 'topLeft':
+          handleX = pos.handle.dx + this._handleSize / 2;
+          handleY = pos.handle.dy + this._handleSize / 2;
+          break;
+        case 'bottomRight':
+          handleX = this.canvas.width - pos.handle.dx - this._handleSize / 2;
+          handleY = this.canvas.height - pos.handle.dy - this._handleSize / 2;
+          break;
+        case 'bottomLeft':
+        default:
+          handleX = pos.handle.dx + this._handleSize / 2;
+          handleY = this.canvas.height - pos.handle.dy - this._handleSize / 2;
+          break;
+      }
+      
+      // Calculate toggle position relative to handle
+      let toggleX, toggleY;
+      if ((this.orientation || this.layout) === 'horizontal') {
+        // For horizontal bars, toggle is above the handle
+        toggleX = handleX;
+        toggleY = handleY - this._handleSize / 2 - this._toggleSize / 2 - this._dotGap;
+      } else {
+        // For vertical bars, toggle is to the right of the handle
+        toggleX = handleX + this._handleSize / 2 + this._toggleSize / 2 + this._dotGap;
+        toggleY = handleY;
+      }
+      
+      return { handleX, handleY, toggleX, toggleY };
+    }
+    
     _handleClick(e) {
       // Check if click is on the handle dot
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      const pos = this._dotPositions[this.orientation || this.layout];
-      // Bottom left for handle
-      const handleX = pos.handle.dx + this._handleSize / 2;
-      const handleY = this.canvas.height - pos.handle.dy - this._handleSize / 2;
-      let toggleX, toggleY;
-      if ((this.orientation || this.layout) === 'horizontal') {
-        // Above handle
-        toggleX = handleX;
-        toggleY = handleY - this._handleSize / 2 - this._toggleSize / 2 - this._dotGap;
-      } else {
-        // To the right of handle
-        toggleX = handleX + this._handleSize / 2 + this._toggleSize / 2 + this._dotGap;
-        toggleY = handleY;
-      }
+      
+      // Calculate handle and toggle positions based on corner
+      const { handleX, handleY, toggleX, toggleY } = this._calculateDotPositions();
       if (
         x >= handleX - this._handleSize / 2 && x <= handleX + this._handleSize / 2 &&
         y >= handleY - this._handleSize / 2 && y <= handleY + this._handleSize / 2
@@ -410,48 +600,7 @@ if (!window.ActionBar) {
         e.stopPropagation();
         return;
       }
-      // Check if click is on the orientation toggle dot (only if handle is green)
-      if (this._handleActive && this.layout !== 'grid' &&
-        x >= toggleX - this._toggleSize / 2 && x <= toggleX + this._toggleSize / 2 &&
-        y >= toggleY - this._toggleSize / 2 && y <= toggleY + this._toggleSize / 2
-      ) {
-        // Capture the current bottom-left corner position before any changes
-        const rect = this.canvas.getBoundingClientRect();
-        let bottomLeftX = rect.left;
-        let bottomLeftY = rect.bottom;
-        
-        // If this is a horizontal bar positioned at bottom, we need to account for menuBarOffset
-        if (this.orientation === 'horizontal' && 'bottom' in this.position) {
-          // The rect.bottom includes the menuBarOffset, so we need to get the actual position
-          // Try a smaller offset to account for the exact positioning
-          bottomLeftY = rect.bottom - (ACTION_BAR_CONFIG.menuBarOffset / 4);
-        }
-        
-        // Toggle orientation and layout
-        const newOrientation = this.orientation === 'horizontal' ? 'vertical' : 'horizontal';
-        this.orientation = newOrientation;
-        this.layout = newOrientation;
-        
-        // Recalculate rows and columns for the new layout
-        if (newOrientation === 'vertical') {
-          this.rows = this.slots; // All slots in one column
-          this.columns = 1;
-        } else {
-          this.rows = 1; // All slots in one row
-          this.columns = this.slots;
-        }
-        
-        this._updateSize();
-        
-        // Apply the captured position to maintain the bottom-left corner location
-        this._applyPositionFromBottomLeft(bottomLeftX, bottomLeftY);
-        
-        this.render();
-        if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
+
       // Otherwise, normal slot click
       if (this.hoveredSlot === null) return;
       this.activeSlot = this.hoveredSlot;
@@ -567,11 +716,9 @@ if (!window.ActionBar) {
         }
       }
       
-      // Draw draggable handle (dot) in bottom left - always on top
+      // Draw draggable handle (dot) - always on top
       ctx.save();
-      const pos = this._dotPositions[this.orientation || this.layout];
-      const handleDotX = pos.handle.dx + this._handleSize / 2;
-      const handleDotY = canvas.height - pos.handle.dy - this._handleSize / 2;
+      const { handleX: handleDotX, handleY: handleDotY } = this._calculateDotPositions();
       ctx.beginPath();
       ctx.arc(
         handleDotX,
@@ -591,40 +738,7 @@ if (!window.ActionBar) {
       ctx.fill();
       ctx.restore();
       
-      // Draw orientation toggle dot (pivot) only if handle is green - always on top
-      if (this._handleActive && this.layout !== 'grid') {
-        let toggleDotX, toggleDotY;
-        if ((this.orientation || this.layout) === 'horizontal') {
-          // Above handle
-          toggleDotX = handleDotX;
-          toggleDotY = handleDotY - this._handleSize / 2 - this._toggleSize / 2 - this._dotGap;
-        } else {
-          // To the right of handle
-          toggleDotX = handleDotX + this._handleSize / 2 + this._toggleSize / 2 + this._dotGap;
-          toggleDotY = handleDotY;
-        }
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(
-          toggleDotX,
-          toggleDotY,
-          this._toggleSize / 2,
-          0, 2 * Math.PI
-        );
-        ctx.fillStyle = this._toggleDotColor;
-        ctx.shadowColor = this._toggleDotShadow;
-        ctx.shadowBlur = 1;
-        ctx.fill();
-        ctx.restore();
-        // Draw ⟳ icon in the center of the toggle dot
-        ctx.save();
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = this._toggleIconColor;
-        ctx.fillText('⟳', toggleDotX, toggleDotY);
-        ctx.restore();
-      }
+
     }
     _keyLabel(binding, row, col) {
       if (!binding) return '';
@@ -680,91 +794,89 @@ if (!window.ActionBar) {
     }
     _showJsonPopup() {
       if (this._jsonPopup) return; // already open
-      // Create popup elements
-      const popup = document.createElement('div');
-      popup.style.position = 'fixed';
-      popup.style.left = '50%';
-      popup.style.top = '50%';
-      popup.style.transform = 'translate(-50%, -50%)';
-      popup.style.background = '#222';
-      popup.style.color = '#fff';
-      popup.style.padding = '20px';
-      popup.style.borderRadius = '8px';
-      popup.style.zIndex = 9999;
-      popup.style.boxShadow = '0 4px 32px #000a';
-      popup.style.minWidth = '400px';
-      popup.style.maxWidth = '90vw';
-      popup.style.maxHeight = '80vh';
-      popup.style.overflow = 'auto';
-
-      const label = document.createElement('div');
-      label.textContent = 'Edit Action Bar JSON:';
-      label.style.marginBottom = '8px';
-      popup.appendChild(label);
-
-      const textarea = document.createElement('textarea');
-      textarea.style.width = '100%';
-      textarea.style.height = '200px';
-      textarea.style.background = '#111';
-      textarea.style.color = '#fff';
-      textarea.style.fontFamily = 'monospace';
-      textarea.style.fontSize = '14px';
-      textarea.value = JSON.stringify(this._getSerializableConfig(), null, 2);
-      popup.appendChild(textarea);
-
-      const errorDiv = document.createElement('div');
-      errorDiv.style.color = '#ff5252';
-      errorDiv.style.margin = '8px 0';
-      popup.appendChild(errorDiv);
-
-      const btnRow = document.createElement('div');
-      btnRow.style.display = 'flex';
-      btnRow.style.justifyContent = 'flex-end';
-      btnRow.style.gap = '8px';
-
-      const submitBtn = document.createElement('button');
-      submitBtn.textContent = 'Save';
-      submitBtn.style.background = '#43a047';
-      submitBtn.style.color = '#fff';
-      submitBtn.style.border = 'none';
-      submitBtn.style.padding = '6px 16px';
-      submitBtn.style.borderRadius = '4px';
-      submitBtn.style.cursor = 'pointer';
-      btnRow.appendChild(submitBtn);
-
-      const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.background = '#e53935';
-      cancelBtn.style.color = '#fff';
-      cancelBtn.style.border = 'none';
-      cancelBtn.style.padding = '6px 16px';
-      cancelBtn.style.borderRadius = '4px';
-      cancelBtn.style.cursor = 'pointer';
-      btnRow.appendChild(cancelBtn);
-
-      popup.appendChild(btnRow);
-
-      document.body.appendChild(popup);
-      this._jsonPopup = popup;
-
-      cancelBtn.onclick = () => {
-        document.body.removeChild(popup);
-        this._jsonPopup = null;
-      };
-
-      submitBtn.onclick = () => {
-        try {
-          const newConfig = JSON.parse(textarea.value);
-          // Update this bar with new config
+      
+      // Create rotate button configuration (only for non-grid layouts)
+      const buttons = [];
+      if (this.layout !== 'grid') {
+        buttons.push({
+          text: 'Rotate',
+          style: {
+            background: '#2196F3',
+            color: '#fff',
+            border: 'none',
+            padding: '6px 16px',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            marginLeft: '8px'
+          },
+          onClick: () => this._rotateActionBar()
+        });
+      }
+      
+      // Create and show the JSON popup
+      this._jsonPopup = new this._JsonPopupClass({
+        title: `Edit Action Bar: ${this.name}`,
+        jsonData: this._getSerializableConfig(),
+        onSave: (newConfig) => {
           this._applyConfig(newConfig);
           if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
-          document.body.removeChild(popup);
-          this._jsonPopup = null;
           this.render();
-        } catch (err) {
-          errorDiv.textContent = 'Invalid JSON: ' + err.message;
-        }
-      };
+        },
+        onCancel: () => {
+          this._jsonPopup = null;
+        },
+        buttons: buttons
+      });
+      
+      this._jsonPopup.show();
+    }
+    
+    _rotateActionBar() {
+      // Capture the current bottom-left corner position before any changes
+      const rect = this.canvas.getBoundingClientRect();
+      let bottomLeftX = rect.left;
+      let bottomLeftY = rect.bottom;
+      
+      // If this is a horizontal bar positioned at bottom, we need to account for menuBarOffset
+      if (this.orientation === 'horizontal' && 'bottom' in this.position) {
+        bottomLeftY = rect.bottom - (ACTION_BAR_CONFIG.menuBarOffset / 4);
+      }
+      
+      // Toggle orientation and layout
+      const newOrientation = this.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+      this.orientation = newOrientation;
+      this.layout = newOrientation;
+      
+      // Transform keyBindings to match the new orientation
+      if (newOrientation === 'vertical') {
+        // Convert from horizontal (1 row, N columns) to vertical (N rows, 1 column)
+        const oldKeyBindings = this.keyBindings[0] || [];
+        this.keyBindings = oldKeyBindings.map(key => [key]);
+        this.rows = this.slots; // All slots in one column
+        this.columns = 1;
+      } else {
+        // Convert from vertical (N rows, 1 column) to horizontal (1 row, N columns)
+        const oldKeyBindings = this.keyBindings.map(row => row[0]);
+        this.keyBindings = [oldKeyBindings];
+        this.rows = 1; // All slots in one row
+        this.columns = this.slots;
+      }
+      
+      this._updateSize();
+      
+      // Apply the captured position to maintain the bottom-left corner location
+      this._applyPositionFromBottomLeft(bottomLeftX, bottomLeftY);
+      
+      // Update the JSON popup with new data
+      if (this._jsonPopup) {
+        this._jsonPopup.updateJsonData(this._getSerializableConfig());
+      }
+      
+      this.render();
+      if (window.UI && window.UI.actionBarManager) {
+        window.UI.actionBarManager._rebuildKeyBindingMap();
+        window.UI.actionBarManager.saveAllBars();
+      }
     }
     _getSerializableConfig() {
       // Return the config as saved in saveAllBars
@@ -795,6 +907,7 @@ if (!window.ActionBar) {
         toggleIconColor: this._toggleIconColor,
         dotPositions: this._dotPositions,
         dotGap: this._dotGap,
+        handleCorner: this._handleCorner,
         handleActive: this._handleActive
       };
     }
@@ -835,35 +948,7 @@ window.UI.actionBarManager = {
     const barsData = {};
     for (const barName in this.bars) {
       const bar = this.bars[barName];
-      barsData[barName] = {
-        name: bar.name,
-        layout: bar.layout,
-        orientation: bar.orientation,
-        position: bar.position,
-        slots: bar.slots,
-        rows: bar.rows,
-        columns: bar.columns,
-        slotSize: bar.slotSize,
-        spacing: bar.spacing,
-        padding: bar.padding,
-        zIndex: bar.zIndex,
-        opacity: bar.opacity,
-        colors: bar.colors,
-        keyBindings: bar.keyBindings,
-        macroBindings: bar.macroBindings,
-        handleSize: bar._handleSize,
-        toggleSize: bar._toggleSize,
-        handleLockedColor: bar._handleLockedColor,
-        handleEditableColor: bar._handleEditableColor,
-        handleLockedShadow: bar._handleLockedShadow,
-        handleEditableShadow: bar._handleEditableShadow,
-        toggleDotColor: bar._toggleDotColor,
-        toggleDotShadow: bar._toggleDotShadow,
-        toggleIconColor: bar._toggleIconColor,
-        dotPositions: bar._dotPositions,
-        dotGap: bar._dotGap,
-        handleActive: bar._handleActive
-      };
+      barsData[barName] = bar._getSerializableConfig();
     }
     try {
       localStorage.setItem(this.barsStorageKey, JSON.stringify(barsData));
@@ -883,8 +968,11 @@ window.UI.actionBarManager = {
         if (!this.bars[barName]) {
           this.createActionBar(config);
         } else {
-          // Restore handleActive state from config
+          // Restore handleActive state and handleCorner from config
           this.bars[barName]._handleActive = config.handleActive;
+          if (config.handleCorner) {
+            this.bars[barName]._handleCorner = config.handleCorner;
+          }
         }
       }
     } catch (e) {
@@ -997,6 +1085,7 @@ function createDefaultActionBars() {
       spacing: 4,
       zIndex: 998,
       opacity: 0.95,
+      handleCorner: 'bottomLeft',
       keyBindings: [
         ['Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0']
       ]
@@ -1012,6 +1101,7 @@ function createDefaultActionBars() {
       spacing: 4,
       zIndex: 998,
       opacity: 0.95,
+      handleCorner: 'bottomRight',
       keyBindings: [
         ['Shift+Digit2','Shift+Digit2','Shift+Digit3','Shift+Digit4','Shift+Digit5','Shift+Digit6','Shift+Digit7','Shift+Digit8','Shift+Digit9','Shift+Digit0']
       ]
@@ -1028,6 +1118,7 @@ function createDefaultActionBars() {
       spacing: 4,
       zIndex: 998,
       opacity: 0.95,
+      handleCorner: 'bottomRight',
       keyBindings: [
         ['KeyF', "KeyG"],
         ["KeyH", "KeyI"]

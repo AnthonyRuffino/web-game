@@ -12,6 +12,7 @@ This document defines the requirements for a robust, fully configurable UI syste
 - **Extensibility:** The configuration system must be extensible to support new UI components, new style properties, and new layout paradigms as the game evolves.
 - **UI State Persistence:** When a user customizes the UI, their configuration should persist across sessions (via localStorage or user profile).
 - **Developer/Designer Workflow:** Developers and designers should be able to design a UI in-game, export the config, and ship it as the default or as an optional skin.
+- **JSON Popup Abstraction:** Create reusable, injectable JSON editing popup components that can be shared across different UI components.
 
 ## Requirements
 
@@ -50,6 +51,30 @@ This document defines the requirements for a robust, fully configurable UI syste
 ### 7. Documentation and Developer Guidance
 - All configuration properties must be documented.
 - Developers must be provided with clear guidelines for adding new UI components to the configuration system.
+
+### 8. JSON Popup Abstraction and Action Bar Rotation
+- **Remove rotate icon from action bars:** The visual rotate icon (⟳) and its click handling must be removed from action bars while preserving all rotation functionality.
+- **JSON Popup Class:** Create a reusable `JsonPopup` class that can be instantiated with:
+  - Title (e.g., action bar name)
+  - JSON data to edit
+  - Save callback function
+  - Optional button configurations for additional functionality
+- **Button Injection System:** Support injecting custom buttons into the JSON popup with:
+  - Full button configuration (text, style, position, etc.)
+  - Callback function for button actions
+  - Relative positioning within the popup
+- **Rotation Integration:** Add a "Rotate" button to action bar JSON popups that:
+  - Calls the action bar's rotation functionality
+  - Updates the JSON data to reflect the new orientation
+  - Maintains the popup state during rotation
+- **Dependency Injection:** Design the system to support dependency injection where:
+  - ActionBar and MiniMap classes receive popup/button classes as constructor dependencies
+  - Classes can be moved to separate files and injected as needed
+  - Global availability is maintained for backward compatibility
+- **Extensibility:** The system must support:
+  - Different button configurations for different UI components (1D bars need rotate, grids might need other functions, minimap might need other buttons)
+  - Easy addition of new functionality buttons
+  - Consistent popup behavior across all UI components
 
 ## Out of Scope (for this step)
 - The actual in-game UI editor (can be a future step).
