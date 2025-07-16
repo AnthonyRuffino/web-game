@@ -435,10 +435,14 @@ window.UI.macroManager = {
       return false;
     }
     
-    // Assign the macro
-    bar.assignMacro(slotIndex, macroName);
+    // Convert 1D slot index to 2D row/col coordinates
+    const row = Math.floor(slotIndex / bar.columns);
+    const col = slotIndex % bar.columns;
     
-    console.log(`[UI] Assigned macro '${macroName}' to ${barName} slot ${slotIndex}`);
+    // Assign the macro
+    bar.assignMacro(row, col, macroName);
+    
+    console.log(`[UI] Assigned macro '${macroName}' to ${barName} slot ${slotIndex} (row ${row}, col ${col})`);
     return true;
   },
   
@@ -466,10 +470,14 @@ window.UI.macroManager = {
       return false;
     }
     
-    // Remove the macro
-    bar.removeMacro(slotIndex);
+    // Convert 1D slot index to 2D row/col coordinates
+    const row = Math.floor(slotIndex / bar.columns);
+    const col = slotIndex % bar.columns;
     
-    console.log(`[UI] Removed macro from ${barName} slot ${slotIndex}`);
+    // Remove the macro
+    bar.removeMacro(row, col);
+    
+    console.log(`[UI] Removed macro from ${barName} slot ${slotIndex} (row ${row}, col ${col})`);
     return true;
   },
   

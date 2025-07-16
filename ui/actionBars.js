@@ -66,8 +66,15 @@ const ACTION_BAR_CONFIG = {
     vertical: {
       handle: { dx: 4, dy: 4 }, // bottom left
       toggle: { dx: 4, dy: 4 } // will be adjusted in code
+    },
+    grid: {
+      handle: { dx: 4, dy: 4 }, // bottom left
+      toggle: { dx: 4, dy: 4 } // will be adjusted in code
     }
-  }
+  },
+  defaultLayout: 'horizontal',
+  defaultRows: 1,
+  defaultColumns: 10,
 };
 // --- End Action Bar Config ---
 
@@ -76,16 +83,20 @@ if (!window.ActionBar) {
   class ActionBar {
     constructor(config) {
       this.name = config.name;
-      this.orientation = config.orientation || 'horizontal';
-      this.position = config.position || { left: 0, bottom: 0 };
-      this.slots = config.slots || ACTION_BAR_CONFIG.defaultSlots;
+      this.layout = config.layout || config.orientation || ACTION_BAR_CONFIG.defaultLayout;
+      this.orientation = (this.layout === 'horizontal' || this.layout === 'vertical') ? this.layout : undefined;
+      this.rows = config.rows || (this.layout === 'grid' ? (config.rows || ACTION_BAR_CONFIG.defaultRows) : (this.layout === 'vertical' ? (config.slots || ACTION_BAR_CONFIG.defaultSlots) : 1));
+      this.columns = config.columns || (this.layout === 'grid' ? (config.columns || ACTION_BAR_CONFIG.defaultColumns) : (this.layout === 'vertical' ? 1 : (config.slots || ACTION_BAR_CONFIG.defaultSlots)));
+      this.slots = this.rows * this.columns;
       this.slotSize = config.slotSize || ACTION_BAR_CONFIG.defaultSlotSize;
       this.spacing = config.spacing || ACTION_BAR_CONFIG.defaultSpacing;
       this.zIndex = config.zIndex || ACTION_BAR_CONFIG.defaultZIndex;
       this.opacity = config.opacity || ACTION_BAR_CONFIG.defaultOpacity;
       this.colors = Object.assign({}, ACTION_BAR_CONFIG.defaultColors, config.colors || {});
-      this.keyBindings = config.keyBindings || [];
-      this.macroBindings = config.macroBindings || {}; // { slotIndex: macroName }
+      this.position = config.position || { left: 0, bottom: 0 };
+      // Always use 2D arrays for keyBindings and macroBindings
+      this.keyBindings = config.keyBindings || Array.from({ length: this.rows }, () => Array(this.columns).fill(undefined));
+      this.macroBindings = config.macroBindings || Array.from({ length: this.rows }, () => Array(this.columns).fill(undefined));
       this.visible = true;
       // State
       this.canvas = null;
@@ -113,11 +124,27 @@ if (!window.ActionBar) {
       this._setupListeners();
       this.render();
     }
+    // Helpers for slot access
+    getSlot(row, col) {
+      return { key: (this.keyBindings[row] || [])[col], macro: (this.macroBindings[row] || [])[col] };
+    }
+    setSlot(row, col, key, macro) {
+      if(this.keyBindings[row] === undefined) this.keyBindings[row] = [];
+      if(this.macroBindings[row] === undefined) this.macroBindings[row] = [];
+      this.keyBindings[row][col] = key;
+      this.macroBindings[row][col] = macro;
+    }
+    getSlotByIndex(i) {
+      const row = Math.floor(i / this.columns);
+      const col = i % this.columns;
+      return this.getSlot(row, col);
+    }
     preloadIcons() {
       // Preload all macro icons for current bindings
       if (!window.UI || !window.UI.macroManager) return;
       for (let i = 0; i < this.slots; i++) {
-        const macroName = this.macroBindings[i];
+        const { row, col } = this._slotPosition(i);
+        const macroName = (this.macroBindings[row] || [])[col];
         if (macroName && window.UI.macroManager.macroIcons[macroName]) {
           const iconUrl = window.UI.macroManager.macroIcons[macroName];
           let img = this._iconCache[macroName];
@@ -134,34 +161,47 @@ if (!window.ActionBar) {
       const canvas = document.createElement('canvas');
       canvas.id = `ui-action-bar-${this.name}`;
       canvas.style.position = 'fixed';
-      for (const [k, v] of Object.entries(this.position)) {
-        // If this is a horizontal bar and positioned at the bottom, shift up by menuBarOffset for the menu bar
-        if (k === 'bottom' && this.orientation === 'horizontal') {
-          canvas.style[k] = typeof v === 'number' ? `${v + ACTION_BAR_CONFIG.menuBarOffset}px` : `calc(${v} + ${ACTION_BAR_CONFIG.menuBarOffset}px)`;
-        } else {
-          canvas.style[k] = typeof v === 'number' ? `${v}px` : v;
-        }
-      }
       canvas.style.zIndex = this.zIndex;
       canvas.style.border = `2px solid ${this.colors.border}`;
       canvas.style.borderRadius = '8px';
       canvas.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6)';
+      
+      // Add canvas to DOM first
       document.body.appendChild(canvas);
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
+      
+      // Now calculate size
       this._updateSize();
+      
+      // Then handle positioning
+      for (const [k, v] of Object.entries(this.position)) {
+        // If this is a horizontal bar and positioned at the bottom, shift up by menuBarOffset for the menu bar
+        if (k === 'bottom' && this.orientation === 'horizontal') {
+          canvas.style[k] = typeof v === 'number' ? `${v + ACTION_BAR_CONFIG.menuBarOffset}px` : `calc(${v} + ${ACTION_BAR_CONFIG.menuBarOffset}px)`;
+        } else if (k === 'right') {
+          // Handle right positioning by calculating left position
+          const rightPos = typeof v === 'number' ? v : parseInt(v);
+          canvas.style.left = `calc(100vw - ${rightPos + this.canvas.width}px)`;
+        } else {
+          canvas.style[k] = typeof v === 'number' ? `${v}px` : v;
+        }
+      }
     }
     _updateSize() {
-      const count = this.slots;
       const slot = this.slotSize;
       const spacing = this.spacing;
       const padding = ACTION_BAR_CONFIG.defaultPadding;
-      if (this.orientation === 'horizontal') {
-        this.canvas.width = count * slot + (count - 1) * spacing + padding;
+      if (this.layout === 'grid') {
+        this.canvas.width = this.columns * slot + (this.columns - 1) * spacing + padding;
+        this.canvas.height = this.rows * slot + (this.rows - 1) * spacing + padding;
+      } else if (this.layout === 'horizontal') {
+        this.canvas.width = this.columns * slot + (this.columns - 1) * spacing + padding;
         this.canvas.height = slot + ACTION_BAR_CONFIG.defaultSlotHeight;
       } else {
+        // vertical
         this.canvas.width = slot + ACTION_BAR_CONFIG.defaultSlotWidth;
-        this.canvas.height = count * slot + (count - 1) * spacing + padding;
+        this.canvas.height = this.rows * slot + (this.rows - 1) * spacing + padding;
       }
       this.scale = 1.0;
     }
@@ -255,12 +295,12 @@ if (!window.ActionBar) {
       const y = (e.clientY - rect.top) / this.scale;
       let found = false;
       for (let i = 0; i < this.slots; i++) {
-        const { slotX, slotY } = this._slotPosition(i);
+        const { slotX, slotY, row, col } = this._slotPosition(i);
         if (
           x >= slotX && x < slotX + this.slotSize &&
           y >= slotY && y < slotY + this.slotSize
         ) {
-          this.hoveredSlot = i;
+          this.hoveredSlot = { row, col };
           found = true;
           break;
         }
@@ -273,12 +313,12 @@ if (!window.ActionBar) {
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      const pos = this._dotPositions[this.orientation];
+      const pos = this._dotPositions[this.orientation || this.layout];
       // Bottom left for handle
       const handleX = pos.handle.dx + this._handleSize / 2;
       const handleY = this.canvas.height - pos.handle.dy - this._handleSize / 2;
       let toggleX, toggleY;
-      if (this.orientation === 'horizontal') {
+      if ((this.orientation || this.layout) === 'horizontal') {
         // Above handle
         toggleX = handleX;
         toggleY = handleY - this._handleSize / 2 - this._toggleSize / 2 - this._dotGap;
@@ -307,12 +347,24 @@ if (!window.ActionBar) {
         return;
       }
       // Check if click is on the orientation toggle dot (only if handle is green)
-      if (this._handleActive &&
+      if (this._handleActive && this.layout !== 'grid' &&
         x >= toggleX - this._toggleSize / 2 && x <= toggleX + this._toggleSize / 2 &&
         y >= toggleY - this._toggleSize / 2 && y <= toggleY + this._toggleSize / 2
       ) {
-        // Toggle orientation
-        this.orientation = this.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+        // Toggle orientation and layout
+        const newOrientation = this.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+        this.orientation = newOrientation;
+        this.layout = newOrientation;
+        
+        // Recalculate rows and columns for the new layout
+        if (newOrientation === 'vertical') {
+          this.rows = this.slots; // All slots in one column
+          this.columns = 1;
+        } else {
+          this.rows = 1; // All slots in one row
+          this.columns = this.slots;
+        }
+        
         this._updateSize();
         this.render();
         if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
@@ -326,7 +378,7 @@ if (!window.ActionBar) {
       this.render();
       e.preventDefault();
       e.stopPropagation();
-      const macroName = this.macroBindings[this.activeSlot];
+      const macroName = (this.macroBindings[this.activeSlot.row] || [])[this.activeSlot.col];
       if (macroName && window.UI.macroManager && window.UI.macroManager.macros[macroName]) {
         if (window.UI.macroManager.macros[macroName].command && window.cmd) {
           window.cmd(window.UI.macroManager.macros[macroName].command);
@@ -343,15 +395,26 @@ if (!window.ActionBar) {
     }
     _slotPosition(i) {
       const start = ACTION_BAR_CONFIG.defaultSlotStart;
-      if (this.orientation === 'horizontal') {
+      if (this.layout === 'grid') {
+        const row = Math.floor(i / this.columns);
+        const col = i % this.columns;
+        return {
+          slotX: start + col * (this.slotSize + this.spacing),
+          slotY: start + row * (this.slotSize + this.spacing),
+          row, col
+        };
+      } else if (this.layout === 'horizontal') {
         return {
           slotX: start + i * (this.slotSize + this.spacing),
-          slotY: ACTION_BAR_CONFIG.defaultSlotY
+          slotY: ACTION_BAR_CONFIG.defaultSlotY,
+          row: 0, col: i
         };
       } else {
+        // vertical
         return {
           slotX: ACTION_BAR_CONFIG.defaultSlotX,
-          slotY: start + i * (this.slotSize + this.spacing)
+          slotY: start + i * (this.slotSize + this.spacing),
+          row: i, col: 0
         };
       }
     }
@@ -366,7 +429,7 @@ if (!window.ActionBar) {
       ctx.globalAlpha = 1.0;
       // Draw draggable handle (dot) in bottom left
       ctx.save();
-      const pos = this._dotPositions[this.orientation];
+      const pos = this._dotPositions[this.orientation || this.layout];
       const handleDotX = pos.handle.dx + this._handleSize / 2;
       const handleDotY = canvas.height - pos.handle.dy - this._handleSize / 2;
       ctx.beginPath();
@@ -388,9 +451,9 @@ if (!window.ActionBar) {
       ctx.fill();
       ctx.restore();
       // Draw orientation toggle dot (pivot) only if handle is green
-      if (this._handleActive) {
+      if (this._handleActive && this.layout !== 'grid') {
         let toggleDotX, toggleDotY;
-        if (this.orientation === 'horizontal') {
+        if ((this.orientation || this.layout) === 'horizontal') {
           // Above handle
           toggleDotX = handleDotX;
           toggleDotY = handleDotY - this._handleSize / 2 - this._toggleSize / 2 - this._dotGap;
@@ -422,10 +485,10 @@ if (!window.ActionBar) {
         ctx.restore();
       }
       for (let i = 0; i < this.slots; i++) {
-        const { slotX, slotY } = this._slotPosition(i);
+        const { slotX, slotY, row, col } = this._slotPosition(i);
         let bgColor = this.colors.slot;
-        if (this.hoveredSlot === i) bgColor = this.colors.slotHover;
-        if (this.activeSlot === i) bgColor = this.colors.slotActive;
+        if (this.hoveredSlot && this.hoveredSlot.row === row && this.hoveredSlot.col === col) bgColor = this.colors.slotHover;
+        if (this.activeSlot && this.activeSlot.row === row && this.activeSlot.col === col) bgColor = this.colors.slotActive;
         ctx.globalAlpha = this.opacity;
         ctx.fillStyle = bgColor;
         ctx.fillRect(slotX, slotY, this.slotSize, this.slotSize);
@@ -433,7 +496,7 @@ if (!window.ActionBar) {
         ctx.strokeStyle = this.colors.border;
         ctx.lineWidth = ACTION_BAR_CONFIG.defaultSlotBorderWidth;
         ctx.strokeRect(slotX, slotY, this.slotSize, this.slotSize);
-        const macroName = this.macroBindings[i];
+        const macroName = (this.macroBindings[row] || [])[col];
         // --- Macro Icon Drawing ---
         if (macroName && UI.macroManager && UI.macroManager.ensureMacroManager() && UI.macroManager.macroIcons[macroName]) {
           const iconUrl = UI.macroManager.macroIcons[macroName];
@@ -456,6 +519,7 @@ if (!window.ActionBar) {
           }
         }
         // --- Key Label Drawing (always on top) ---
+        const keyLabel = (this.keyBindings[row] || [])[col];
         ctx.fillStyle = this.colors.label;
         ctx.font = ACTION_BAR_CONFIG.defaultSlotLabelFont;
         ctx.textAlign = ACTION_BAR_CONFIG.defaultSlotLabelTextAlign;
@@ -464,12 +528,12 @@ if (!window.ActionBar) {
         ctx.lineWidth = ACTION_BAR_CONFIG.defaultSlotLabelOutlineWidth;
         // Draw outline for better contrast
         ctx.strokeText(
-          this._slotLabel(i),
+          this._keyLabel(keyLabel, row, col),
           slotX + this.slotSize / 2,
           slotY + this.slotSize / 2
         );
         ctx.fillText(
-          this._slotLabel(i),
+          this._keyLabel(keyLabel, row, col),
           slotX + this.slotSize / 2,
           slotY + this.slotSize / 2
         );
@@ -480,31 +544,28 @@ if (!window.ActionBar) {
         }
       }
     }
-    _slotLabel(i) {
-      if (this.keyBindings && this.keyBindings[i]) {
-        return this._keyLabel(this.keyBindings[i]);
-      }
-      return (i === 9 ? '0' : (i + 1).toString());
-    }
-    _keyLabel(binding) {
-      if (binding.startsWith('Shift+')) {
+    _keyLabel(binding, row, col) {
+      if (!binding) return '';
+      if (typeof binding === 'string' && binding.startsWith('Shift+')) {
         return 'S+' + binding.replace('Shift+Digit', '');
       }
-      if (binding.startsWith('Digit')) {
+      if (typeof binding === 'string' && binding.startsWith('Digit')) {
         return binding.replace('Digit', '');
       }
-      if (binding.startsWith('F')) {
+      if (typeof binding === 'string' && binding.startsWith('F')) {
         return binding;
       }
-      return binding;
+      return binding || '';
     }
-    assignMacro(slotIndex, macroName) {
-      this.macroBindings[slotIndex] = macroName;
+    assignMacro(row, col, macroName) {
+      if(this.macroBindings[row] === undefined) this.macroBindings[row] = [];
+      this.macroBindings[row][col] = macroName;
       this.render();
       if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
     }
-    removeMacro(slotIndex) {
-      delete this.macroBindings[slotIndex];
+    removeMacro(row, col) {
+      if(thins.macroBindings[row] === undefined) this.macroBindings[row] = [];
+      this.macroBindings[row][col] = undefined;
       this.render();
       if (window.UI && window.UI.actionBarManager) window.UI.actionBarManager.saveAllBars();
     }
@@ -513,10 +574,10 @@ if (!window.ActionBar) {
       this._updateSize();
       this.render();
     }
-    triggerSlot(slotIndex) {
-      this.activeSlot = slotIndex;
+    triggerSlot(row, col) {
+      this.activeSlot = { row, col };
       this.render();
-      const macroName = this.macroBindings[slotIndex];
+      const macroName = (this.macroBindings[row] || [])[col];
       if (macroName && UI.macroManager && UI.macroManager.ensureMacroManager() && UI.macroManager.macros[macroName]) {
         if (UI.macroManager.macros[macroName].command && window.cmd) {
           window.cmd(UI.macroManager.macros[macroName].command);
@@ -627,9 +688,12 @@ if (!window.ActionBar) {
       // Return the config as saved in saveAllBars
       return {
         name: this.name,
+        layout: this.layout,
         orientation: this.orientation,
         position: this.position,
         slots: this.slots,
+        rows: this.rows,
+        columns: this.columns,
         slotSize: this.slotSize,
         spacing: this.spacing,
         zIndex: this.zIndex,
@@ -690,9 +754,12 @@ window.UI.actionBarManager = {
       const bar = this.bars[barName];
       barsData[barName] = {
         name: bar.name,
+        layout: bar.layout,
         orientation: bar.orientation,
         position: bar.position,
         slots: bar.slots,
+        rows: bar.rows,
+        columns: bar.columns,
         slotSize: bar.slotSize,
         spacing: bar.spacing,
         zIndex: bar.zIndex,
@@ -787,17 +854,18 @@ window.UI.actionBarManager = {
   // Rebuild the key binding map from all bars
   _rebuildKeyBindingMap() {
     this.keyBindingMap = {};
-    
     for (const barName in this.bars) {
       const bar = this.bars[barName];
       if (!bar.keyBindings) continue;
-      
-      for (let i = 0; i < bar.keyBindings.length; i++) {
-        const binding = bar.keyBindings[i];
-        this.keyBindingMap[binding] = { barName, slotIndex: i };
+      for (let r = 0; r < bar.rows; r++) {
+        for (let c = 0; c < bar.columns; c++) {
+          const binding = (bar.keyBindings[r] || [])[c];
+          if (binding) {
+            this.keyBindingMap[binding] = { barName, row: r, col: c };
+          }
+        }
       }
     }
-    
     console.log('[UI] Key binding map rebuilt:', this.keyBindingMap);
   },
 
@@ -816,7 +884,7 @@ window.UI.actionBarManager = {
     if (binding) {
       const bar = this.bars[binding.barName];
       if (bar) {
-        bar.triggerSlot(binding.slotIndex);
+        bar.triggerSlot(binding.row, binding.col);
         e.preventDefault();
         e.stopPropagation();
         return;
@@ -838,7 +906,7 @@ function createDefaultActionBars() {
   if (!window.UI.actionBarManager.getActionBar('mainBar')) {
     window.UI.actionBarManager.createActionBar({
       name: 'mainBar',
-      orientation: 'horizontal',
+      layout: 'horizontal',
       position: { left: 20, bottom: 20 },
       slots: 10,
       slotSize: 60,
@@ -846,14 +914,14 @@ function createDefaultActionBars() {
       zIndex: 998,
       opacity: 0.95,
       keyBindings: [
-        'Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0'
+        ['Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0']
       ]
     });
   }
   if (!window.UI.actionBarManager.getActionBar('secondaryBar')) {
     window.UI.actionBarManager.createActionBar({
       name: 'secondaryBar',
-      orientation: 'horizontal',
+      layout: 'horizontal',
       position: { left: 700, bottom: 20 },
       slots: 10,
       slotSize: 60,
@@ -861,7 +929,23 @@ function createDefaultActionBars() {
       zIndex: 998,
       opacity: 0.95,
       keyBindings: [
-        'Shift+Digit1','Shift+Digit2','Shift+Digit3','Shift+Digit4','Shift+Digit5','Shift+Digit6','Shift+Digit7','Shift+Digit8','Shift+Digit9','Shift+Digit0'
+        ['Shift+Digit2','Shift+Digit2','Shift+Digit3','Shift+Digit4','Shift+Digit5','Shift+Digit6','Shift+Digit7','Shift+Digit8','Shift+Digit9','Shift+Digit0']
+      ]
+    });
+  }
+  if (!window.UI.actionBarManager.getActionBar('gridBar')) {
+    window.UI.actionBarManager.createActionBar({
+      name: 'gridBar',
+      layout: 'grid',
+      position: { right: 20, top: 20 },
+      rows: 2,
+      columns: 2,
+      slotSize: 60,
+      spacing: 4,
+      zIndex: 998,
+      opacity: 0.95,
+      keyBindings: [
+        ['Shift+Digit1']
       ]
     });
   }
