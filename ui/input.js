@@ -221,8 +221,14 @@ window.UI.input = {
           worldX = rx + (Player ? Player.x : 0);
           worldY = ry + (Player ? Player.y : 0);
         } else {
-          worldX = x + (Player ? Player.x : 0);
-          worldY = y + (Player ? Player.y : 0);
+          // Fixed-north mode: undo camera rotation first, then translate
+          const cameraRotation = typeof CAMERA_ROTATION !== 'undefined' ? CAMERA_ROTATION : 0;
+          const cos = Math.cos(cameraRotation);
+          const sin = Math.sin(cameraRotation);
+          const rx = x * cos + y * sin;
+          const ry = -x * sin + y * cos;
+          worldX = rx + (Player ? Player.x : 0);
+          worldY = ry + (Player ? Player.y : 0);
         }
         // Convert to grid cell
         const tileSize = window.World ? window.World.config.tileSize : 32;
@@ -261,8 +267,14 @@ window.UI.input = {
           worldX = rx + (Player ? Player.x : 0);
           worldY = ry + (Player ? Player.y : 0);
         } else {
-          worldX = x + (Player ? Player.x : 0);
-          worldY = y + (Player ? Player.y : 0);
+          // Fixed-north mode: undo camera rotation first, then translate
+          const cameraRotation = typeof CAMERA_ROTATION !== 'undefined' ? CAMERA_ROTATION : 0;
+          const cos = Math.cos(cameraRotation);
+          const sin = Math.sin(cameraRotation);
+          const rx = x * cos + y * sin;
+          const ry = -x * sin + y * cos;
+          worldX = rx + (Player ? Player.x : 0);
+          worldY = ry + (Player ? Player.y : 0);
         }
         // Convert to grid cell
         const tileSize = window.World ? window.World.config.tileSize : 32;
