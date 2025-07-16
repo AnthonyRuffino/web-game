@@ -507,63 +507,6 @@ if (!window.ActionBar) {
       ctx.fillStyle = this.colors.background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.globalAlpha = 1.0;
-      // Draw draggable handle (dot) in bottom left
-      ctx.save();
-      const pos = this._dotPositions[this.orientation || this.layout];
-      const handleDotX = pos.handle.dx + this._handleSize / 2;
-      const handleDotY = canvas.height - pos.handle.dy - this._handleSize / 2;
-      ctx.beginPath();
-      ctx.arc(
-        handleDotX,
-        handleDotY,
-        this._handleSize / 2,
-        0, 2 * Math.PI
-      );
-      if (this._handleActive) {
-        ctx.fillStyle = this._handleEditableColor;
-        ctx.shadowColor = this._handleEditableShadow;
-        ctx.shadowBlur = 4;
-      } else {
-        ctx.fillStyle = this._handleLockedColor;
-        ctx.shadowColor = this._handleLockedShadow;
-        ctx.shadowBlur = 2;
-      }
-      ctx.fill();
-      ctx.restore();
-      // Draw orientation toggle dot (pivot) only if handle is green
-      if (this._handleActive && this.layout !== 'grid') {
-        let toggleDotX, toggleDotY;
-        if ((this.orientation || this.layout) === 'horizontal') {
-          // Above handle
-          toggleDotX = handleDotX;
-          toggleDotY = handleDotY - this._handleSize / 2 - this._toggleSize / 2 - this._dotGap;
-        } else {
-          // To the right of handle
-          toggleDotX = handleDotX + this._handleSize / 2 + this._toggleSize / 2 + this._dotGap;
-          toggleDotY = handleDotY;
-        }
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(
-          toggleDotX,
-          toggleDotY,
-          this._toggleSize / 2,
-          0, 2 * Math.PI
-        );
-        ctx.fillStyle = this._toggleDotColor;
-        ctx.shadowColor = this._toggleDotShadow;
-        ctx.shadowBlur = 1;
-        ctx.fill();
-        ctx.restore();
-        // Draw ⟳ icon in the center of the toggle dot
-        ctx.save();
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = this._toggleIconColor;
-        ctx.fillText('⟳', toggleDotX, toggleDotY);
-        ctx.restore();
-      }
       for (let i = 0; i < this.slots; i++) {
         const { slotX, slotY, row, col } = this._slotPosition(i);
         let bgColor = this.colors.slot;
@@ -622,6 +565,65 @@ if (!window.ActionBar) {
           ctx.font = ACTION_BAR_CONFIG.defaultEmptyLabelFont;
           ctx.fillText(ACTION_BAR_CONFIG.defaultEmptyLabel, slotX + this.slotSize / 2, slotY + this.slotSize / 2 + ACTION_BAR_CONFIG.defaultSlotLabelYOffset);
         }
+      }
+      
+      // Draw draggable handle (dot) in bottom left - always on top
+      ctx.save();
+      const pos = this._dotPositions[this.orientation || this.layout];
+      const handleDotX = pos.handle.dx + this._handleSize / 2;
+      const handleDotY = canvas.height - pos.handle.dy - this._handleSize / 2;
+      ctx.beginPath();
+      ctx.arc(
+        handleDotX,
+        handleDotY,
+        this._handleSize / 2,
+        0, 2 * Math.PI
+      );
+      if (this._handleActive) {
+        ctx.fillStyle = this._handleEditableColor;
+        ctx.shadowColor = this._handleEditableShadow;
+        ctx.shadowBlur = 4;
+      } else {
+        ctx.fillStyle = this._handleLockedColor;
+        ctx.shadowColor = this._handleLockedShadow;
+        ctx.shadowBlur = 2;
+      }
+      ctx.fill();
+      ctx.restore();
+      
+      // Draw orientation toggle dot (pivot) only if handle is green - always on top
+      if (this._handleActive && this.layout !== 'grid') {
+        let toggleDotX, toggleDotY;
+        if ((this.orientation || this.layout) === 'horizontal') {
+          // Above handle
+          toggleDotX = handleDotX;
+          toggleDotY = handleDotY - this._handleSize / 2 - this._toggleSize / 2 - this._dotGap;
+        } else {
+          // To the right of handle
+          toggleDotX = handleDotX + this._handleSize / 2 + this._toggleSize / 2 + this._dotGap;
+          toggleDotY = handleDotY;
+        }
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(
+          toggleDotX,
+          toggleDotY,
+          this._toggleSize / 2,
+          0, 2 * Math.PI
+        );
+        ctx.fillStyle = this._toggleDotColor;
+        ctx.shadowColor = this._toggleDotShadow;
+        ctx.shadowBlur = 1;
+        ctx.fill();
+        ctx.restore();
+        // Draw ⟳ icon in the center of the toggle dot
+        ctx.save();
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = this._toggleIconColor;
+        ctx.fillText('⟳', toggleDotX, toggleDotY);
+        ctx.restore();
       }
     }
     _keyLabel(binding, row, col) {
