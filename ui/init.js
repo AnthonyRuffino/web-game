@@ -11,7 +11,8 @@ const UI = {
     { name: 'console', file: 'ui/console.js', dependencies: [] },
     { name: 'input', file: 'ui/input.js', dependencies: [] },
     { name: 'responsiveCanvas', file: 'ui/responsiveCanvas.js', dependencies: [] },
-    { name: 'actionBars', file: 'ui/actionBars.js', dependencies: [] },
+    { name: 'jsonPopup', file: 'ui/jsonPopup.js', dependencies: [] },
+    { name: 'actionBars', file: 'ui/actionBars.js', dependencies: ['jsonPopup'] },
     { name: 'macros', file: 'ui/macros.js', dependencies: ['actionBars'] },
     { name: 'inventory', file: 'ui/inventory.js', dependencies: [] },
     { name: 'inputBar', file: 'ui/inputBar.js', dependencies: [] },
@@ -188,6 +189,10 @@ const UI = {
   
   get console() {
     return window.UI.console;
+  },
+  
+  get jsonPopup() {
+    return window.JsonPopup;
   }
 };
 
