@@ -321,6 +321,9 @@ class Menu {
       startLeft = parseInt(this.element.style.left) || 50;
       startTop = parseInt(this.element.style.top) || 50;
       
+      // Bring menu to front when starting to drag
+      this.bringToFront();
+      
       document.onmousemove = (e) => {
         if (!isDragging) return;
         
@@ -336,6 +339,15 @@ class Menu {
         document.onmousemove = null;
         document.onmouseup = null;
       };
+    };
+    
+    // Add click-to-front functionality for the entire menu
+    this.element.onmousedown = (e) => {
+      // Don't interfere with dragging
+      if (e.target.closest('.menu-header')) return;
+      
+      // Bring menu to front when clicked
+      this.bringToFront();
     };
   }
   
@@ -363,6 +375,13 @@ class Menu {
     if (window.UI.menuManager) {
       window.UI.menuManager.bringMenuToFront(this);
     }
+  }
+  
+  // Method to check if menu is currently on top
+  isOnTop() {
+    if (!window.UI.menuManager) return false;
+    const topMenu = window.UI.menuManager.getTopMenu();
+    return topMenu && topMenu.id === this.id;
   }
   
   destroy() {
