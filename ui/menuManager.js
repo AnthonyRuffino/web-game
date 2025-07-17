@@ -239,7 +239,20 @@ class Menu {
         `;
         button.onmouseover = () => button.style.background = '#555';
         button.onmouseout = () => button.style.background = '#444';
-        button.onclick = buttonConfig.onClick || (() => console.log('Tab button clicked'));
+        button.onclick = (e) => {
+          // Handle onClickMenu if provided
+          if (buttonConfig.onClickMenu) {
+            const childMenuId = window.UI.menuManager.createMenu(buttonConfig.onClickMenu);
+            window.UI.menuManager.showMenu(childMenuId);
+          }
+          
+          // Handle regular onClick if provided
+          if (buttonConfig.onClick) {
+            buttonConfig.onClick(e);
+          } else {
+            console.log('Tab button clicked');
+          }
+        };
         
         buttonContainer.appendChild(button);
       });
@@ -415,7 +428,20 @@ class Menu {
         };
         
         // Click handler
-        cell.onclick = button.onClick || (() => console.log(`Grid button ${i} clicked`));
+        cell.onclick = (e) => {
+          // Handle onClickMenu if provided
+          if (button.onClickMenu) {
+            const childMenuId = window.UI.menuManager.createMenu(button.onClickMenu);
+            window.UI.menuManager.showMenu(childMenuId);
+          }
+          
+          // Handle regular onClick if provided
+          if (button.onClick) {
+            button.onClick(e);
+          } else {
+            console.log(`Grid button ${i} clicked`);
+          }
+        };
         
       } else {
         // Empty cell with plus sign
