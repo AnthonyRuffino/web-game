@@ -92,13 +92,8 @@ class Menu {
       height: calc(100% - 50px);
     `;
     
-    // Create tab system if tabs are configured
-    if (this.config.tabs && Array.isArray(this.config.tabs) && this.config.tabs.length > 0) {
-      this.createTabSystem(mainContent);
-    } else {
-      // Create simple content area
-      this.createSimpleContent(mainContent);
-    }
+    // Always create a tab system - single tab if no tabs configured
+    this.createTabSystem(mainContent);
     
     // Assemble the menu
     this.element.appendChild(header);
@@ -112,10 +107,13 @@ class Menu {
   }
   
   createTabSystem(mainContent) {
-    // Create tab container
+    // Determine if we have explicit tabs or need to create a single tab
+    const hasExplicitTabs = this.config.tabs && Array.isArray(this.config.tabs) && this.config.tabs.length > 0;
+    
+    // Create tab container (hidden if single tab)
     const tabContainer = document.createElement('div');
     tabContainer.style.cssText = `
-      display: flex;
+      display: ${hasExplicitTabs ? 'flex' : 'none'};
       border-bottom: 2px solid #444;
       background: #333;
     `;
@@ -128,26 +126,36 @@ class Menu {
       padding: 12px;
     `;
     
-    // Create tab buttons
-    this.config.tabs.forEach((tab, index) => {
-      const tabBtn = document.createElement('button');
-      tabBtn.textContent = tab.name;
-      tabBtn.style.cssText = `
-        background: ${index === 0 ? '#4ECDC4' : 'transparent'};
-        color: ${index === 0 ? '#222' : '#fff'};
-        border: none;
-        padding: 12px 20px;
-        cursor: pointer;
-        border-radius: 6px 6px 0 0;
-        font-weight: ${index === 0 ? 'bold' : 'normal'};
-        margin-right: 4px;
-        font-family: 'Courier New', monospace;
-        font-size: 13px;
-      `;
-      
-      tabBtn.onclick = () => this.switchTab(index, tabContainer, contentArea);
-      tabContainer.appendChild(tabBtn);
-    });
+    // Create tabs array - either from config or single default tab
+    this.tabs = hasExplicitTabs ? this.config.tabs : [{
+      name: 'Content',
+      content: this.config.content,
+      buttons: this.config.buttons,
+      radioGroups: this.config.radioGroups
+    }];
+    
+    // Create tab buttons (only if multiple tabs)
+    if (hasExplicitTabs) {
+      this.tabs.forEach((tab, index) => {
+        const tabBtn = document.createElement('button');
+        tabBtn.textContent = tab.name;
+        tabBtn.style.cssText = `
+          background: ${index === 0 ? '#4ECDC4' : 'transparent'};
+          color: ${index === 0 ? '#222' : '#fff'};
+          border: none;
+          padding: 12px 20px;
+          cursor: pointer;
+          border-radius: 6px 6px 0 0;
+          font-weight: ${index === 0 ? 'bold' : 'normal'};
+          margin-right: 4px;
+          font-family: 'Courier New', monospace;
+          font-size: 13px;
+        `;
+        
+        tabBtn.onclick = () => this.switchTab(index, tabContainer, contentArea);
+        tabContainer.appendChild(tabBtn);
+      });
+    }
     
     // Add tab container and content area to main content
     mainContent.appendChild(tabContainer);
@@ -157,59 +165,7 @@ class Menu {
     this.loadTabContent(0, contentArea);
   }
   
-  createSimpleContent(mainContent) {
-    const content = document.createElement('div');
-    content.className = 'menu-content';
-    content.style.cssText = `
-      padding: 12px;
-      flex: 1;
-      overflow: auto;
-    `;
-    
-    // Add configured content
-    if (this.config.content) {
-      if (typeof this.config.content === 'string') {
-        content.innerHTML = this.config.content;
-      } else if (this.config.content instanceof HTMLElement) {
-        content.appendChild(this.config.content);
-      }
-    }
-    
-    // Add configured buttons
-    if (this.config.buttons && Array.isArray(this.config.buttons)) {
-      const buttonContainer = document.createElement('div');
-      buttonContainer.style.cssText = `
-        display: flex;
-        gap: 8px;
-        margin-top: 12px;
-        flex-wrap: wrap;
-      `;
-      
-      this.config.buttons.forEach(buttonConfig => {
-        const button = document.createElement('button');
-        button.textContent = buttonConfig.text || 'Button';
-        button.style.cssText = `
-          background: #444;
-          border: 1px solid #666;
-          color: #fff;
-          padding: 6px 12px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-family: 'Courier New', monospace;
-          font-size: 12px;
-        `;
-        button.onmouseover = () => button.style.background = '#555';
-        button.onmouseout = () => button.style.background = '#444';
-        button.onclick = buttonConfig.onClick || (() => console.log('Button clicked'));
-        
-        buttonContainer.appendChild(button);
-      });
-      
-      content.appendChild(buttonContainer);
-    }
-    
-    mainContent.appendChild(content);
-  }
+
   
   switchTab(tabIndex, tabContainer, contentArea) {
     // Update tab button styles
@@ -225,7 +181,7 @@ class Menu {
   }
   
   loadTabContent(tabIndex, contentArea) {
-    const tab = this.config.tabs[tabIndex];
+    const tab = this.tabs[tabIndex];
     if (!tab) return;
     
     // Clear content area
@@ -238,6 +194,14 @@ class Menu {
       } else if (tab.content instanceof HTMLElement) {
         contentArea.appendChild(tab.content);
       }
+    }
+    
+    // Add radio groups
+    if (tab.radioGroups && Array.isArray(tab.radioGroups)) {
+      tab.radioGroups.forEach(radioGroup => {
+        const radioContainer = this.createRadioGroup(radioGroup);
+        contentArea.appendChild(radioContainer);
+      });
     }
     
     // Add tab buttons
@@ -272,6 +236,77 @@ class Menu {
       
       contentArea.appendChild(buttonContainer);
     }
+  }
+  
+  createRadioGroup(radioGroup) {
+    const container = document.createElement('div');
+    container.style.cssText = `
+      margin: 12px 0;
+      padding: 12px;
+      background: #333;
+      border-radius: 6px;
+      border: 1px solid #555;
+    `;
+    
+    // Group label
+    if (radioGroup.label) {
+      const label = document.createElement('div');
+      label.textContent = radioGroup.label;
+      label.style.cssText = `
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #fff;
+        font-size: 14px;
+      `;
+      container.appendChild(label);
+    }
+    
+    // Radio options
+    if (radioGroup.options && Array.isArray(radioGroup.options)) {
+      radioGroup.options.forEach((option, index) => {
+        const optionContainer = document.createElement('div');
+        optionContainer.style.cssText = `
+          display: flex;
+          align-items: center;
+          margin: 6px 0;
+          cursor: pointer;
+        `;
+        
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = radioGroup.name || 'radio-group';
+        radio.value = option.value || option.text || index.toString();
+        radio.checked = option.checked || (index === 0 && !radioGroup.options.some(opt => opt.checked));
+        radio.style.cssText = `
+          margin-right: 8px;
+          cursor: pointer;
+        `;
+        
+        const optionLabel = document.createElement('label');
+        optionLabel.textContent = option.text || option.value || `Option ${index + 1}`;
+        optionLabel.style.cssText = `
+          cursor: pointer;
+          color: #fff;
+          font-size: 13px;
+        `;
+        
+        // Handle radio change
+        radio.onchange = () => {
+          if (radio.checked && radioGroup.onChange) {
+            radioGroup.onChange(option.value || option.text || index.toString(), option);
+          }
+        };
+        
+        // Make label clickable
+        optionLabel.onclick = () => radio.click();
+        
+        optionContainer.appendChild(radio);
+        optionContainer.appendChild(optionLabel);
+        container.appendChild(optionContainer);
+      });
+    }
+    
+    return container;
   }
   
   makeDraggable() {
