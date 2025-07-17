@@ -27,13 +27,18 @@ const MENU_BAR_CONFIG = {
     disabledBackground: '#333',
     disabledColor: '#888',
     disabledCursor: 'default',
-    disabledOpacity: '0.6'
+    disabledOpacity: '0.6',
+    activeBackground: '#4ECDC4',
+    activeColor: '#222'
   },
   pollInterval: 500
 };
 // --- End Menu Bar Config ---
 
 window.UI.menuBar = {
+  // Track which menus are currently open
+  openMenus: new Set(),
+  
   init() {
     if (document.getElementById('ui-menu-bar')) return;
     const bar = document.createElement('div');
@@ -83,27 +88,45 @@ window.UI.menuBar = {
       }
     ));
 
-    // Skins menu
-    bar.appendChild(makeButton(
+    // Skins menu with toggle functionality
+    const skinsBtn = makeButton(
       '🎨',
-      'Open Skins Menu',
+      'Toggle Skins Menu',
       () => {
-        if (window.UI.skinsManager && window.UI.skinsManager.openSkinsUI) {
-          window.UI.skinsManager.openSkinsUI();
+        if (window.UI.menuBar.openMenus.has('skins')) {
+          // Close skins menu
+          window.UI.menuBar.closeMenu('skins');
+        } else {
+          // Open skins menu
+          if (window.UI.skinsManager && window.UI.skinsManager.openSkinsUI) {
+            window.UI.skinsManager.openSkinsUI();
+            window.UI.menuBar.openMenus.add('skins');
+            window.UI.menuBar.updateButtonStates();
+          }
         }
       }
-    ));
+    );
+    bar.appendChild(skinsBtn);
 
-    // Macro menu
-    bar.appendChild(makeButton(
+    // Macro menu with toggle functionality
+    const macroBtn = makeButton(
       '\u26a1',
-      'Open Macro Menu',
+      'Toggle Macro Menu',
       () => {
-        if (window.UI.macroManager && window.UI.macroManager.openMacroUI) {
-          window.UI.macroManager.openMacroUI();
+        if (window.UI.menuBar.openMenus.has('macro')) {
+          // Close macro menu
+          window.UI.menuBar.closeMenu('macro');
+        } else {
+          // Open macro menu
+          if (window.UI.macroManager && window.UI.macroManager.openMacroUI) {
+            window.UI.macroManager.openMacroUI();
+            window.UI.menuBar.openMenus.add('macro');
+            window.UI.menuBar.updateButtonStates();
+          }
         }
       }
-    ));
+    );
+    bar.appendChild(macroBtn);
 
     // --- Grid toggle button ---
     const gridBtn = makeButton(
@@ -141,5 +164,58 @@ window.UI.menuBar = {
     bar.appendChild(makeButton('🧑', 'Character (coming soon)', null, false));
 
     document.body.appendChild(bar);
+  },
+
+  // Close a specific menu
+  closeMenu(menuName) {
+    this.openMenus.delete(menuName);
+    this.updateButtonStates();
+    
+    // Close the actual menu UI
+    if (menuName === 'skins') {
+      const skinsModal = document.getElementById('skins-ui-modal');
+      if (skinsModal) {
+        skinsModal.remove();
+      }
+    } else if (menuName === 'macro') {
+      const macroModal = document.getElementById('macro-ui-modal');
+      if (macroModal) {
+        macroModal.remove();
+      }
+    }
+  },
+
+  // Update button visual states based on open menus
+  updateButtonStates() {
+    const bar = document.getElementById('ui-menu-bar');
+    if (!bar) return;
+
+    // Update skins button
+    const skinsBtn = bar.querySelector('button[title*="Skins"]');
+    if (skinsBtn) {
+      if (this.openMenus.has('skins')) {
+        skinsBtn.style.background = MENU_BAR_CONFIG.button.activeBackground;
+        skinsBtn.style.color = MENU_BAR_CONFIG.button.activeColor;
+        skinsBtn.title = 'Skins Menu Open (click to close)';
+      } else {
+        skinsBtn.style.background = MENU_BAR_CONFIG.button.background;
+        skinsBtn.style.color = MENU_BAR_CONFIG.button.color;
+        skinsBtn.title = 'Toggle Skins Menu';
+      }
+    }
+
+    // Update macro button
+    const macroBtn = bar.querySelector('button[title*="Macro"]');
+    if (macroBtn) {
+      if (this.openMenus.has('macro')) {
+        macroBtn.style.background = MENU_BAR_CONFIG.button.activeBackground;
+        macroBtn.style.color = MENU_BAR_CONFIG.button.activeColor;
+        macroBtn.title = 'Macro Menu Open (click to close)';
+      } else {
+        macroBtn.style.background = MENU_BAR_CONFIG.button.background;
+        macroBtn.style.color = MENU_BAR_CONFIG.button.color;
+        macroBtn.title = 'Toggle Macro Menu';
+      }
+    }
   }
 }; 

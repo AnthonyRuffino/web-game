@@ -502,25 +502,36 @@ window.UI.skinsManager = {
     // Reload caches to get latest data
     this.loadCaches();
 
-    // Create overlay for the modal
-    const overlay = document.createElement('div');
-    overlay.id = 'skins-ui-modal';
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.background = SKINS_CONFIG.overlay.background;
-    overlay.style.zIndex = SKINS_CONFIG.overlay.zIndex;
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
+    // Create modal container (no full-screen overlay)
+    const modal = document.createElement('div');
+    modal.id = 'skins-ui-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.background = SKINS_CONFIG.modal.background;
+    modal.style.borderRadius = SKINS_CONFIG.modal.borderRadius;
+    modal.style.boxShadow = SKINS_CONFIG.modal.boxShadow;
+    modal.style.padding = SKINS_CONFIG.modal.padding;
+    modal.style.minWidth = SKINS_CONFIG.modal.minWidth;
+    modal.style.maxWidth = SKINS_CONFIG.modal.maxWidth;
+    modal.style.maxHeight = SKINS_CONFIG.modal.maxHeight;
+    modal.style.color = SKINS_CONFIG.modal.color;
+    modal.style.zIndex = SKINS_CONFIG.modal.zIndex || 9999;
+    modal.style.overflow = 'hidden';
+    modal.style.resize = 'both';
+    modal.style.cursor = 'default';
 
     // Handle escape key to close modal
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
-        overlay.remove();
+        modal.remove();
         document.removeEventListener('keydown', handleEscape);
+        // Update menu bar state
+        if (window.UI.menuBar) {
+          window.UI.menuBar.openMenus.delete('skins');
+          window.UI.menuBar.updateButtonStates();
+        }
       }
     };
     document.addEventListener('keydown', handleEscape);
@@ -859,20 +870,11 @@ window.UI.skinsManager = {
     };
 
     // Create modal content
-    const modal = document.createElement('div');
-    modal.style.background = SKINS_CONFIG.modal.background;
-    modal.style.borderRadius = SKINS_CONFIG.modal.borderRadius + 'px';
-    modal.style.boxShadow = SKINS_CONFIG.modal.boxShadow;
-    modal.style.padding = SKINS_CONFIG.modal.padding;
-    modal.style.minWidth = SKINS_CONFIG.modal.minWidth;
-    modal.style.maxWidth = SKINS_CONFIG.modal.maxWidth;
-    modal.style.maxHeight = SKINS_CONFIG.modal.maxHeight;
-    modal.style.overflow = 'hidden';
-    modal.style.color = SKINS_CONFIG.modal.color;
-    modal.style.position = 'relative';
-    modal.style.display = 'flex';
-    modal.style.flexDirection = 'column';
-    modal.innerHTML = `<h2 style="margin-top:0;margin-bottom:20px;font-size:${SKINS_CONFIG.font.title}">Skins Management</h2>`;
+    const modalContent = document.createElement('div');
+    modalContent.style.display = 'flex';
+    modalContent.style.flexDirection = 'column';
+    modalContent.style.height = '100%';
+    modalContent.innerHTML = `<h2 style="margin-top:0;margin-bottom:20px;font-size:${SKINS_CONFIG.font.title}">Skins Management</h2>`;
 
     // Top buttons row
     const topButtons = document.createElement('div');
@@ -924,7 +926,7 @@ window.UI.skinsManager = {
     topButtons.appendChild(importBtn);
     topButtons.appendChild(importInput);
 
-    modal.appendChild(topButtons);
+    modalContent.appendChild(topButtons);
 
     // Tab system
     const tabContainer = document.createElement('div');
@@ -954,7 +956,7 @@ window.UI.skinsManager = {
       tabContainer.appendChild(tabBtn);
     });
 
-    modal.appendChild(tabContainer);
+    modalContent.appendChild(tabContainer);
 
     // Content area
     const contentArea = document.createElement('div');
@@ -1439,8 +1441,8 @@ window.UI.skinsManager = {
       contentArea.appendChild(grid);
     };
 
-    // Add content area to modal
-    modal.appendChild(contentArea);
+    // Add content area to modal content
+    modalContent.appendChild(contentArea);
 
     // Initialize with preferences tab
     loadPreferencesContent();
@@ -1459,13 +1461,18 @@ window.UI.skinsManager = {
     closeBtn.style.cursor = 'pointer';
     closeBtn.style.fontSize = SKINS_CONFIG.font.button;
     closeBtn.onclick = () => {
-      overlay.remove();
+      modal.remove();
       document.removeEventListener('keydown', handleEscape);
+      // Update menu bar state
+      if (window.UI.menuBar) {
+        window.UI.menuBar.openMenus.delete('skins');
+        window.UI.menuBar.updateButtonStates();
+      }
     };
     modal.appendChild(closeBtn);
+    modal.appendChild(modalContent);
 
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
   }
 };
 

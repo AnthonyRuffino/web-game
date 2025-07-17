@@ -546,25 +546,35 @@ window.UI.macroManager = {
     // Prevent multiple modals
     if (document.getElementById('macro-ui-modal')) return;
 
-    // Create overlay for the modal
-    const overlay = document.createElement('div');
-    overlay.id = 'macro-ui-modal';
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.background = MACRO_CONFIG.modal.overlay.background;
-    overlay.style.zIndex = MACRO_CONFIG.modal.overlay.zIndex;
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
+    // Create modal container (no full-screen overlay)
+    const modal = document.createElement('div');
+    modal.id = 'macro-ui-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.background = MACRO_CONFIG.modal.background;
+    modal.style.borderRadius = '12px';
+    modal.style.boxShadow = '0 4px 32px rgba(0,0,0,0.7)';
+    modal.style.padding = '32px 40px';
+    modal.style.minWidth = '480px';
+    modal.style.maxWidth = '95vw';
+    modal.style.color = MACRO_CONFIG.modal.color;
+    modal.style.zIndex = MACRO_CONFIG.modal.overlay.zIndex;
+    modal.style.overflow = 'hidden';
+    modal.style.resize = 'both';
+    modal.style.cursor = 'default';
 
     // Handle escape key to close modal
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
-        overlay.remove();
+        modal.remove();
         document.removeEventListener('keydown', handleEscape);
+        // Update menu bar state
+        if (window.UI.menuBar) {
+          window.UI.menuBar.openMenus.delete('macro');
+          window.UI.menuBar.updateButtonStates();
+        }
       }
     };
     document.addEventListener('keydown', handleEscape);
@@ -1061,16 +1071,9 @@ window.UI.macroManager = {
     };
 
     // Create modal content
-    const modal = document.createElement('div');
-    modal.style.background = MACRO_CONFIG.modal.background;
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 32px rgba(0,0,0,0.7)';
-    modal.style.padding = '32px 40px';
-    modal.style.minWidth = '480px';
-    modal.style.maxWidth = '95vw';
-    modal.style.color = MACRO_CONFIG.modal.color;
-    modal.style.position = 'relative';
-    modal.innerHTML = `<h2 style="margin-top:0">Macro Management</h2>`;
+    const modalContent = document.createElement('div');
+    modalContent.style.position = 'relative';
+    modalContent.innerHTML = `<h2 style="margin-top:0">Macro Management</h2>`;
 
     // Macro grid config
     const gridRows = 4;
@@ -1138,7 +1141,7 @@ window.UI.macroManager = {
       grid.appendChild(cell);
     }
 
-    modal.appendChild(grid);
+    modalContent.appendChild(grid);
 
     // Close button
     const closeBtn = document.createElement('button');
@@ -1153,13 +1156,18 @@ window.UI.macroManager = {
     closeBtn.style.padding = '6px 14px';
     closeBtn.style.cursor = 'pointer';
     closeBtn.onclick = () => {
-      overlay.remove();
+      modal.remove();
       document.removeEventListener('keydown', handleEscape);
+      // Update menu bar state
+      if (window.UI.menuBar) {
+        window.UI.menuBar.openMenus.delete('macro');
+        window.UI.menuBar.updateButtonStates();
+      }
     };
     modal.appendChild(closeBtn);
+    modal.appendChild(modalContent);
 
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
   },
 
   // Ensure macro manager is always available
