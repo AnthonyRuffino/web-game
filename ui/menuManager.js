@@ -37,7 +37,7 @@ class Menu {
       font-family: 'Courier New', monospace;
       color: #fff;
       resize: both;
-      overflow: auto;
+      overflow: hidden;
     `;
     
     // Create header
@@ -84,12 +84,86 @@ class Menu {
     header.appendChild(title);
     header.appendChild(closeBtn);
     
+    // Create main content container
+    const mainContent = document.createElement('div');
+    mainContent.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 50px);
+    `;
+    
+    // Create tab system if tabs are configured
+    if (this.config.tabs && Array.isArray(this.config.tabs) && this.config.tabs.length > 0) {
+      this.createTabSystem(mainContent);
+    } else {
+      // Create simple content area
+      this.createSimpleContent(mainContent);
+    }
+    
+    // Assemble the menu
+    this.element.appendChild(header);
+    this.element.appendChild(mainContent);
+    
+    // Add to document
+    document.body.appendChild(this.element);
+    
+    // Make draggable
+    this.makeDraggable();
+  }
+  
+  createTabSystem(mainContent) {
+    // Create tab container
+    const tabContainer = document.createElement('div');
+    tabContainer.style.cssText = `
+      display: flex;
+      border-bottom: 2px solid #444;
+      background: #333;
+    `;
+    
     // Create content area
+    const contentArea = document.createElement('div');
+    contentArea.style.cssText = `
+      flex: 1;
+      overflow: auto;
+      padding: 12px;
+    `;
+    
+    // Create tab buttons
+    this.config.tabs.forEach((tab, index) => {
+      const tabBtn = document.createElement('button');
+      tabBtn.textContent = tab.name;
+      tabBtn.style.cssText = `
+        background: ${index === 0 ? '#4ECDC4' : 'transparent'};
+        color: ${index === 0 ? '#222' : '#fff'};
+        border: none;
+        padding: 12px 20px;
+        cursor: pointer;
+        border-radius: 6px 6px 0 0;
+        font-weight: ${index === 0 ? 'bold' : 'normal'};
+        margin-right: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+      `;
+      
+      tabBtn.onclick = () => this.switchTab(index, tabContainer, contentArea);
+      tabContainer.appendChild(tabBtn);
+    });
+    
+    // Add tab container and content area to main content
+    mainContent.appendChild(tabContainer);
+    mainContent.appendChild(contentArea);
+    
+    // Load initial tab content
+    this.loadTabContent(0, contentArea);
+  }
+  
+  createSimpleContent(mainContent) {
     const content = document.createElement('div');
     content.className = 'menu-content';
     content.style.cssText = `
       padding: 12px;
       flex: 1;
+      overflow: auto;
     `;
     
     // Add configured content
@@ -134,15 +208,70 @@ class Menu {
       content.appendChild(buttonContainer);
     }
     
-    // Assemble the menu
-    this.element.appendChild(header);
-    this.element.appendChild(content);
+    mainContent.appendChild(content);
+  }
+  
+  switchTab(tabIndex, tabContainer, contentArea) {
+    // Update tab button styles
+    const tabButtons = tabContainer.querySelectorAll('button');
+    tabButtons.forEach((btn, index) => {
+      btn.style.background = index === tabIndex ? '#4ECDC4' : 'transparent';
+      btn.style.color = index === tabIndex ? '#222' : '#fff';
+      btn.style.fontWeight = index === tabIndex ? 'bold' : 'normal';
+    });
     
-    // Add to document
-    document.body.appendChild(this.element);
+    // Load tab content
+    this.loadTabContent(tabIndex, contentArea);
+  }
+  
+  loadTabContent(tabIndex, contentArea) {
+    const tab = this.config.tabs[tabIndex];
+    if (!tab) return;
     
-    // Make draggable
-    this.makeDraggable();
+    // Clear content area
+    contentArea.innerHTML = '';
+    
+    // Add tab content
+    if (tab.content) {
+      if (typeof tab.content === 'string') {
+        contentArea.innerHTML = tab.content;
+      } else if (tab.content instanceof HTMLElement) {
+        contentArea.appendChild(tab.content);
+      }
+    }
+    
+    // Add tab buttons
+    if (tab.buttons && Array.isArray(tab.buttons)) {
+      const buttonContainer = document.createElement('div');
+      buttonContainer.style.cssText = `
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      `;
+      
+      tab.buttons.forEach(buttonConfig => {
+        const button = document.createElement('button');
+        button.textContent = buttonConfig.text || 'Button';
+        button.style.cssText = `
+          background: #444;
+          border: 1px solid #666;
+          color: #fff;
+          padding: 6px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+        `;
+        button.onmouseover = () => button.style.background = '#555';
+        button.onmouseout = () => button.style.background = '#444';
+        button.onclick = buttonConfig.onClick || (() => console.log('Tab button clicked'));
+        
+        buttonContainer.appendChild(button);
+      });
+      
+      contentArea.appendChild(buttonContainer);
+    }
   }
   
   makeDraggable() {
