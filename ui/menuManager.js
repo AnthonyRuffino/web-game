@@ -13,6 +13,8 @@ class Menu {
     this.element = null;
     this.config = config;
     this.destroyOnClose = config.destroyOnClose || false;
+    this.isBlocking = config.isBlocking || false;
+    this.overlay = null;
     
     this.createMenuElement();
   }
@@ -493,12 +495,21 @@ class Menu {
   show() {
     this.visible = true;
     this.element.style.display = 'block';
+    
+    // Create blocking overlay if needed
+    if (this.isBlocking) {
+      this.createBlockingOverlay();
+    }
+    
     this.bringToFront();
   }
   
   hide() {
     this.visible = false;
     this.element.style.display = 'none';
+    
+    // Remove blocking overlay if present
+    this.removeBlockingOverlay();
     
     if (this.destroyOnClose) {
       this.destroy();
@@ -524,8 +535,53 @@ class Menu {
   }
   
   destroy() {
+    // Remove blocking overlay
+    this.removeBlockingOverlay();
+    
     if (this.element && this.element.parentNode) {
       this.element.parentNode.removeChild(this.element);
+    }
+  }
+  
+  createBlockingOverlay() {
+    // Remove any existing overlay
+    this.removeBlockingOverlay();
+    
+    // Find the highest z-index among OTHER menus (excluding this one)
+    let maxZIndex = 1000;
+    if (window.UI.menuManager) {
+      window.UI.menuManager.menus.forEach(menu => {
+        if (menu.visible && menu.id !== this.id && menu.zIndex > maxZIndex) {
+          maxZIndex = menu.zIndex;
+        }
+      });
+    }
+    
+    // Create new overlay with z-index higher than other menus but lower than this menu
+    this.overlay = document.createElement('div');
+    this.overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: ${Math.max(maxZIndex, this.zIndex - 1)};
+      pointer-events: auto;
+      cursor: default;
+    `;
+    
+    // Add overlay to document
+    document.body.appendChild(this.overlay);
+    
+    console.log(`[MenuManager] Created blocking overlay for menu: ${this.id} with z-index: ${this.overlay.style.zIndex}`);
+  }
+  
+  removeBlockingOverlay() {
+    if (this.overlay && this.overlay.parentNode) {
+      this.overlay.parentNode.removeChild(this.overlay);
+      this.overlay = null;
+      console.log(`[MenuManager] Removed blocking overlay for menu: ${this.id}`);
     }
   }
 }
