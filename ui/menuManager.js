@@ -3,12 +3,16 @@
 
 class Menu {
   constructor(config) {
-    this.id = config.id || `menu-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    if (!config.id) {
+      throw new Error('Menu config must include an id property');
+    }
+    this.id = config.id;
     this.title = config.title || 'Menu';
     this.visible = false;
     this.zIndex = 1000;
     this.element = null;
     this.config = config;
+    this.destroyOnClose = config.destroyOnClose || false;
     
     this.createMenuElement();
   }
@@ -180,6 +184,14 @@ class Menu {
   hide() {
     this.visible = false;
     this.element.style.display = 'none';
+    
+    if (this.destroyOnClose) {
+      this.destroy();
+      if (window.UI.menuManager) {
+        window.UI.menuManager.removeMenu(this.id);
+        console.log(`[MenuManager] Auto-destroyed menu: ${this.id}`);
+      }
+    }
   }
   
   bringToFront() {
@@ -204,10 +216,18 @@ class MenuManager {
   }
   
   createMenu(config) {
+    if (!config.id) {
+      throw new Error('Menu config must include an id property');
+    }
+    
+    if (this.menus.has(config.id)) {
+      throw new Error(`Menu with id '${config.id}' already exists`);
+    }
+    
     const menu = new Menu(config);
     this.menus.set(menu.id, menu);
     console.log(`[MenuManager] Created menu: ${menu.id}`);
-    return menu;
+    return menu.id;
   }
   
   showMenu(menuId) {
