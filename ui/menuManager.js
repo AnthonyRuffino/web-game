@@ -204,6 +204,14 @@ class Menu {
       });
     }
     
+    // Add grid buttons
+    if (tab.gridButtons && Array.isArray(tab.gridButtons)) {
+      tab.gridButtons.forEach(gridConfig => {
+        const gridContainer = this.createGridButtons(gridConfig);
+        contentArea.appendChild(gridContainer);
+      });
+    }
+    
     // Add tab buttons
     if (tab.buttons && Array.isArray(tab.buttons)) {
       const buttonContainer = document.createElement('div');
@@ -306,6 +314,137 @@ class Menu {
       });
     }
     
+    return container;
+  }
+  
+  createGridButtons(gridConfig) {
+    const container = document.createElement('div');
+    container.style.cssText = `
+      margin: 12px 0;
+    `;
+    
+    // Grid label
+    if (gridConfig.label) {
+      const label = document.createElement('div');
+      label.textContent = gridConfig.label;
+      label.style.cssText = `
+        font-weight: bold;
+        margin-bottom: 12px;
+        color: #fff;
+        font-size: 14px;
+      `;
+      container.appendChild(label);
+    }
+    
+    // Create grid
+    const grid = document.createElement('div');
+    const rows = gridConfig.rows || 4;
+    const cols = gridConfig.cols || 4;
+    const cellSize = gridConfig.cellSize || 80;
+    const gap = gridConfig.gap || 16;
+    
+    grid.style.cssText = `
+      display: grid;
+      grid-template-rows: repeat(${rows}, ${cellSize}px);
+      grid-template-columns: repeat(${cols}, ${cellSize}px);
+      gap: ${gap}px;
+      justify-content: start;
+    `;
+    
+    // Create grid cells
+    const buttons = gridConfig.buttons || [];
+    const totalCells = rows * cols;
+    
+    for (let i = 0; i < totalCells; i++) {
+      const cell = document.createElement('div');
+      cell.style.cssText = `
+        background: #333;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+        transition: background 0.2s;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #555;
+      `;
+      
+      const button = buttons[i];
+      
+      if (button) {
+        // Filled cell with button data
+        if (button.imageDataUrl) {
+          const img = document.createElement('img');
+          img.src = button.imageDataUrl;
+          img.alt = button.name || 'Button';
+          img.style.cssText = `
+            width: ${cellSize * 0.5}px;
+            height: ${cellSize * 0.5}px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            object-fit: cover;
+          `;
+          cell.appendChild(img);
+        }
+        
+        const name = document.createElement('div');
+        name.textContent = button.name || `Button ${i + 1}`;
+        name.style.cssText = `
+          font-size: 12px;
+          text-align: center;
+          word-break: break-all;
+          color: #fff;
+          font-family: 'Courier New', monospace;
+        `;
+        cell.appendChild(name);
+        
+        // Hover effects
+        cell.onmouseenter = () => {
+          cell.style.background = '#444';
+          if (button.tooltip) {
+            cell.title = button.tooltip;
+          }
+        };
+        cell.onmouseleave = () => {
+          cell.style.background = '#333';
+        };
+        
+        // Click handler
+        cell.onclick = button.onClick || (() => console.log(`Grid button ${i} clicked`));
+        
+      } else {
+        // Empty cell with plus sign
+        const plus = document.createElement('div');
+        plus.textContent = '+';
+        plus.style.cssText = `
+          font-size: 32px;
+          color: #aaa;
+          user-select: none;
+        `;
+        cell.appendChild(plus);
+        
+        // Hover effects for empty cell
+        cell.onmouseenter = () => {
+          cell.style.background = '#444';
+          if (gridConfig.emptyTooltip) {
+            cell.title = gridConfig.emptyTooltip;
+          }
+        };
+        cell.onmouseleave = () => {
+          cell.style.background = '#333';
+        };
+        
+        // Click handler for empty cell
+        cell.onclick = gridConfig.onEmptyClick || (() => console.log(`Empty grid cell ${i} clicked`));
+      }
+      
+      grid.appendChild(cell);
+    }
+    
+    container.appendChild(grid);
     return container;
   }
   
