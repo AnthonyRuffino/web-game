@@ -245,10 +245,6 @@ window.UI.skinsManager = {
       }
       // Ensure all entity types have default preferences
       this.ensureDefaultPreferences();
-      // Save migrated caches if needed
-      console.log(`[UI] Loaded ${Object.keys(this.imageCache).length} image cache entries`);
-      console.log(`[UI] Loaded ${Object.keys(this.canvasCache).length} canvas cache entries`);
-      console.log(`[UI] Loaded ${Object.keys(this.preferences).length} preference entries`);
     } catch (e) {
       console.warn('[UI] Failed to load caches:', e);
     }
@@ -517,7 +513,7 @@ window.UI.skinsManager = {
     modal.style.maxWidth = SKINS_CONFIG.modal.maxWidth;
     modal.style.maxHeight = SKINS_CONFIG.modal.maxHeight;
     modal.style.color = SKINS_CONFIG.modal.color;
-    modal.style.zIndex = SKINS_CONFIG.modal.zIndex || 9999;
+    // Z-index will be set by the menu bar system
     modal.style.overflow = 'hidden';
     modal.style.resize = 'both';
     modal.style.cursor = 'default';

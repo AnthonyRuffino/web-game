@@ -35,10 +35,16 @@ const MENU_BAR_CONFIG = {
 };
 // --- End Menu Bar Config ---
 
-window.UI.menuBar = {
-  // Track which menus are currently open
-  openMenus: new Set(),
-  
+// --- Menu Bar Class ---
+class MenuBar {
+  constructor() {
+    this.element = null;
+    this.openMenus = new Set();
+    this.baseZIndex = 1200; // Base z-index for menus
+    this.menuZIndexes = new Map(); // Track z-index for each menu
+    this.nextZIndex = this.baseZIndex;
+  }
+
   init() {
     if (document.getElementById('ui-menu-bar')) return;
     const bar = document.createElement('div');
@@ -92,19 +98,7 @@ window.UI.menuBar = {
     const skinsBtn = makeButton(
       '🎨',
       'Toggle Skins Menu',
-      () => {
-        if (window.UI.menuBar.openMenus.has('skins')) {
-          // Close skins menu
-          window.UI.menuBar.closeMenu('skins');
-        } else {
-          // Open skins menu
-          if (window.UI.skinsManager && window.UI.skinsManager.openSkinsUI) {
-            window.UI.skinsManager.openSkinsUI();
-            window.UI.menuBar.openMenus.add('skins');
-            window.UI.menuBar.updateButtonStates();
-          }
-        }
-      }
+      () => window.UI.menuBar.openMenu('skins')
     );
     bar.appendChild(skinsBtn);
 
@@ -112,19 +106,7 @@ window.UI.menuBar = {
     const macroBtn = makeButton(
       '\u26a1',
       'Toggle Macro Menu',
-      () => {
-        if (window.UI.menuBar.openMenus.has('macro')) {
-          // Close macro menu
-          window.UI.menuBar.closeMenu('macro');
-        } else {
-          // Open macro menu
-          if (window.UI.macroManager && window.UI.macroManager.openMacroUI) {
-            window.UI.macroManager.openMacroUI();
-            window.UI.menuBar.openMenus.add('macro');
-            window.UI.menuBar.updateButtonStates();
-          }
-        }
-      }
+      () => window.UI.menuBar.openMenu('macro')
     );
     bar.appendChild(macroBtn);
 
@@ -164,26 +146,93 @@ window.UI.menuBar = {
     bar.appendChild(makeButton('🧑', 'Character (coming soon)', null, false));
 
     document.body.appendChild(bar);
-  },
-
-  // Close a specific menu
-  closeMenu(menuName) {
-    this.openMenus.delete(menuName);
-    this.updateButtonStates();
     
-    // Close the actual menu UI
-    if (menuName === 'skins') {
-      const skinsModal = document.getElementById('skins-ui-modal');
-      if (skinsModal) {
-        skinsModal.remove();
-      }
-    } else if (menuName === 'macro') {
-      const macroModal = document.getElementById('macro-ui-modal');
-      if (macroModal) {
-        macroModal.remove();
-      }
+    // Setup global click handler for menu bring-to-front functionality
+    this.setupMenuClickHandler();
+  }
+
+  // Get next available z-index for a new menu
+  getNextZIndex() {
+    this.nextZIndex += 10; // Increment by 10 to leave room for other elements
+    return this.nextZIndex;
+  }
+
+  // Bring menu to front (highest z-index)
+  bringMenuToFront(menuId) {
+    const modal = document.getElementById(`${menuId}-ui-modal`);
+    if (modal) {
+      const newZIndex = this.getNextZIndex();
+      modal.style.zIndex = newZIndex;
+      this.menuZIndexes.set(menuId, newZIndex);
     }
-  },
+  }
+
+  // Check if a click is on a menu and bring it to front
+  handleMenuClick(event) {
+    // Check if the click target is part of a menu
+    let menuElement = event.target;
+    let menuId = null;
+    
+    // Walk up the DOM tree to find the menu container
+    while (menuElement && menuElement !== document.body) {
+      if (menuElement.id && menuElement.id.endsWith('-ui-modal')) {
+        menuId = menuElement.id.replace('-ui-modal', '');
+        break;
+      }
+      menuElement = menuElement.parentElement;
+    }
+    
+    if (menuId && this.openMenus.has(menuId)) {
+      this.bringMenuToFront(menuId);
+    }
+  }
+
+  // Setup global click listener for menu bring-to-front functionality
+  setupMenuClickHandler() {
+    document.addEventListener('click', (event) => this.handleMenuClick(event));
+  }
+
+  // Open menu with toggle functionality
+  openMenu(menuId) {
+    if (this.openMenus.has(menuId)) {
+      // Menu is already open, close it
+      this.closeMenu(menuId);
+      return;
+    }
+
+    // Open the menu
+    this.openMenus.add(menuId);
+    this.updateButtonStates();
+
+    // Call the appropriate menu opening function
+    switch (menuId) {
+      case 'skins':
+        if (window.UI.skinsManager) {
+          window.UI.skinsManager.openSkinsUI();
+          // Set z-index after modal is created
+          setTimeout(() => this.bringMenuToFront(menuId), 0);
+        }
+        break;
+      case 'macro':
+        if (window.UI.macroManager) {
+          window.UI.macroManager.openMacroUI();
+          // Set z-index after modal is created
+          setTimeout(() => this.bringMenuToFront(menuId), 0);
+        }
+        break;
+    }
+  }
+
+  // Close specific menu
+  closeMenu(menuId) {
+    const modal = document.getElementById(`${menuId}-ui-modal`);
+    if (modal) {
+      modal.remove();
+    }
+    this.openMenus.delete(menuId);
+    this.menuZIndexes.delete(menuId);
+    this.updateButtonStates();
+  }
 
   // Update button visual states based on open menus
   updateButtonStates() {
@@ -218,4 +267,6 @@ window.UI.menuBar = {
       }
     }
   }
-}; 
+}
+
+window.UI.menuBar = new MenuBar(); 

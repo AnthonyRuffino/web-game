@@ -560,7 +560,7 @@ window.UI.macroManager = {
     modal.style.minWidth = '480px';
     modal.style.maxWidth = '95vw';
     modal.style.color = MACRO_CONFIG.modal.color;
-    modal.style.zIndex = MACRO_CONFIG.modal.overlay.zIndex;
+    // Z-index will be set by the menu bar system
     modal.style.overflow = 'hidden';
     modal.style.resize = 'both';
     modal.style.cursor = 'default';
