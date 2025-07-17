@@ -518,19 +518,7 @@ window.UI.skinsManager = {
     modal.style.resize = 'both';
     modal.style.cursor = 'default';
 
-    // Handle escape key to close modal
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        modal.remove();
-        document.removeEventListener('keydown', handleEscape);
-        // Update menu bar state
-        if (window.UI.menuBar) {
-          window.UI.menuBar.openMenus.delete('skins');
-          window.UI.menuBar.updateButtonStates();
-        }
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
+    // Escape key handling is now managed centrally by the menu bar
 
     // Helper to refresh the UI
     const refreshUI = () => {

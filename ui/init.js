@@ -18,7 +18,8 @@ const UI = {
     { name: 'inputBar', file: 'ui/inputBar.js', dependencies: [] },
     { name: 'skins', file: 'ui/skins.js', dependencies: [] },
     { name: 'menuBar', file: 'ui/menuBar.js', dependencies: ['actionBars'] },
-    { name: 'minimap', file: 'ui/minimap.js', dependencies: ['jsonPopup'] }
+    { name: 'minimap', file: 'ui/minimap.js', dependencies: ['jsonPopup'] },
+    { name: 'menuManager', file: 'ui/menuManager.js', dependencies: [] }
   ],
   
   // Load a single module
@@ -154,6 +155,13 @@ const UI = {
       console.warn('[UI] Minimap manager not found');
     }
 
+    // MenuManager is automatically initialized when loaded
+    if (window.UI.menuManager) {
+      console.log('[UI] MenuManager ready');
+    } else {
+      console.warn('[UI] MenuManager not found');
+    }
+
     // Preload all action bar icons after all modules are loaded and initialized
     if (window.UI.actionBarManager && typeof window.UI.actionBarManager.preloadAllIcons === 'function') {
       window.UI.actionBarManager.preloadAllIcons();
@@ -193,6 +201,10 @@ const UI = {
   
   get jsonPopup() {
     return window.JsonPopup;
+  },
+  
+  get menuManager() {
+    return window.UI.menuManager;
   }
 };
 

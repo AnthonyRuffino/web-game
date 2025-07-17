@@ -149,6 +149,9 @@ class MenuBar {
     
     // Setup global click handler for menu bring-to-front functionality
     this.setupMenuClickHandler();
+    
+    // Setup global escape key handler
+    this.setupEscapeHandler();
   }
 
   // Get next available z-index for a new menu
@@ -190,6 +193,22 @@ class MenuBar {
   // Setup global click listener for menu bring-to-front functionality
   setupMenuClickHandler() {
     document.addEventListener('click', (event) => this.handleMenuClick(event));
+  }
+
+  // Setup global escape key handler to close all menus
+  setupEscapeHandler() {
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && this.openMenus.size > 0) {
+        this.closeAllMenus();
+      }
+    });
+  }
+
+  // Close all open menus
+  closeAllMenus() {
+    for (const menuId of this.openMenus) {
+      this.closeMenu(menuId);
+    }
   }
 
   // Open menu with toggle functionality
