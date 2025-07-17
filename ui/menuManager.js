@@ -584,6 +584,12 @@ class MenuManager {
   }
   
   bringMenuToFront(menu) {
+    // Check if menu is already on top
+    const topMenu = this.getTopMenu();
+    if (topMenu && topMenu.id === menu.id) {
+      return;
+    }
+    
     // Find the highest z-index currently in use
     let maxZIndex = 1000;
     this.menus.forEach(m => {
