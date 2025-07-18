@@ -16,6 +16,7 @@ function loadScript(src) {
 async function startGame() {
   window.WebGame = window.WebGame || {};
   window.WebGame.UI = window.WebGame.UI || {};
+  window.WebGame.MenuConfigs = {};
   window.UI = window.WebGame.UI;
 
   // Wait for DOM ready
@@ -38,7 +39,11 @@ async function startGame() {
     'skins': {file: 'ui/skins.js', dependencies: [], self: () => window.WebGame?.UI?.skinsManager },
     'menuBar': {file: 'ui/menuBar.js', dependencies: ['actionBars'], self: () => window.WebGame?.UI?.menuBar },
     'minimap': {file: 'ui/minimap.js', dependencies: ['jsonPopup'], self: () => window.WebGame?.UI?.minimapManager },
-    'menuManager': {file: 'ui/menuManager.js', dependencies: [], self: () => window.WebGame?.UI?.menuManager }
+    'menuManager': {file: 'ui/menuManager.js', dependencies: [], self: () => window.WebGame?.UI?.menuManager },
+    'macroMenus': {file: 'data/ui/menu-configs/macro-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.macroMenus },
+    'uiMenus': {file: 'data/ui/menu-configs/ui-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.uiMenus },
+    'skinMenus': {file: 'data/ui/menu-configs/skin-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.skinMenus },
+    'initializeMenuConfigs': {file: 'data/ui/menu-configs/initialize-menu-configs.js', dependencies: ['macroMenus', 'uiMenus', 'skinMenus'], self: () => window.WebGame?.MenuConfigs }
   };
 
   for (const key of Object.keys(newSystemModules)) {

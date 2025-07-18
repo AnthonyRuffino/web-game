@@ -1,13 +1,9 @@
 // data/ui/macros/index.js
 // Main export file for all menu configurations
 
-(() =>{
+((webGame) =>{
   // Initialize the unified menu system
-async function initialize(_MacroMenus, _UIMenus, _SkinMenus) {
-  
-  const macroMenus = _MacroMenus.menus;
-  const uiMenus = _UIMenus.menus;
-  const skinMenus = _SkinMenus.menus;
+async function initialize(macroMenus, uiMenus, skinMenus) {
   
   // Combined menu collections
   const allMenus = {
@@ -44,34 +40,28 @@ async function initialize(_MacroMenus, _UIMenus, _SkinMenus) {
     };
   }
 
-  // Create the unified menu system
-  window.WebGame.MenuConfigs = {
-    ...window.WebGame.MenuConfigs,
-    getMenu,
-    getAllMenuKeys,
-    getMenuKeysByCategory,
-    getMenusByCategory,
-    macro: { 
-      menus: macroMenus, 
-      get: _MacroMenus.get, 
-      keys: _MacroMenus.keys 
-    },
-    ui: { 
-      menus: uiMenus, 
-      get: _UIMenus.get, 
-      keys: _UIMenus.keys 
-    },
-    skin: { 
-      menus: skinMenus, 
-      get: _SkinMenus.get, 
-      keys: _SkinMenus.keys 
-    }
+  webGame.MenuConfigs.getMenu = getMenu;
+  webGame.MenuConfigs.getAllMenuKeys = getAllMenuKeys;
+  webGame.MenuConfigs.getMenuKeysByCategory = getMenuKeysByCategory;
+  webGame.MenuConfigs.getMenusByCategory = getMenusByCategory;
+  webGame.MenuConfigs.macro = { 
+    menus: macroMenus, 
+    get: (key) => macroMenus[key], 
+    keys: Object.keys(macroMenus)
   };
-
+  webGame.MenuConfigs.ui = { 
+    menus: uiMenus, 
+    get: (key) => uiMenus[key], 
+    keys: Object.keys(uiMenus) 
+  };
+  webGame.MenuConfigs.skin = { 
+    menus: skinMenus, 
+    get: (key) => skinMenus[key], 
+    keys: Object.keys(skinMenus)
+  };
   console.log('[MenuConfigs] Menu system initialized with', getAllMenuKeys().length, 'menus');
 }
 
-window.WebGame.MenuConfigs = {
-  initialize
-}
-})();
+window.WebGame.MenuConfigs.init = initialize;
+
+})(window.WebGame);
