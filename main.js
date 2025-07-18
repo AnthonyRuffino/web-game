@@ -76,15 +76,6 @@ async function startGame() {
 
   // Now all UI and core modules are loaded and can reference each other safely!
 
-  // Initialize responsive canvas system (check both old and new systems)
-  if (window.WebGame?.UI?.responsiveCanvas && window.WebGame.UI.responsiveCanvas.init) {
-    console.log('[Main] Initializing responsive canvas (new system)');
-    window.WebGame.UI.responsiveCanvas.init();
-  } else if (window.UI.responsiveCanvas && window.UI.responsiveCanvas.init) {
-    console.log('[Main] Initializing responsive canvas (old system)');
-    window.UI.responsiveCanvas.init();
-  }
-
   if (typeof EntityRenderer !== 'undefined' && EntityRenderer.init) {
     await EntityRenderer.init();
   }
