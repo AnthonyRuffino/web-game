@@ -49,7 +49,8 @@ async function startGame() {
     'rock': {file: 'core/entities/rock.js', dependencies: [], self: () => window.WebGame?.Entities?.Rock },
     'tree': {file: 'core/entities/tree.js', dependencies: [], self: () => window.WebGame?.Entities?.Tree },
     'grass': {file: 'core/entities/grass.js', dependencies: [], self: () => window.WebGame?.Entities?.Grass },
-    'entityRenderer': {file: 'core/entityRenderer.js', dependencies: ['rock', 'tree', 'grass'], self: () => window.WebGame?.EntityRenderer }
+    'entityRenderer': {file: 'core/entityRenderer.js', dependencies: ['rock', 'tree', 'grass'], self: () => window.WebGame?.EntityRenderer },
+    'world': {file: 'core/world.js', dependencies: [], self: () => window.WebGame?.World }
   };
 
   for (const key of Object.keys(newSystemModules)) {
@@ -65,7 +66,6 @@ async function startGame() {
 
   // Dynamically load all core game modules in order
   const coreModules = [
-    'core/world.js',
     'core/persistence.js',
     'core/collision.js',
     'core/gameEngine.js',
@@ -77,31 +77,11 @@ async function startGame() {
 
   // Now all UI and core modules are loaded and can reference each other safely!
 
-  if (window.WebGame?.EntityRenderer && window.WebGame.EntityRenderer.init) {
-    console.log('[Main] Initializing entity renderer (new system)');
-    await window.WebGame.EntityRenderer.init();
-  } else if (typeof EntityRenderer !== 'undefined' && EntityRenderer.init) {
-    console.log('[Main] Initializing entity renderer (old system)');
-    await EntityRenderer.init();
-  }
-
   // Get canvas and context from responsive canvas system (check both systems)
   const canvas = window.WebGame?.UI?.responsiveCanvas?.canvas || 
                  window.UI.responsiveCanvas?.canvas || 
                  document.getElementById('gameCanvas');
   const ctx = canvas ? canvas.getContext('2d') : null;
-
-  // Initialize world system
-  if (typeof World !== 'undefined' && World.init) {
-    World.init();
-    // Set player starting position based on world seed
-    if (typeof Player !== 'undefined') {
-      const startPos = World.getStartingPosition();
-      Player.x = startPos.x;
-      Player.y = startPos.y;
-      console.log(`[Main] Player positioned at (${Player.x}, ${Player.y})`);
-    }
-  }
 
   // Initialize background system
   if (window.WebGame?.Background && window.WebGame.Background.init) {

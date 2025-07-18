@@ -115,14 +115,14 @@ class MenuBar {
       '\u25A9',
       'Toggle World Grid Overlay',
       () => {
-        if (window.cmd) window.cmd('grid');
+        window.WebGame.World.showGrid = !window.WebGame.World.showGrid;
         // Update button style immediately for feedback
         updateGridButton();
       }
     );
     bar.appendChild(gridBtn);
     function updateGridButton() {
-      if (window.RENDER_GRID) {
+      if (window.WebGame?.World?.showGrid) {
         gridBtn.style.background = '#4ECDC4';
         gridBtn.style.color = '#222';
         gridBtn.textContent = '\u25A9'; // Could use a different icon if desired
