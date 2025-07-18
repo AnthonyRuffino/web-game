@@ -48,7 +48,8 @@ async function startGame() {
     'background': {file: 'core/background.js', dependencies: [], self: () => window.WebGame?.Background },
     'rock': {file: 'core/entities/rock.js', dependencies: [], self: () => window.WebGame?.Entities?.Rock },
     'tree': {file: 'core/entities/tree.js', dependencies: [], self: () => window.WebGame?.Entities?.Tree },
-    'grass': {file: 'core/entities/grass.js', dependencies: [], self: () => window.WebGame?.Entities?.Grass }
+    'grass': {file: 'core/entities/grass.js', dependencies: [], self: () => window.WebGame?.Entities?.Grass },
+    'entityRenderer': {file: 'core/entityRenderer.js', dependencies: ['rock', 'tree', 'grass'], self: () => window.WebGame?.EntityRenderer }
   };
 
   for (const key of Object.keys(newSystemModules)) {
@@ -64,7 +65,6 @@ async function startGame() {
 
   // Dynamically load all core game modules in order
   const coreModules = [
-    'core/entityRenderer.js',
     'core/world.js',
     'core/persistence.js',
     'core/collision.js',
@@ -77,7 +77,11 @@ async function startGame() {
 
   // Now all UI and core modules are loaded and can reference each other safely!
 
-  if (typeof EntityRenderer !== 'undefined' && EntityRenderer.init) {
+  if (window.WebGame?.EntityRenderer && window.WebGame.EntityRenderer.init) {
+    console.log('[Main] Initializing entity renderer (new system)');
+    await window.WebGame.EntityRenderer.init();
+  } else if (typeof EntityRenderer !== 'undefined' && EntityRenderer.init) {
+    console.log('[Main] Initializing entity renderer (old system)');
     await EntityRenderer.init();
   }
 
