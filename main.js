@@ -43,7 +43,8 @@ async function startGame() {
     'macroMenus': {file: 'data/ui/menu-configs/macro-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.macroMenus },
     'uiMenus': {file: 'data/ui/menu-configs/ui-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.uiMenus },
     'skinMenus': {file: 'data/ui/menu-configs/skin-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.skinMenus },
-    'initializeMenuConfigs': {file: 'data/ui/menu-configs/initialize-menu-configs.js', dependencies: ['macroMenus', 'uiMenus', 'skinMenus'], self: () => window.WebGame?.MenuConfigs }
+    'initializeMenuConfigs': {file: 'data/ui/menu-configs/initialize-menu-configs.js', dependencies: ['macroMenus', 'uiMenus', 'skinMenus'], self: () => window.WebGame?.MenuConfigs },
+    'background': {file: 'core/background.js', dependencies: [], self: () => window.WebGame?.Background }
   };
 
   for (const key of Object.keys(newSystemModules)) {
@@ -59,7 +60,6 @@ async function startGame() {
 
   // Dynamically load all core game modules in order
   const coreModules = [
-    'core/background.js',
     'core/entities/rock.js',
     'core/entities/tree.js',
     'core/entities/grass.js',
@@ -108,7 +108,11 @@ async function startGame() {
   }
 
   // Initialize background system
-  if (typeof Background !== 'undefined' && Background.init) {
+  if (window.WebGame?.Background && window.WebGame.Background.init) {
+    console.log('[Main] Initializing background system (new system)');
+    window.WebGame.Background.init();
+  } else if (typeof Background !== 'undefined' && Background.init) {
+    console.log('[Main] Initializing background system (old system)');
     Background.init();
   }
 
