@@ -17,6 +17,7 @@ async function startGame() {
   window.WebGame = window.WebGame || {};
   window.WebGame.UI = window.WebGame.UI || {};
   window.WebGame.MenuConfigs = {};
+  window.WebGame.Entities = {};
   window.UI = window.WebGame.UI;
 
   // Wait for DOM ready
@@ -44,7 +45,10 @@ async function startGame() {
     'uiMenus': {file: 'data/ui/menu-configs/ui-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.uiMenus },
     'skinMenus': {file: 'data/ui/menu-configs/skin-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.skinMenus },
     'initializeMenuConfigs': {file: 'data/ui/menu-configs/initialize-menu-configs.js', dependencies: ['macroMenus', 'uiMenus', 'skinMenus'], self: () => window.WebGame?.MenuConfigs },
-    'background': {file: 'core/background.js', dependencies: [], self: () => window.WebGame?.Background }
+    'background': {file: 'core/background.js', dependencies: [], self: () => window.WebGame?.Background },
+    'rock': {file: 'core/entities/rock.js', dependencies: [], self: () => window.WebGame?.Entities?.Rock },
+    'tree': {file: 'core/entities/tree.js', dependencies: [], self: () => window.WebGame?.Entities?.Tree },
+    'grass': {file: 'core/entities/grass.js', dependencies: [], self: () => window.WebGame?.Entities?.Grass }
   };
 
   for (const key of Object.keys(newSystemModules)) {
@@ -60,9 +64,6 @@ async function startGame() {
 
   // Dynamically load all core game modules in order
   const coreModules = [
-    'core/entities/rock.js',
-    'core/entities/tree.js',
-    'core/entities/grass.js',
     'core/entityRenderer.js',
     'core/world.js',
     'core/persistence.js',
