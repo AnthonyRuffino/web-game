@@ -16,20 +16,29 @@ function loadScript(src) {
 async function startGame() {
   window.WebGame = window.WebGame || {};
   window.WebGame.UI = window.WebGame.UI || {};
+  window.UI = window.WebGame.UI;
 
   // Wait for DOM ready
   if (document.readyState === 'loading') {
     await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
   }
 
-  // NEW SYSTEM: Load first 4 UI modules with new dependency injection system
-  console.log('[Main] Loading first 4 UI modules with new system...');
+  // NEW SYSTEM: Load all UI modules with new dependency injection system
+  console.log('[Main] Loading all UI modules with new system...');
   
   const newSystemModules = {
     'console': {file: 'ui/console.js', dependencies: [], self: () => window.WebGame?.UI?.console },
     'input': {file: 'ui/input.js', dependencies: [], self: () => window.WebGame?.UI?.input },
     'responsiveCanvas': {file: 'ui/responsiveCanvas.js', dependencies: [], self: () => window.WebGame?.UI?.responsiveCanvas },
-    'jsonPopup': {file: 'ui/jsonPopup.js', dependencies: [], self: () => window.WebGame?.UI?.jsonPopup }
+    'jsonPopup': {file: 'ui/jsonPopup.js', dependencies: [], self: () => window.WebGame?.UI?.jsonPopup },
+    'actionBars': {file: 'ui/actionBars.js', dependencies: ['jsonPopup'], self: () => window.WebGame?.UI?.actionBarManager },
+    'macros': {file: 'ui/macros.js', dependencies: ['actionBars'], self: () => window.WebGame?.UI?.macroManager },
+    'inventory': {file: 'ui/inventory.js', dependencies: [], self: () => window.WebGame?.UI?.inventory },
+    'inputBar': {file: 'ui/inputBar.js', dependencies: [], self: () => window.WebGame?.UI?.inputBar },
+    'skins': {file: 'ui/skins.js', dependencies: [], self: () => window.WebGame?.UI?.skinsManager },
+    'menuBar': {file: 'ui/menuBar.js', dependencies: ['actionBars'], self: () => window.WebGame?.UI?.menuBar },
+    'minimap': {file: 'ui/minimap.js', dependencies: ['jsonPopup'], self: () => window.WebGame?.UI?.minimapManager },
+    'menuManager': {file: 'ui/menuManager.js', dependencies: [], self: () => window.WebGame?.UI?.menuManager }
   };
 
   for (const key of Object.keys(newSystemModules)) {
@@ -41,17 +50,6 @@ async function startGame() {
       const resolvedDeps = dependencies.map(dep => newSystemModules[dep].self());
       await module.init(...resolvedDeps);
     }
-  }
-
-  // OLD SYSTEM: Load remaining UI modules via ui/init.js (to prevent breaking)
-  console.log('[Main] Loading remaining UI modules via old system...');
-  await loadScript('ui/init.js');
-
-  // Wait for UI system to finish loading all UI modules
-  if (window.UI && window.UI.init) {
-    await window.UI.init();
-  } else {
-    throw new Error('UI system not available');
   }
 
   // Dynamically load all core game modules in order

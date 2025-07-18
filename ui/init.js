@@ -7,17 +7,8 @@ const UI = {
   loadedModules: new Set(),
   
   // Module loading queue with dependencies
-  // NOTE: console, input, responsiveCanvas, jsonPopup moved to main.js new system
-  moduleQueue: [
-    { name: 'actionBars', file: 'ui/actionBars.js', dependencies: ['jsonPopup'] },
-    { name: 'macros', file: 'ui/macros.js', dependencies: ['actionBars'] },
-    { name: 'inventory', file: 'ui/inventory.js', dependencies: [] },
-    { name: 'inputBar', file: 'ui/inputBar.js', dependencies: [] },
-    { name: 'skins', file: 'ui/skins.js', dependencies: [] },
-    { name: 'menuBar', file: 'ui/menuBar.js', dependencies: ['actionBars'] },
-    { name: 'minimap', file: 'ui/minimap.js', dependencies: ['jsonPopup'] },
-    { name: 'menuManager', file: 'ui/menuManager.js', dependencies: [] }
-  ],
+  // NOTE: All modules moved to main.js new system
+  moduleQueue: [],
   
   // Load a single module
   async loadModule(moduleInfo) {
@@ -58,7 +49,7 @@ const UI = {
       return false;
     }
   },
-  
+
   // Load all modules in dependency order
   async loadAllModules() {
     console.log('[UI] Starting dynamic module loading...');
@@ -205,11 +196,3 @@ const UI = {
     return window.UI.menuManager;
   }
 };
-
-// Create the global UI object
-if (!window.UI) {
-  window.UI = {};
-}
-
-// Merge our UI object with the global one
-Object.assign(window.UI, UI);

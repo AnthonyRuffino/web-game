@@ -735,4 +735,7 @@ if (!window.UI) {
 }
 window.UI.menuManager = menuManager;
 
+// Also register with new system for migration
+window.WebGame.UI.menuManager = window.UI.menuManager;
+
 console.log('[MenuManager] MenuManager initialized and available at window.UI.menuManager'); 

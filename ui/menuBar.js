@@ -288,4 +288,7 @@ class MenuBar {
   }
 }
 
-window.UI.menuBar = new MenuBar(); 
+window.UI.menuBar = new MenuBar();
+
+// Also register with new system for migration
+window.WebGame.UI.menuBar = window.UI.menuBar; 

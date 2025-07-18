@@ -1,5 +1,146 @@
 // ui/actionBars.js
-// Action bar system with multiple configurable bars
+// Action bar system for customizable hotkeys and macros
+
+(() => {
+  // Action bar system
+  window.WebGame.UI.actionBarManager = {
+    bars: {},
+    keyBindingMap: {}, // Maps key codes to { barName, slotIndex }
+
+    barsStorageKey: 'ui_actionBars',
+
+    saveAllBars() {
+      // Serialize all action bars (full config, not just macroBindings)
+      const barsData = {};
+      for (const barName in this.bars) {
+        const bar = this.bars[barName];
+        barsData[barName] = bar._getSerializableConfig();
+      }
+      try {
+        localStorage.setItem(this.barsStorageKey, JSON.stringify(barsData));
+      } catch (e) {
+        console.warn('[UI] Failed to save action bars:', e);
+      }
+    },
+
+    loadAllBars() {
+      try {
+        const raw = localStorage.getItem(this.barsStorageKey);
+        if (!raw) return;
+        const barsData = JSON.parse(raw);
+        for (const barName in barsData) {
+          const config = barsData[barName];
+          // Avoid duplicate creation
+          if (!this.bars[barName]) {
+            this.createActionBar(config);
+          } else {
+            // Restore handleActive state and handleCorner from config
+            this.bars[barName]._handleActive = config.handleActive;
+            if (config.handleCorner) {
+              this.bars[barName]._handleCorner = config.handleCorner;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[UI] Failed to load action bars:', e);
+      }
+    },
+
+    preloadAllIcons() {
+      for (const barName in this.bars) {
+        this.bars[barName].preloadIcons();
+      }
+    },
+
+    createActionBar(config) {
+      if (!config.name) throw new Error('Action bar must have a unique name');
+      if (this.bars[config.name]) throw new Error('Action bar name already exists');
+      const bar = new ActionBar(config);
+      this.bars[config.name] = bar;
+      this._rebuildKeyBindingMap();
+      this.saveAllBars(); // Save all bars after creation
+      return bar;
+    },
+
+    removeActionBar(name) {
+      const bar = this.bars[name];
+      if (bar) {
+        bar.canvas.remove();
+        delete this.bars[name];
+        this._rebuildKeyBindingMap();
+        this.saveAllBars(); // Save all bars after removal
+      }
+    },
+
+    getActionBar(name) {
+      return this.bars[name];
+    },
+
+    listActionBars() {
+      return Object.keys(this.bars);
+    },
+
+    // Update key bindings for a specific bar
+    updateKeyBindings(barName, newKeyBindings) {
+      const bar = this.bars[barName];
+      if (bar) {
+        bar.keyBindings = newKeyBindings;
+        this._rebuildKeyBindingMap();
+      }
+    },
+
+    // Rebuild the key binding map from all bars
+    _rebuildKeyBindingMap() {
+      this.keyBindingMap = {};
+      for (const barName in this.bars) {
+        const bar = this.bars[barName];
+        if (!bar.keyBindings) continue;
+        for (let r = 0; r < bar.rows; r++) {
+          for (let c = 0; c < bar.columns; c++) {
+            const binding = (bar.keyBindings[r] || [])[c];
+            if (binding) {
+              this.keyBindingMap[binding] = { barName, row: r, col: c };
+            }
+          }
+        }
+      }
+      console.log('[UI] Key binding map rebuilt:', this.keyBindingMap);
+    },
+
+    // Global event handling for key bindings
+    handleGlobalKey(e) {
+      // Explicitly block all action bar processing if the input bar is open
+      if (typeof window !== 'undefined' && window.UI && typeof window.UI.isInputBlocked === 'function' && window.UI.isInputBlocked()) {
+        return;
+      }
+      
+      // Create the key lookup string
+      const keyLookup = e.shiftKey ? `Shift+${e.code}` : e.code;
+      
+      // Look up the binding in the map
+      const binding = this.keyBindingMap[keyLookup];
+      if (binding) {
+        const bar = this.bars[binding.barName];
+        if (bar) {
+          bar.triggerSlot(binding.row, binding.col);
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+      }
+      
+      // If no action bar binding found, let other handlers process the key
+      // (like movement, input bar, etc.)
+    }
+  };
+
+  // Also register with old system for backward compatibility during migration
+  window.UI.actionBarManager = window.WebGame.UI.actionBarManager;
+  
+  // Attach global keydown listener for action bar key bindings
+  window.addEventListener('keydown', (e) => window.WebGame.UI.actionBarManager.handleGlobalKey(e));
+  
+})();
 
 // --- Action Bar Config ---
 const ACTION_BAR_CONFIG = {
@@ -782,143 +923,6 @@ if (!window.ActionBar) {
 } else {
   var ActionBar = window.ActionBar;
 }
-
-// ActionBarManager
-window.UI.actionBarManager = {
-  bars: {},
-  keyBindingMap: {}, // Maps key codes to { barName, slotIndex }
-
-  barsStorageKey: 'ui_actionBars',
-
-  saveAllBars() {
-    // Serialize all action bars (full config, not just macroBindings)
-    const barsData = {};
-    for (const barName in this.bars) {
-      const bar = this.bars[barName];
-      barsData[barName] = bar._getSerializableConfig();
-    }
-    try {
-      localStorage.setItem(this.barsStorageKey, JSON.stringify(barsData));
-    } catch (e) {
-      console.warn('[UI] Failed to save action bars:', e);
-    }
-  },
-
-  loadAllBars() {
-    try {
-      const raw = localStorage.getItem(this.barsStorageKey);
-      if (!raw) return;
-      const barsData = JSON.parse(raw);
-      for (const barName in barsData) {
-        const config = barsData[barName];
-        // Avoid duplicate creation
-        if (!this.bars[barName]) {
-          this.createActionBar(config);
-        } else {
-          // Restore handleActive state and handleCorner from config
-          this.bars[barName]._handleActive = config.handleActive;
-          if (config.handleCorner) {
-            this.bars[barName]._handleCorner = config.handleCorner;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[UI] Failed to load action bars:', e);
-    }
-  },
-
-  preloadAllIcons() {
-    for (const barName in this.bars) {
-      this.bars[barName].preloadIcons();
-    }
-  },
-
-  createActionBar(config) {
-    if (!config.name) throw new Error('Action bar must have a unique name');
-    if (this.bars[config.name]) throw new Error('Action bar name already exists');
-    const bar = new ActionBar(config);
-    this.bars[config.name] = bar;
-    this._rebuildKeyBindingMap();
-    this.saveAllBars(); // Save all bars after creation
-    return bar;
-  },
-
-  removeActionBar(name) {
-    const bar = this.bars[name];
-    if (bar) {
-      bar.canvas.remove();
-      delete this.bars[name];
-      this._rebuildKeyBindingMap();
-      this.saveAllBars(); // Save all bars after removal
-    }
-  },
-
-  getActionBar(name) {
-    return this.bars[name];
-  },
-
-  listActionBars() {
-    return Object.keys(this.bars);
-  },
-
-  // Update key bindings for a specific bar
-  updateKeyBindings(barName, newKeyBindings) {
-    const bar = this.bars[barName];
-    if (bar) {
-      bar.keyBindings = newKeyBindings;
-      this._rebuildKeyBindingMap();
-    }
-  },
-
-  // Rebuild the key binding map from all bars
-  _rebuildKeyBindingMap() {
-    this.keyBindingMap = {};
-    for (const barName in this.bars) {
-      const bar = this.bars[barName];
-      if (!bar.keyBindings) continue;
-      for (let r = 0; r < bar.rows; r++) {
-        for (let c = 0; c < bar.columns; c++) {
-          const binding = (bar.keyBindings[r] || [])[c];
-          if (binding) {
-            this.keyBindingMap[binding] = { barName, row: r, col: c };
-          }
-        }
-      }
-    }
-    console.log('[UI] Key binding map rebuilt:', this.keyBindingMap);
-  },
-
-  // Global event handling for key bindings
-  handleGlobalKey(e) {
-    // Explicitly block all action bar processing if the input bar is open
-    if (typeof window !== 'undefined' && window.UI && typeof window.UI.isInputBlocked === 'function' && window.UI.isInputBlocked()) {
-      return;
-    }
-    
-    // Create the key lookup string
-    const keyLookup = e.shiftKey ? `Shift+${e.code}` : e.code;
-    
-    // Look up the binding in the map
-    const binding = this.keyBindingMap[keyLookup];
-    if (binding) {
-      const bar = this.bars[binding.barName];
-      if (bar) {
-        bar.triggerSlot(binding.row, binding.col);
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
-    }
-    
-    // If no action bar binding found, let other handlers process the key
-    // (like movement, input bar, etc.)
-  }
-};
-
-// Attach global keydown listener (normal priority)
-window.addEventListener('keydown', (e) => window.UI.actionBarManager.handleGlobalKey(e));
-
-
 
 // --- Example: create two default bars for compatibility ---
 function createDefaultActionBars() {

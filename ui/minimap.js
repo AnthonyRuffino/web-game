@@ -739,6 +739,9 @@ window.UI.minimapManager = {
   }
 };
 
+// Also register with new system for migration
+window.WebGame.UI.minimapManager = window.UI.minimapManager;
+
 // --- Create default minimap for compatibility ---
 function createDefaultMinimap() {
   if (!window.UI.minimapManager.getMinimap('mainMinimap')) {
