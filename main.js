@@ -14,12 +14,37 @@ function loadScript(src) {
 }
 
 async function startGame() {
+  window.WebGame = window.WebGame || {};
+  window.WebGame.UI = window.WebGame.UI || {};
+
   // Wait for DOM ready
   if (document.readyState === 'loading') {
     await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
   }
 
-  // Dynamically load the UI system (ui/init.js)
+  // NEW SYSTEM: Load first 4 UI modules with new dependency injection system
+  console.log('[Main] Loading first 4 UI modules with new system...');
+  
+  const newSystemModules = {
+    'console': {file: 'ui/console.js', dependencies: [], self: () => window.WebGame?.UI?.console },
+    'input': {file: 'ui/input.js', dependencies: [], self: () => window.WebGame?.UI?.input },
+    'responsiveCanvas': {file: 'ui/responsiveCanvas.js', dependencies: [], self: () => window.WebGame?.UI?.responsiveCanvas },
+    'jsonPopup': {file: 'ui/jsonPopup.js', dependencies: [], self: () => window.WebGame?.UI?.jsonPopup }
+  };
+
+  for (const key of Object.keys(newSystemModules)) {
+    const { file, dependencies, self } = newSystemModules[key];
+    await loadScript(file);
+    
+    const module = self();
+    if (module?.init) {
+      const resolvedDeps = dependencies.map(dep => newSystemModules[dep].self());
+      await module.init(...resolvedDeps);
+    }
+  }
+
+  // OLD SYSTEM: Load remaining UI modules via ui/init.js (to prevent breaking)
+  console.log('[Main] Loading remaining UI modules via old system...');
   await loadScript('ui/init.js');
 
   // Wait for UI system to finish loading all UI modules
@@ -48,8 +73,12 @@ async function startGame() {
 
   // Now all UI and core modules are loaded and can reference each other safely!
 
-  // Initialize responsive canvas system
-  if (window.UI.responsiveCanvas && window.UI.responsiveCanvas.init) {
+  // Initialize responsive canvas system (check both old and new systems)
+  if (window.WebGame?.UI?.responsiveCanvas && window.WebGame.UI.responsiveCanvas.init) {
+    console.log('[Main] Initializing responsive canvas (new system)');
+    window.WebGame.UI.responsiveCanvas.init();
+  } else if (window.UI.responsiveCanvas && window.UI.responsiveCanvas.init) {
+    console.log('[Main] Initializing responsive canvas (old system)');
     window.UI.responsiveCanvas.init();
   }
 
@@ -57,8 +86,10 @@ async function startGame() {
     await EntityRenderer.init();
   }
 
-  // Get canvas and context from responsive canvas system
-  const canvas = window.UI.responsiveCanvas ? window.UI.responsiveCanvas.canvas : document.getElementById('gameCanvas');
+  // Get canvas and context from responsive canvas system (check both systems)
+  const canvas = window.WebGame?.UI?.responsiveCanvas?.canvas || 
+                 window.UI.responsiveCanvas?.canvas || 
+                 document.getElementById('gameCanvas');
   const ctx = canvas ? canvas.getContext('2d') : null;
 
   // Initialize world system

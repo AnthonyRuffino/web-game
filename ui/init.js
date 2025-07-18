@@ -7,11 +7,8 @@ const UI = {
   loadedModules: new Set(),
   
   // Module loading queue with dependencies
+  // NOTE: console, input, responsiveCanvas, jsonPopup moved to main.js new system
   moduleQueue: [
-    { name: 'console', file: 'ui/console.js', dependencies: [] },
-    { name: 'input', file: 'ui/input.js', dependencies: [] },
-    { name: 'responsiveCanvas', file: 'ui/responsiveCanvas.js', dependencies: [] },
-    { name: 'jsonPopup', file: 'ui/jsonPopup.js', dependencies: [] },
     { name: 'actionBars', file: 'ui/actionBars.js', dependencies: ['jsonPopup'] },
     { name: 'macros', file: 'ui/macros.js', dependencies: ['actionBars'] },
     { name: 'inventory', file: 'ui/inventory.js', dependencies: [] },
@@ -30,12 +27,12 @@ const UI = {
     }
     
     // Check dependencies
-    for (const dep of moduleInfo.dependencies) {
-      if (!this.loadedModules.has(dep)) {
-        console.warn(`[UI] Module ${moduleInfo.name} depends on ${dep}, but it's not loaded yet`);
-        return false;
-      }
-    }
+    // for (const dep of moduleInfo.dependencies) {
+    //   if (!this.loadedModules.has(dep)) {
+    //     console.warn(`[UI] Module ${moduleInfo.name} depends on ${dep}, but it's not loaded yet`);
+    //     return false;
+    //   }
+    // }
     
     try {
       console.log(`[UI] Loading module: ${moduleInfo.name} from ${moduleInfo.file}`);
@@ -100,6 +97,7 @@ const UI = {
     await this.loadAllModules();
     
     // Initialize submodules in dependency order
+    // NOTE: console, input, responsiveCanvas moved to main.js new system
     if (window.UI.input && window.UI.input.init) {
       console.log('[UI] Initializing input system...');
       window.UI.input.init();

@@ -203,6 +203,10 @@ class JsonPopup {
   }
 }
 
-// Make classes available globally
+// Register with new system
+window.WebGame.UI.jsonPopup = JsonPopup;
+window.WebGame.UI.jsonPopupButton = JsonPopupButton;
+
+// Keep old global registration for backward compatibility
 window.JsonPopup = JsonPopup;
 window.JsonPopupButton = JsonPopupButton; 
