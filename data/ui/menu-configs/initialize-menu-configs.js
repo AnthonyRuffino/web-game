@@ -1,12 +1,13 @@
 // data/ui/macros/index.js
 // Main export file for all menu configurations
 
-// Initialize the unified menu system
-async function initializeMenuSystem() {
+(() =>{
+  // Initialize the unified menu system
+async function initialize(_MacroMenus, _UIMenus, _SkinMenus) {
   
-  const macroMenus = window.MacroMenus.menus;
-  const uiMenus = window.UIMenus.menus;
-  const skinMenus = window.SkinMenus.menus;
+  const macroMenus = _MacroMenus.menus;
+  const uiMenus = _UIMenus.menus;
+  const skinMenus = _SkinMenus.menus;
   
   // Combined menu collections
   const allMenus = {
@@ -28,9 +29,9 @@ async function initializeMenuSystem() {
   // Get menu keys by category
   function getMenuKeysByCategory() {
     return {
-      macro: window.MacroMenus.keys(),
-      ui: window.UIMenus.keys(),
-      skin: window.SkinMenus.keys()
+      macro: _MacroMenus.keys(),
+      ui: _UIMenus.keys(),
+      skin: _SkinMenus.keys()
     };
   }
 
@@ -44,27 +45,33 @@ async function initializeMenuSystem() {
   }
 
   // Create the unified menu system
-  window.MenuConfigs = {
+  window.WebGame.MenuConfigs = {
+    ...window.WebGame.MenuConfigs,
     getMenu,
     getAllMenuKeys,
     getMenuKeysByCategory,
     getMenusByCategory,
     macro: { 
       menus: macroMenus, 
-      get: window.MacroMenus.get, 
-      keys: window.MacroMenus.keys 
+      get: _MacroMenus.get, 
+      keys: _MacroMenus.keys 
     },
     ui: { 
       menus: uiMenus, 
-      get: window.UIMenus.get, 
-      keys: window.UIMenus.keys 
+      get: _UIMenus.get, 
+      keys: _UIMenus.keys 
     },
     skin: { 
       menus: skinMenus, 
-      get: window.SkinMenus.get, 
-      keys: window.SkinMenus.keys 
+      get: _SkinMenus.get, 
+      keys: _SkinMenus.keys 
     }
   };
 
   console.log('[MenuConfigs] Menu system initialized with', getAllMenuKeys().length, 'menus');
 }
+
+window.WebGame.MenuConfigs = {
+  initialize
+}
+})();
