@@ -120,8 +120,6 @@
   };
 
   // Register with new system
-  window.WebGame = window.WebGame || {};
-  window.WebGame.Entities = window.WebGame.Entities || {};
   window.WebGame.Entities.Rock = RockEntity;
 
   // Keep old global registration for backward compatibility

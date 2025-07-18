@@ -152,8 +152,6 @@
   };
 
   // Register with new system
-  window.WebGame = window.WebGame || {};
-  window.WebGame.Entities = window.WebGame.Entities || {};
   window.WebGame.Entities.Grass = GrassEntity;
 
   // Keep old global registration for backward compatibility
