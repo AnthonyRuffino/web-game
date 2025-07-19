@@ -1,10 +1,5 @@
 # Menu Creation System Requirements
 
-## Current Problem
-**Bug**: `skins.js:1450 Uncaught ReferenceError: handleEscape is not defined`
-- Occurs when closing macro and skin menus with the close button
-- `removeEventListener('keydown', handleEscape)` is called but `handleEscape` function is not in scope
-
 ## Vision: Comprehensive Menu Creation System
 
 ### 1. Menu Creation Menu (Main Interface)
