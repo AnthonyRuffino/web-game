@@ -29,7 +29,6 @@ async function startGame() {
   console.log('[Main] Loading all UI modules with new system...');
   
   const newSystemModules = {
-    'console': {file: 'ui/console.js', dependencies: [], self: () => window.WebGame?.UI?.console },
     'input': {file: 'ui/input.js', dependencies: [], self: () => window.WebGame?.UI?.input },
     'responsiveCanvas': {file: 'ui/responsiveCanvas.js', dependencies: [], self: () => window.WebGame?.UI?.responsiveCanvas },
     'jsonPopup': {file: 'ui/jsonPopup.js', dependencies: [], self: () => window.WebGame?.UI?.jsonPopup },
@@ -41,16 +40,13 @@ async function startGame() {
     'menuBar': {file: 'ui/menuBar.js', dependencies: ['actionBars'], self: () => window.WebGame?.UI?.menuBar },
     'minimap': {file: 'ui/minimap.js', dependencies: ['jsonPopup'], self: () => window.WebGame?.UI?.minimapManager },
     'menuManager': {file: 'ui/menuManager.js', dependencies: [], self: () => window.WebGame?.UI?.menuManager },
-    'macroMenus': {file: 'data/ui/menu-configs/macro-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.macroMenus },
-    'uiMenus': {file: 'data/ui/menu-configs/ui-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.uiMenus },
-    'skinMenus': {file: 'data/ui/menu-configs/skin-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.skinMenus },
-    'initializeMenuConfigs': {file: 'data/ui/menu-configs/initialize-menu-configs.js', dependencies: ['macroMenus', 'uiMenus', 'skinMenus'], self: () => window.WebGame?.MenuConfigs },
     'background': {file: 'core/background.js', dependencies: [], self: () => window.WebGame?.Background },
     'rock': {file: 'core/entities/rock.js', dependencies: [], self: () => window.WebGame?.Entities?.Rock },
     'tree': {file: 'core/entities/tree.js', dependencies: [], self: () => window.WebGame?.Entities?.Tree },
     'grass': {file: 'core/entities/grass.js', dependencies: [], self: () => window.WebGame?.Entities?.Grass },
     'entityRenderer': {file: 'core/entityRenderer.js', dependencies: ['rock', 'tree', 'grass'], self: () => window.WebGame?.EntityRenderer },
-    'world': {file: 'core/world.js', dependencies: [], self: () => window.WebGame?.World }
+    'world': {file: 'core/world.js', dependencies: [], self: () => window.WebGame?.World },
+    'console': {file: 'ui/console.js', dependencies: [], self: () => window.WebGame?.UI?.console },
   };
 
   for (const key of Object.keys(newSystemModules)) {
