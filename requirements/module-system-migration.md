@@ -1,21 +1,26 @@
 # Module System Migration Requirements
 
-## Goals
-- Migrate from `ui/init.js` dynamic loading to centralized `main.js` dependency injection
-- Preserve existing functionality during gradual migration
-- Implement proper module encapsulation with closures
-- Maintain backward compatibility during transition
+## Current Status: Core Module Migration Phase
 
-## Current System Analysis
-- **Old System**: `ui/init.js` loads modules dynamically with dependency checking
-- **New System**: `main.js` loads modules with explicit dependency injection
-- **Migration Status**: ✅ **COMPLETED** - All 12 UI modules migrated
+### Completed ✅
+- **UI Modules**: All 12 UI modules successfully migrated to new system
+- **Background**: Migrated and cleaned up
+- **Entities**: Rock, Tree, Grass entities migrated
+- **EntityRenderer**: Migrated with proper dependencies
+- **World**: Migrated and cleaned up (removed global pollution)
 
-## Module Structure
+### Remaining Core Modules (4)
+- [ ] `persistence.js` - Game state persistence and loading
+- [ ] `collision.js` - Collision detection system  
+- [ ] `gameEngine.js` - Core game logic and state management
+- [ ] `gameLoop.js` - Game loop and timing system
+
+## Current System Architecture
 
 ### New System (main.js)
 ```javascript
 const newSystemModules = {
+  // UI Modules (12) - ✅ COMPLETED
   'console': {file: 'ui/console.js', dependencies: [], self: () => window.WebGame?.UI?.console },
   'input': {file: 'ui/input.js', dependencies: [], self: () => window.WebGame?.UI?.input },
   'responsiveCanvas': {file: 'ui/responsiveCanvas.js', dependencies: [], self: () => window.WebGame?.UI?.responsiveCanvas },
@@ -27,97 +32,147 @@ const newSystemModules = {
   'skins': {file: 'ui/skins.js', dependencies: [], self: () => window.WebGame?.UI?.skinsManager },
   'menuBar': {file: 'ui/menuBar.js', dependencies: ['actionBars'], self: () => window.WebGame?.UI?.menuBar },
   'minimap': {file: 'ui/minimap.js', dependencies: ['jsonPopup'], self: () => window.WebGame?.UI?.minimapManager },
-  'menuManager': {file: 'ui/menuManager.js', dependencies: [], self: () => window.WebGame?.UI?.menuManager }
+  'menuManager': {file: 'ui/menuManager.js', dependencies: [], self: () => window.WebGame?.UI?.menuManager },
+  
+  // Menu Configs - ✅ COMPLETED
+  'macroMenus': {file: 'data/ui/menu-configs/macro-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.macroMenus },
+  'uiMenus': {file: 'data/ui/menu-configs/ui-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.uiMenus },
+  'skinMenus': {file: 'data/ui/menu-configs/skin-menus.js', dependencies: [], self: () => window.WebGame?.MenuConfigs?.skinMenus },
+  'initializeMenuConfigs': {file: 'data/ui/menu-configs/initialize-menu-configs.js', dependencies: ['macroMenus', 'uiMenus', 'skinMenus'], self: () => window.WebGame?.MenuConfigs },
+  
+  // Core Modules - 🔄 IN PROGRESS
+  'background': {file: 'core/background.js', dependencies: [], self: () => window.WebGame?.Background },
+  'rock': {file: 'core/entities/rock.js', dependencies: [], self: () => window.WebGame?.Entities?.Rock },
+  'tree': {file: 'core/entities/tree.js', dependencies: [], self: () => window.WebGame?.Entities?.Tree },
+  'grass': {file: 'core/entities/grass.js', dependencies: [], self: () => window.WebGame?.Entities?.Grass },
+  'entityRenderer': {file: 'core/entityRenderer.js', dependencies: ['rock', 'tree', 'grass'], self: () => window.WebGame?.EntityRenderer },
+  'world': {file: 'core/world.js', dependencies: [], self: () => window.WebGame?.World },
+  
+  // TODO: Add remaining core modules
+  'persistence': {file: 'core/persistence.js', dependencies: [], self: () => window.WebGame?.Persistence },
+  'collision': {file: 'core/collision.js', dependencies: [], self: () => window.WebGame?.Collision },
+  'gameEngine': {file: 'core/gameEngine.js', dependencies: [], self: () => window.WebGame?.GameEngine },
+  'gameLoop': {file: 'core/gameLoop.js', dependencies: [], self: () => window.WebGame?.GameLoop }
 };
 ```
 
-### Loading Order
-1. **Phase 1**: console, input, responsiveCanvas, jsonPopup
-2. **Phase 2**: actionBars, macros, inventory, inputBar  
-3. **Phase 3**: skins, menuBar, minimap, menuManager
+## Current Issues to Address
 
-## Migration Checklist ✅
+### Global Variable Pollution
+**Problem**: Many modules use global variables without proper encapsulation:
+- `PERSPECTIVE_MODE`, `CAMERA_ROTATION`, `ZOOM` in gameEngine.js
+- Direct references to `Player`, `World`, `Background` across modules
+- Undefined checks creating brittle dependencies
 
-### Phase 1: Core Modules ✅
-- [x] console.js - Wrapped in IIFE, registered under `window.WebGame.UI.console`
-- [x] input.js - Wrapped in IIFE, registered under `window.WebGame.UI.input`
-- [x] responsiveCanvas.js - Wrapped in IIFE, registered under `window.WebGame.UI.responsiveCanvas`
-- [x] jsonPopup.js - Added registration under `window.WebGame.UI.jsonPopup`
-
-### Phase 2: UI Components ✅
-- [x] actionBars.js - Wrapped in IIFE, registered under `window.WebGame.UI.actionBarManager`
-- [x] macros.js - Wrapped in IIFE, registered under `window.WebGame.UI.macroManager`
-- [x] inventory.js - Wrapped in IIFE, registered under `window.WebGame.UI.inventory`
-- [x] inputBar.js - Wrapped in IIFE, registered under `window.WebGame.UI.inputBar`
-
-### Phase 3: Advanced UI ✅
-- [x] skins.js - Wrapped in IIFE, registered under `window.WebGame.UI.skinsManager`
-- [x] menuBar.js - Added registration under `window.WebGame.UI.menuBar`
-- [x] minimap.js - Added registration under `window.WebGame.UI.minimapManager`
-- [x] menuManager.js - Added registration under `window.WebGame.UI.menuManager`
-
-### System Updates ✅
-- [x] main.js - Added all modules to newSystemModules
-- [x] ui/init.js - Removed all modules from moduleQueue
-- [x] WebGame initialization centralized in main.js
-- [x] Backward compatibility maintained throughout
-
-## Module Migration Process
-
-### Template for Each Module
+**Current Pattern**:
 ```javascript
-// ui/moduleName.js
-// Module description
+// Brittle - depends on load order
+if (typeof PERSPECTIVE_MODE !== 'undefined' && PERSPECTIVE_MODE === 'player-perspective') {
+  // ...
+}
 
-(() => {
-  // Module system
-  window.WebGame.UI.moduleName = {
-    // ... existing code ...
-  };
-
-  // Also register with old system for backward compatibility during migration
-  window.UI.moduleName = window.WebGame.UI.moduleName;
-  
-})();
+// Better - explicit window reference
+if (window.PERSPECTIVE_MODE === 'player-perspective') {
+  // ...
+}
 ```
 
-### Key Changes Made
-1. **Closure Wrapping**: All modules wrapped in IIFE for proper encapsulation
-2. **Dual Registration**: Modules registered under both `window.WebGame.UI` and `window.UI`
-3. **Dependency Injection**: Explicit dependencies defined in main.js
-4. **Centralized Loading**: All module loading handled by main.js
+### Circular Dependencies
+**Problem**: Some modules need each other but load in different phases:
+- `persistence.js` needs `gameEngine.js` for state
+- `gameEngine.js` needs `persistence.js` for world loading
+- Current solution: undefined checks (fragile)
 
-## Testing Requirements
+## Next Phase: Global Variable Cleanup
 
-### Functionality Tests
-- [ ] All UI components load and initialize correctly
-- [ ] Dependencies resolve properly (actionBars → jsonPopup, macros → actionBars, etc.)
-- [ ] Backward compatibility maintained (old `window.UI` references still work)
-- [ ] No console errors during loading
-- [ ] All interactive features work (menus, action bars, input, etc.)
+### Step 1: Explicit Window Attachments
+For the final 4 core modules, ensure all global variables are explicitly attached to window:
+```javascript
+// Instead of: let PERSPECTIVE_MODE = 'fixed-north';
+window.PERSPECTIVE_MODE = 'fixed-north';
 
-### Performance Tests
-- [ ] Loading time comparable to old system
-- [ ] Memory usage stable
-- [ ] No memory leaks from dual registration
+// Instead of: const Player = { ... };
+window.Player = Player;
+```
 
-## Success Criteria ✅
+### Step 2: Update All References
+Update all files to use explicit window references:
+- `background.js` - Use `window.PERSPECTIVE_MODE`
+- `entityRenderer.js` - Use `window.PERSPECTIVE_MODE`, `window.CAMERA_ROTATION`
+- `persistence.js` - Use `window.Player`, `window.World`
+- `input.js` - Use `window.PERSPECTIVE_MODE`, `window.CAMERA_ROTATION`
 
-### Primary Goals ✅
-- [x] All 12 UI modules successfully migrated to new system
-- [x] Proper closure encapsulation implemented
-- [x] Dependency injection working correctly
-- [x] Backward compatibility maintained
-- [x] No breaking changes to existing functionality
+### Step 3: Dependency Injection Design
+Plan for proper dependency injection to eliminate globals:
+```javascript
+// Future pattern
+const GameEngine = {
+  init(persistence, world, background, entityRenderer) {
+    this.persistence = persistence;
+    this.world = world;
+    // ...
+  }
+};
+```
 
-### Technical Goals ✅
-- [x] Centralized module loading in main.js
-- [x] Explicit dependency management
-- [x] Clean module encapsulation
-- [x] Gradual migration approach completed
+## Future: Electron Migration
 
-### Next Steps
-- [ ] Remove old system (ui/init.js) once testing confirms stability
-- [ ] Clean up dual registration after full migration
-- [ ] Update documentation to reflect new system
-- [ ] Consider adding TypeScript definitions for better IDE support 
+### Motivation
+- Enable `showDirectoryPicker()` for filesystem access
+- Support advanced features requiring native APIs
+- Foundation for multiplayer server architecture
+
+### Electron Architecture Plan
+```javascript
+// main.js (Electron main process)
+const { app, BrowserWindow, protocol } = require('electron');
+const path = require('path');
+
+app.whenReady().then(() => {
+  protocol.registerFileProtocol('app', (request, callback) => {
+    const url = request.url.replace('app://', '');
+    callback({ path: path.join(__dirname, url) });
+  });
+
+  const win = new BrowserWindow({
+    webPreferences: {
+      sandbox: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  win.loadURL('app://index.html');
+});
+```
+
+### Benefits
+- **Native APIs**: Access to filesystem, system dialogs
+- **Security**: Proper sandboxing with preload scripts
+- **Performance**: Better resource management
+- **Distribution**: Standalone executable
+- **Multiplayer Ready**: HTTP server integration path
+
+### Migration Steps
+1. **Setup Electron**: Configure main process and preload scripts
+2. **API Bridge**: Create secure IPC communication for native features
+3. **File Protocol**: Register custom protocol for asset loading
+4. **Security**: Implement proper context isolation
+5. **Testing**: Ensure all existing functionality works in Electron
+
+## Success Criteria
+
+### Current Phase
+- [ ] All 4 remaining core modules migrated
+- [ ] All global variables explicitly attached to window
+- [ ] All cross-module references use explicit window paths
+- [ ] No undefined checks for module availability
+- [ ] Clean dependency injection ready for next phase
+
+### Future Phase
+- [ ] Eliminate all global variables
+- [ ] Implement proper dependency injection
+- [ ] Resolve circular dependencies
+- [ ] Prepare for Electron migration
+- [ ] Maintain backward compatibility during transition 
