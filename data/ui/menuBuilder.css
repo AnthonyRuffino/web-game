@@ -1,0 +1,520 @@
+/* Menu Builder CSS Styles */
+
+/* Main Menu Builder Container */
+.menu-builder-menu {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+  user-select: none;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Component Base Styles */
+.menu-builder-component {
+  position: absolute;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.menu-builder-component:hover {
+  outline: 2px solid rgba(102, 126, 234, 0.5);
+}
+
+.component-selected {
+  outline: 2px solid #667eea !important;
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
+/* Button Component */
+.menu-builder-component.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.menu-builder-component.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.menu-builder-component.button:active {
+  transform: translateY(0px);
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+}
+
+/* Label Component */
+.menu-builder-component.label {
+  display: flex;
+  align-items: center;
+  user-select: none;
+}
+
+/* Input Component */
+.menu-builder-component.input input {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  color: white;
+  padding: 8px 12px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.menu-builder-component.input input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+  outline: none;
+}
+
+.menu-builder-component.input input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+/* Container Component */
+.menu-builder-component.container {
+  position: relative;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 0;
+  margin: 0;
+}
+
+.tab {
+  padding: 12px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tab:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.tab.active {
+  background: rgba(102, 126, 234, 0.2);
+  border-bottom-color: #667eea;
+  color: #667eea;
+}
+
+/* Tab Content */
+.tab-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Collapsible Section */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.section-header:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.section-toggle {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.section-content {
+  padding: 15px;
+  background: rgba(255,255,255,0.02);
+}
+
+/* Draggable Component */
+.draggable-component {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+  cursor: grab;
+  transition: all 0.3s ease;
+}
+
+.draggable-component:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.draggable-component:active {
+  cursor: grabbing;
+  transform: translateY(0px);
+}
+
+.component-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+}
+
+/* Designer Canvas */
+.designer-canvas {
+  position: relative;
+  background: rgba(255,255,255,0.02);
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 8px;
+  margin: 10px;
+  overflow: auto;
+  min-height: 400px;
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 10px 10px;
+}
+
+/* Property Inspector */
+.property-inspector-content {
+  padding: 10px;
+}
+
+.property-section {
+  margin-bottom: 20px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.property-section-header {
+  padding: 10px 15px;
+  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.property-section-header:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.property-toggle {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.property-section-content {
+  padding: 15px;
+}
+
+.property-field {
+  margin-bottom: 12px;
+}
+
+.property-field label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+}
+
+.property-field input,
+.property-field select,
+.property-field textarea {
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.property-field input:focus,
+.property-field select:focus,
+.property-field textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+  outline: none;
+}
+
+.property-field input:disabled,
+.property-field select:disabled,
+.property-field textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Template Items */
+.template-item {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.template-item:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.template-item .template-label {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.template-item .template-description {
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 8px;
+}
+
+.template-item .template-icon {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+/* Category Items */
+.category-item {
+  margin-bottom: 15px;
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.category-header:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.category-label {
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-toggle {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.category-content {
+  padding: 10px 0;
+  display: none;
+}
+
+.category-content.expanded {
+  display: block;
+}
+
+/* Example Items */
+.example-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.example-item:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.example-item .example-label {
+  font-weight: 500;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.example-item .example-description {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Code Editor */
+.code-editor {
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow: auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .menu-builder-menu {
+    width: 95% !important;
+    height: 90% !important;
+    left: 2.5% !important;
+    top: 5% !important;
+  }
+  
+  .tab-navigation {
+    flex-direction: column;
+  }
+  
+  .tab {
+    border-bottom: none;
+    border-right: 2px solid transparent;
+  }
+  
+  .tab.active {
+    border-bottom: none;
+    border-right-color: #667eea;
+  }
+}
+
+@media (max-width: 1024px) {
+  .menu-builder-menu {
+    width: 85% !important;
+    height: 85% !important;
+    left: 7.5% !important;
+    top: 7.5% !important;
+  }
+}
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Loading States */
+.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Scrollbar Styling */
+.menu-builder-menu ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.menu-builder-menu ::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+}
+
+.menu-builder-menu ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+}
+
+.menu-builder-menu ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* Focus States */
+.menu-builder-menu *:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Disabled States */
+.menu-builder-menu *:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Print Styles */
+@media print {
+  .menu-builder-menu {
+    display: none !important;
+  }
+} 
