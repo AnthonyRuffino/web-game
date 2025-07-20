@@ -15,19 +15,15 @@ export class AssetManager {
 
     async initAssetDir() {
         try {
-            // Get asset directory path
-            const { app } = require('electron').remote || require('@electron/remote');
-            const path = require('path');
-            const os = require('os');
-            
-            // Use app.getPath('userData') for proper Electron user data directory
-            this.assetDir = path.join(app.getPath('userData'), 'assets');
-            
-            // Ensure directory exists
-            const fs = require('fs');
-            if (!fs.existsSync(this.assetDir)) {
-                fs.mkdirSync(this.assetDir, { recursive: true });
-                console.log('[AssetManager] Created asset directory:', this.assetDir);
+            // Check if we're in an Electron environment
+            if (typeof window !== 'undefined' && window.electronAPI) {
+                // We're in Electron renderer process
+                console.log('[AssetManager] Running in Electron environment');
+                this.assetDir = null; // For now, just use localStorage
+            } else {
+                // We're in a browser environment
+                console.log('[AssetManager] Running in browser environment');
+                this.assetDir = null;
             }
         } catch (error) {
             console.warn('[AssetManager] Could not initialize filesystem access:', error);
@@ -185,21 +181,10 @@ export class AssetManager {
         if (!this.assetDir) return null;
 
         try {
-            const fs = require('fs');
-            const path = require('path');
-            const imagePath = path.join(this.assetDir, `${imageName}.png`);
-            
-            if (fs.existsSync(imagePath)) {
-                const imageBuffer = fs.readFileSync(imagePath);
-                const base64 = imageBuffer.toString('base64');
-                const dataURL = `data:image/png;base64,${base64}`;
-                
-                // Update in-memory cache
-                const cacheKey = `image:${imageName}`;
-                this.imageCache.set(cacheKey, dataURL);
-                
-                return dataURL;
-            }
+            // For now, skip filesystem loading in browser context
+            // This can be enhanced later for Electron filesystem access
+            console.log(`[AssetManager] Filesystem access not available for ${imageName}`);
+            return null;
         } catch (error) {
             console.warn(`[AssetManager] Filesystem read error for ${imageName}:`, error);
         }

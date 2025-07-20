@@ -5,6 +5,9 @@ export class InputManager {
         this.mouseWheelDelta = 0;
         this.isInitialized = false;
         
+        // Camera mode support
+        this.cameraMode = 'fixed-angle'; // 'fixed-angle' or 'player-perspective'
+        
         // Bind methods to preserve context
         this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleKeyUp = this.handleKeyUp.bind(this);
@@ -33,6 +36,59 @@ export class InputManager {
         
         this.isInitialized = false;
         console.log('[InputManager] Input system destroyed');
+    }
+
+    // Set camera mode
+    setCameraMode(mode) {
+        if (mode === 'fixed-angle' || mode === 'player-perspective') {
+            this.cameraMode = mode;
+            console.log(`[InputManager] Camera mode set to: ${mode}`);
+        }
+    }
+
+    // Toggle camera mode
+    toggleCameraMode() {
+        this.cameraMode = this.cameraMode === 'fixed-angle' ? 'player-perspective' : 'fixed-angle';
+        console.log(`[InputManager] Camera mode toggled to: ${this.cameraMode}`);
+        return this.cameraMode;
+    }
+
+    // Get movement input based on camera mode
+    getMovementInput() {
+        const input = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            strafeLeft: false,
+            strafeRight: false,
+            cameraLeft: false,
+            cameraRight: false
+        };
+
+        if (this.cameraMode === 'fixed-angle') {
+            // Fixed-angle mode: WASD moves in fixed directions, arrow keys rotate camera
+            input.forward = this.isKeyPressed('w') || this.isKeyPressed('W');
+            input.backward = this.isKeyPressed('s') || this.isKeyPressed('S');
+            input.left = this.isKeyPressed('a') || this.isKeyPressed('A');
+            input.right = this.isKeyPressed('d') || this.isKeyPressed('D');
+            input.strafeLeft = this.isKeyPressed('q') || this.isKeyPressed('Q');
+            input.strafeRight = this.isKeyPressed('e') || this.isKeyPressed('E');
+            
+            // Arrow keys rotate camera
+            input.cameraLeft = this.isKeyPressed('ArrowLeft');
+            input.cameraRight = this.isKeyPressed('ArrowRight');
+        } else {
+            // Player-perspective mode: A/D rotates player, W/S moves forward/backward
+            input.forward = this.isKeyPressed('w') || this.isKeyPressed('W');
+            input.backward = this.isKeyPressed('s') || this.isKeyPressed('S');
+            input.left = this.isKeyPressed('a') || this.isKeyPressed('A');
+            input.right = this.isKeyPressed('d') || this.isKeyPressed('D');
+            input.strafeLeft = this.isKeyPressed('q') || this.isKeyPressed('Q');
+            input.strafeRight = this.isKeyPressed('e') || this.isKeyPressed('E');
+        }
+
+        return input;
     }
 
     handleKeyDown(event) {
@@ -96,7 +152,7 @@ export class InputManager {
     // Check if a key is used for game input
     isGameKey(key) {
         const gameKeys = [
-            'w', 'a', 's', 'd',
+            'w', 'a', 's', 'd', 'q', 'e',
             'arrowup', 'arrowdown', 'arrowleft', 'arrowright',
             'space', 'enter', 'escape',
             'shift', 'ctrl', 'alt'
@@ -122,7 +178,9 @@ export class InputManager {
             pressedKeys: this.getPressedKeys(),
             totalKeys: this.keys.size,
             bindings: Array.from(this.bindings.keys()),
-            mouseWheelDelta: this.mouseWheelDelta
+            mouseWheelDelta: this.mouseWheelDelta,
+            cameraMode: this.cameraMode,
+            movementInput: this.getMovementInput()
         };
     }
 } 

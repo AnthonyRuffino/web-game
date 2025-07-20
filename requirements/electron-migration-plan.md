@@ -495,3 +495,116 @@ export class WorldEnhancements {
 - **Weather effects**: Rain, fog, and atmospheric rendering
 - **Resource collection**: Trees and rocks as collectible resources
 - **Performance monitoring**: FPS and memory usage optimization 
+
+## Phase 7: Camera Angles and Control Modes (Iteration 7) 🚧 **IN PROGRESS**
+**Goal**: Implement dual camera modes with different control schemes
+
+### 7.1 Camera Modes
+```javascript
+// src/modules/game/camera.js
+export class Camera {
+  constructor(width, height) {
+    this.x = 0;
+    this.y = 0;
+    this.zoom = 1;
+    this.followSpeed = 0.1;
+    this.mode = 'fixed-angle'; // 'fixed-angle' or 'player-perspective'
+    this.rotation = 0; // Camera rotation for fixed-angle mode
+  }
+  
+  setMode(mode) {
+    this.mode = mode;
+  }
+  
+  rotateCamera(deltaRotation) {
+    // Rotate camera in fixed-angle mode
+    this.rotation += deltaRotation;
+  }
+  
+  applyTransform(ctx) {
+    // Apply appropriate transform based on mode
+  }
+}
+```
+
+### 7.2 Control Schemes
+```javascript
+// src/modules/game/input.js
+export class InputManager {
+  constructor() {
+    this.keys = new Map();
+    this.cameraMode = 'fixed-angle';
+  }
+  
+  setCameraMode(mode) {
+    this.cameraMode = mode;
+  }
+  
+  handleMovement(player, deltaTime) {
+    // Handle movement based on camera mode
+  }
+}
+```
+
+### 7.3 Implementation Steps
+1. **Fixed-Angle Mode**
+   - **Current behavior**: WASD moves player in fixed directions
+   - **Arrow keys**: Rotate camera view while keeping world orientation
+   - **Entities**: Rotate around player when camera rotates
+   - **Camera**: Fixed in new direction after rotation
+
+2. **Player-Perspective Mode**
+   - **A/D**: Rotate player (world rotates around player)
+   - **W**: Move forward in facing direction
+   - **S**: Move backward at half speed
+   - **Player**: Always faces up on screen
+   - **World**: Rotates to match player orientation
+
+3. **Mode Switching**
+   - **Toggle key**: Switch between modes
+   - **Persistence**: Save camera mode preference
+   - **Smooth transitions**: Smooth camera transitions between modes
+
+4. **Entity Rendering**
+   - **Fixed-angle entities**: Maintain screen-relative orientation
+   - **World entities**: Rotate with camera/player
+   - **Proper layering**: Entities render in correct order
+
+### 7.4 Technical Requirements
+- **Dual control schemes** with mode-specific input handling
+- **Camera rotation** in fixed-angle mode with arrow keys
+- **World rotation** in player-perspective mode
+- **Entity rendering** that respects camera mode
+- **Smooth transitions** between modes
+- **Persistence** of camera mode preference
+
+### 7.5 Features to Implement
+- **Fixed-angle mode**: Arrow keys rotate camera, WASD moves in fixed directions
+- **Player-perspective mode**: A/D rotates player, W/S moves forward/backward
+- **Mode toggle**: Switch between camera modes
+- **Entity rotation**: Proper entity rendering in both modes
+- **Camera persistence**: Save and restore camera mode and rotation
+- **Smooth controls**: Responsive and smooth movement in both modes
+
+## Phase 8: Advanced Features (Future Iterations) 📋 **PLANNED**
+**Goal**: Additional game features and enhancements
+
+### 8.1 Weather and Atmospheric Effects
+- **Day/night cycle** with dynamic lighting
+- **Weather system** (rain, fog, etc.)
+- **Atmospheric rendering** effects
+
+### 8.2 Enhanced Interactions
+- **Resource collection** from trees and rocks
+- **Crafting system** with recipes
+- **Inventory management** system
+
+### 8.3 Performance Optimizations
+- **Spatial partitioning** for collision detection
+- **Entity culling** for off-screen objects
+- **Memory management** for large worlds
+
+### 8.4 UI Enhancements
+- **Minimap system** for navigation
+- **Quest system** with objectives
+- **Character progression** system 

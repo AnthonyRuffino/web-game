@@ -30,6 +30,27 @@ export class EntityRenderer {
                     const offsetX = config.drawOffsetX || 0;
                     const offsetY = config.drawOffsetY || 0;
                     
+                    // Handle fixed screen angle if specified
+                    if (config.fixedScreenAngle !== null && config.fixedScreenAngle !== undefined) {
+                        // Get current camera mode and rotation
+                        const cameraMode = window.game?.inputManager?.cameraMode || 'fixed-angle';
+                        const cameraRotation = window.game?.camera?.rotation || 0;
+                        const playerAngle = window.game?.player?.angle || 0;
+                        
+                        let angle = 0;
+                        if (cameraMode === 'player-perspective') {
+                            // In player-perspective mode, undo world rotation and apply fixed angle
+                            angle = playerAngle + (config.fixedScreenAngle * Math.PI / 180);
+                        } else {
+                            // In fixed-angle mode, apply camera rotation and fixed angle
+                            angle = cameraRotation + (config.fixedScreenAngle * Math.PI / 180);
+                        }
+                        
+                        // Apply rotation
+                        ctx.save();
+                        ctx.rotate(angle);
+                    }
+                    
                     ctx.drawImage(
                         img,
                         -width / 2 + offsetX,
@@ -37,6 +58,11 @@ export class EntityRenderer {
                         width,
                         height
                     );
+                    
+                    // Restore rotation if applied
+                    if (config.fixedScreenAngle !== null && config.fixedScreenAngle !== undefined) {
+                        ctx.restore();
+                    }
                 } else {
                     // No cached image available - this should not happen with proper caching
                     console.error(`[EntityRenderer] No cached image for ${type} with key: ${cacheKey}`);

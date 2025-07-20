@@ -47,81 +47,108 @@ export class Game {
         try {
             console.log('[Game] Initializing game...');
             
-            // Initialize canvas with proper error handling
-            this.canvas = document.getElementById('game-canvas');
-            if (!this.canvas) {
-                throw new Error('Canvas element not found');
-            }
-            
+            // Initialize canvas
+            this.canvasManager = new CanvasManager();
+            this.canvas = this.canvasManager.canvas;
             this.ctx = this.canvas.getContext('2d');
-            this.canvasManager = new CanvasManager(this.canvas);
             
-            // Wait for canvas to be properly initialized
-            if (!this.canvasManager.isInitialized()) {
-                console.log('[Game] Waiting for canvas initialization...');
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            // Initialize asset manager first
-            this.assetManager = new AssetManager();
-            await this.assetManager.initAssetDir();
-            
-            // Initialize all required images
-            console.log('[Game] Initializing required images...');
-            await this.assetManager.initializeImages();
-            
-            // Initialize game systems
-            this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);
+            // Initialize systems
             this.inputManager = new InputManager();
-            this.dotsSystem = new DotsSystem();
             this.camera = new Camera(this.canvas.width, this.canvas.height);
+            this.player = new Player(0, 0);
+            this.dotsSystem = new DotsSystem();
             this.world = new World();
             this.collisionSystem = new CollisionSystem();
             this.interactionSystem = new InteractionSystem();
-            this.worldEnhancements = new WorldEnhancements(this.world);
+            this.worldEnhancements = new WorldEnhancements();
+            this.assetManager = new AssetManager();
             
-            // Make asset manager available globally for world system
-            window.game = this;
-            
-            // Setup systems
+            // Initialize systems
             this.inputManager.init();
+            this.world.init();
+            
+            // Load assets
+            await this.assetManager.initializeImages();
+            
+            // Setup input bindings
             this.setupInputBindings();
+            
+            // Setup debug info
             this.setupDebugInfo('1.0.0');
+            
+            // Setup window resize handling
             this.setupWindowResize();
             
-            // Hide loading message
-            document.body.classList.add('game-ready');
+            // Setup console commands
+            this.setupConsoleCommands();
             
-            console.log('[Game] Game initialized successfully');
-            
-            // Start the game loop
+            // Start the game
             this.start();
             
+            console.log('[Game] Game initialized successfully');
         } catch (error) {
             console.error('[Game] Failed to initialize game:', error);
             this.showError(error.message);
+            throw error;
         }
     }
 
     setupInputBindings() {
-        // Bind input to player movement
-        this.inputManager.bindAction('w', () => this.player.setKeyState('w', true));
-        this.inputManager.bindAction('s', () => this.player.setKeyState('s', true));
-        this.inputManager.bindAction('a', () => this.player.setKeyState('a', true));
-        this.inputManager.bindAction('d', () => this.player.setKeyState('d', true));
-        
-        this.inputManager.bindAction('ArrowUp', () => this.player.setKeyState('arrowup', true));
-        this.inputManager.bindAction('ArrowDown', () => this.player.setKeyState('arrowdown', true));
-        this.inputManager.bindAction('ArrowLeft', () => this.player.setKeyState('arrowleft', true));
-        this.inputManager.bindAction('ArrowRight', () => this.player.setKeyState('arrowright', true));
-        
-        // Handle key releases
-        document.addEventListener('keyup', (event) => {
-            this.player.setKeyState(event.key, false);
-            
-            // Handle interaction input
-            this.interactionSystem.handleInput(this.world, this.player, event.key);
+        // Bind camera mode toggle
+        this.inputManager.bindAction('p', () => {
+            const newMode = this.inputManager.toggleCameraMode();
+            this.camera.setMode(newMode);
+            console.log(`[Game] Camera mode toggled to: ${newMode}`);
         });
+        
+        // Bind camera rotation reset
+        this.inputManager.bindAction('r', () => {
+            this.camera.resetRotation();
+            console.log('[Game] Camera rotation reset to north');
+        });
+        
+        // Handle interaction input
+        this.inputManager.bindAction('e', () => {
+            this.interactionSystem.handleInput(this.world, this.player, 'e');
+        });
+    }
+
+    setupConsoleCommands() {
+        // Make console commands available globally
+        window.cmd = (command, ...args) => {
+            switch (command) {
+                case 'perspective':
+                case 'toggle':
+                    const newMode = this.inputManager.toggleCameraMode();
+                    this.camera.setMode(newMode);
+                    console.log(`[Console] Camera mode toggled to: ${newMode}`);
+                    break;
+                    
+                case 'reset':
+                case 'resetcamera':
+                    this.camera.resetRotation();
+                    console.log('[Console] Camera rotation reset to north');
+                    break;
+                    
+                case 'mode':
+                    console.log(`[Console] Current camera mode: ${this.inputManager.cameraMode}`);
+                    break;
+                    
+                case 'help':
+                    console.log('[Console] Available commands:');
+                    console.log('  cmd("perspective") or cmd("toggle") - Toggle camera mode');
+                    console.log('  cmd("reset") or cmd("resetcamera") - Reset camera rotation to north');
+                    console.log('  cmd("mode") - Show current camera mode');
+                    console.log('  cmd("help") - Show this help');
+                    break;
+                    
+                default:
+                    console.log(`[Console] Unknown command: ${command}. Use cmd("help") for available commands.`);
+                    break;
+            }
+        };
+        
+        console.log('[Game] Console commands available. Use cmd("help") for list of commands.');
     }
 
     setupDebugInfo(version) {
@@ -213,11 +240,19 @@ export class Game {
             this.camera.handleZoom(wheelDelta);
         }
         
+        // Handle camera rotation in fixed-angle mode
+        const input = this.inputManager.getMovementInput();
+        if (this.inputManager.cameraMode === 'fixed-angle') {
+            const rotationSpeed = this.player.rotSpeed * 0.1; // Much slower rotation
+            if (input.cameraLeft) this.camera.rotateCamera(-rotationSpeed * deltaTime);
+            if (input.cameraRight) this.camera.rotateCamera(rotationSpeed * deltaTime);
+        }
+        
         // Update camera
         this.camera.update(deltaTime);
         
-        // Update player
-        this.player.update(deltaTime);
+        // Update player with proper input and collision
+        this.player.update(deltaTime, this.inputManager, this.collisionSystem);
         
         // Update camera to follow player
         this.camera.follow(this.player.x, this.player.y);
@@ -253,6 +288,11 @@ export class Game {
         const ctx = this.ctx;
         const width = this.canvas.width;
         const height = this.canvas.height;
+        
+        // Apply player-perspective transform if in that mode
+        if (this.inputManager.cameraMode === 'player-perspective') {
+            this.camera.applyPlayerPerspectiveTransform(ctx, this.player.angle);
+        }
         
         // Draw background dots (dots handle their own world coordinates)
         this.dotsSystem.render(ctx, this.camera.x, this.camera.y, width, height, this.camera.zoom);
@@ -306,22 +346,46 @@ export class Game {
         
         const timeOfDay = this.worldEnhancements.getTimeOfDay();
         const timeRemaining = this.worldEnhancements.getTimeRemaining();
+        const cameraMode = this.inputManager.cameraMode;
+        const playerInfo = this.player.getInfo();
+        const cameraInfo = this.camera.getInfo();
         
         const instructions = [
-            'Use WASD or Arrow Keys to move',
-            'Press E to interact with nearby objects',
-            'Player position: (' + Math.round(this.player.x) + ', ' + Math.round(this.player.y) + ')',
-            'Camera position: (' + Math.round(this.camera.x) + ', ' + Math.round(this.camera.y) + ')',
-            'Moving: ' + (this.player.isMoving ? 'Yes' : 'No'),
-            'Loaded chunks: ' + this.world.chunkCache.size,
-            'Time: ' + timeOfDay + ' (' + timeRemaining + 's remaining)',
-            'Weather: ' + this.worldEnhancements.weather
+            `Camera Mode: ${cameraMode} (Press P to toggle)`,
+            '',
+            cameraMode === 'fixed-angle' ? 
+                'Fixed-Angle Mode Controls:' :
+                'Player-Perspective Mode Controls:',
+            cameraMode === 'fixed-angle' ?
+                'WASD: Move in fixed directions' :
+                'A/D: Rotate player',
+            cameraMode === 'fixed-angle' ?
+                'Arrow Keys: Rotate camera view' :
+                'W: Move forward, S: Move backward (half speed)',
+            cameraMode === 'fixed-angle' ?
+                'Q/E: Strafe left/right' :
+                'Q/E: Strafe left/right',
+            '',
+            'R: Reset camera rotation to north',
+            'E: Interact with nearby objects',
+            'Mouse Wheel: Zoom in/out',
+            '',
+            `Player: ${playerInfo.position}, ${playerInfo.angle}`,
+            `Camera: ${cameraInfo.position}, ${cameraInfo.zoom}, ${cameraInfo.rotation}`,
+            `Moving: ${this.player.isMoving ? 'Yes' : 'No'}`,
+            `Loaded chunks: ${this.world.chunkCache.size}`,
+            `Time: ${timeOfDay} (${timeRemaining}s remaining)`,
+            `Weather: ${this.worldEnhancements.weather}`
         ];
         
         let y = 30;
         instructions.forEach(instruction => {
-            ctx.fillText(instruction, 10, y);
-            y += 20;
+            if (instruction === '') {
+                y += 10; // Extra spacing for empty lines
+            } else {
+                ctx.fillText(instruction, 10, y);
+                y += 20;
+            }
         });
     }
 

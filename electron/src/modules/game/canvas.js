@@ -1,9 +1,10 @@
 // Canvas management and responsive handling
 
 export class CanvasManager {
-    constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
+    constructor(canvas = null) {
+        // Find or create canvas element
+        this.canvas = canvas || this.findOrCreateCanvas();
+        this.ctx = this.canvas.getContext('2d');
         this.isResizing = false;
         
         // Ensure canvas has proper dimensions
@@ -11,6 +12,27 @@ export class CanvasManager {
         
         // Setup resize handling
         this.setupResizeHandling();
+    }
+
+    findOrCreateCanvas() {
+        // First try to find existing canvas
+        let canvas = document.getElementById('game-canvas');
+        
+        if (!canvas) {
+            // Create canvas element
+            canvas = document.createElement('canvas');
+            canvas.id = 'game-canvas';
+            canvas.style.display = 'block';
+            canvas.style.margin = '0 auto';
+            
+            // Find a suitable container
+            const container = document.getElementById('game-container') || document.body;
+            container.appendChild(canvas);
+            
+            console.log('[CanvasManager] Created new canvas element');
+        }
+        
+        return canvas;
     }
 
     initializeCanvas() {

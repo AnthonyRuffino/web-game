@@ -10,6 +10,42 @@ export class Camera {
         this.zoomSpeed = 0.1;
         this.followSpeed = 0.1;
         this.targetZoom = 1;
+        
+        // Camera mode support
+        this.mode = 'fixed-angle'; // 'fixed-angle' or 'player-perspective'
+        this.rotation = 0; // Camera rotation for fixed-angle mode (radians)
+        this.rotationSpeed = Math.PI * 0.8; // radians per second
+    }
+
+    // Set camera mode
+    setMode(mode) {
+        if (mode === 'fixed-angle' || mode === 'player-perspective') {
+            this.mode = mode;
+            console.log(`[Camera] Mode set to: ${mode}`);
+        }
+    }
+
+    // Toggle between camera modes
+    toggleMode() {
+        this.mode = this.mode === 'fixed-angle' ? 'player-perspective' : 'fixed-angle';
+        console.log(`[Camera] Mode toggled to: ${this.mode}`);
+        return this.mode;
+    }
+
+    // Rotate camera in fixed-angle mode
+    rotateCamera(deltaRotation) {
+        if (this.mode === 'fixed-angle') {
+            this.rotation += deltaRotation;
+            // Keep rotation in reasonable bounds
+            while (this.rotation > Math.PI * 2) this.rotation -= Math.PI * 2;
+            while (this.rotation < 0) this.rotation += Math.PI * 2;
+        }
+    }
+
+    // Reset camera rotation to north (0 degrees)
+    resetRotation() {
+        this.rotation = 0;
+        console.log('[Camera] Rotation reset to north');
     }
 
     // Handle mouse wheel zoom
@@ -41,7 +77,27 @@ export class Camera {
         // Apply zoom and translation
         ctx.translate(this.width / 2, this.height / 2);
         ctx.scale(this.zoom, this.zoom);
-        ctx.translate(-this.x, -this.y);
+        
+        if (this.mode === 'player-perspective') {
+            // In player-perspective mode, we'll apply rotation in the game render loop
+            // based on player angle, so we just translate here
+            ctx.translate(-this.x, -this.y);
+        } else {
+            // Fixed-angle mode: apply camera rotation
+            ctx.rotate(-this.rotation);
+            ctx.translate(-this.x, -this.y);
+        }
+    }
+
+    // Apply player-perspective transform (called from game render loop)
+    applyPlayerPerspectiveTransform(ctx, playerAngle) {
+        if (this.mode === 'player-perspective') {
+            // Rotate the entire world around the player's position
+            // First translate to player position, rotate, then translate back
+            ctx.translate(this.x, this.y);
+            ctx.rotate(-playerAngle);
+            ctx.translate(-this.x, -this.y);
+        }
     }
 
     // Restore camera transform
@@ -50,16 +106,52 @@ export class Camera {
     }
 
     // Convert screen coordinates to world coordinates
-    screenToWorld(screenX, screenY) {
-        const worldX = (screenX - this.width / 2) / this.zoom + this.x;
-        const worldY = (screenY - this.height / 2) / this.zoom + this.y;
+    screenToWorld(screenX, screenY, playerAngle = 0) {
+        let worldX, worldY;
+        
+        // Undo zoom and center translation
+        const x = (screenX - this.width / 2) / this.zoom;
+        const y = (screenY - this.height / 2) / this.zoom;
+        
+        if (this.mode === 'player-perspective') {
+            // Undo player rotation
+            const cos = Math.cos(playerAngle);
+            const sin = Math.sin(playerAngle);
+            worldX = x * cos - y * sin + this.x;
+            worldY = x * sin + y * cos + this.y;
+        } else {
+            // Undo camera rotation
+            const cos = Math.cos(this.rotation);
+            const sin = Math.sin(this.rotation);
+            worldX = x * cos + y * sin + this.x;
+            worldY = -x * sin + y * cos + this.y;
+        }
+        
         return { x: worldX, y: worldY };
     }
 
     // Convert world coordinates to screen coordinates
-    worldToScreen(worldX, worldY) {
-        const screenX = (worldX - this.x) * this.zoom + this.width / 2;
-        const screenY = (worldY - this.y) * this.zoom + this.height / 2;
+    worldToScreen(worldX, worldY, playerAngle = 0) {
+        let screenX, screenY;
+        
+        // Translate to camera-relative coordinates
+        const x = worldX - this.x;
+        const y = worldY - this.y;
+        
+        if (this.mode === 'player-perspective') {
+            // Apply player rotation
+            const cos = Math.cos(-playerAngle);
+            const sin = Math.sin(-playerAngle);
+            screenX = (x * cos - y * sin) * this.zoom + this.width / 2;
+            screenY = (x * sin + y * cos) * this.zoom + this.height / 2;
+        } else {
+            // Apply camera rotation
+            const cos = Math.cos(-this.rotation);
+            const sin = Math.sin(-this.rotation);
+            screenX = (x * cos + y * sin) * this.zoom + this.width / 2;
+            screenY = (-x * sin + y * cos) * this.zoom + this.height / 2;
+        }
+        
         return { x: screenX, y: screenY };
     }
 
@@ -90,6 +182,8 @@ export class Camera {
         return {
             position: `(${this.x.toFixed(1)}, ${this.y.toFixed(1)})`,
             zoom: `${this.zoom.toFixed(2)}x`,
+            mode: this.mode,
+            rotation: `${(this.rotation * 180 / Math.PI).toFixed(1)}°`,
             bounds: this.getBounds()
         };
     }
