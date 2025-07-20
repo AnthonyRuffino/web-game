@@ -3,6 +3,7 @@
 import { GrassEntity } from './entities/grass.js';
 import { TreeEntity } from './entities/tree.js';
 import { RockEntity } from './entities/rock.js';
+import { EntityRenderer } from './entityRenderer.js';
 
 export class World {
     constructor() {
@@ -134,6 +135,12 @@ export class World {
             lastAccessed: Date.now()
         };
 
+        // Determine biome for this chunk
+        const biome = this.getChunkBiome(chunkX, chunkY);
+        chunk.biome = biome;
+        
+        console.log(`[World] Generated chunk (${chunkX}, ${chunkY}) with biome: ${biome}`);
+
         // Generate tiles for this chunk
         const startTileX = chunkX * this.config.chunkSize;
         const startTileY = chunkY * this.config.chunkSize;
@@ -142,7 +149,7 @@ export class World {
 
         for (let tileY = startTileY; tileY < endTileY; tileY++) {
             for (let tileX = startTileX; tileX < endTileX; tileX++) {
-                // Generate tile
+                // Generate tile based on position and seed
                 const tile = this.generateTile(tileX, tileY);
                 chunk.tiles.push(tile);
                 
@@ -151,14 +158,27 @@ export class World {
                     const grassX = tileX * this.config.tileSize + this.config.tileSize / 2;
                     const grassY = tileY * this.config.tileSize + this.config.tileSize / 2;
                     
-                    const grassEntity = GrassEntity.create({
+                    // Create grass using EntityRenderer
+                    const grassEntity = EntityRenderer.createGrass({
+                        isSprite: false,
+                        size: 32,
+                        bladeColor: '#81C784',
+                        bladeWidth: 1.5,
+                        clusterCount: 3,
+                        bladeCount: 5,
+                        bladeLength: 10,
+                        bladeAngleVariation: 30,
+                        opacity: 1.0
+                    });
+                    
+                    // Merge with world-specific properties
+                    chunk.entities.push({
+                        ...grassEntity,
                         x: grassX,
                         y: grassY,
                         tileX: tileX,
                         tileY: tileY
                     });
-                    
-                    chunk.entities.push(grassEntity);
                 }
                 
                 // Generate trees and rocks deterministically
@@ -166,37 +186,124 @@ export class World {
                     const treeX = tileX * this.config.tileSize + this.config.tileSize / 2;
                     const treeY = tileY * this.config.tileSize + this.config.tileSize / 2;
                     
-                    const treeEntity = TreeEntity.create({
+                    // Create tree using EntityRenderer
+                    const treeEntity = EntityRenderer.createTree({
+                        isSprite: false,
+                        size: 24,
+                        trunkColor: '#5C4033',
+                        foliageColor: '#1B5E20',
+                        trunkWidth: 12,
+                        foliageRadius: 12,
+                        opacity: 1.0,
+                    });
+                    
+                    // Merge with world-specific properties
+                    chunk.entities.push({
+                        ...treeEntity,
                         x: treeX,
                         y: treeY,
                         tileX: tileX,
                         tileY: tileY,
                         collision: true,
-                        collisionRadius: 18
+                        collisionRadius: 18 // Tree collision radius
                     });
-                    
-                    chunk.entities.push(treeEntity);
                 }
                 
                 if (this.shouldPlaceRock(tileX, tileY)) {
                     const rockX = tileX * this.config.tileSize + this.config.tileSize / 2;
                     const rockY = tileY * this.config.tileSize + this.config.tileSize / 2;
                     
-                    const rockEntity = RockEntity.create({
+                    // Create rock using EntityRenderer
+                    const rockEntity = EntityRenderer.createRock({
+                        isSprite: false,
+                        size: 20,
+                        baseColor: '#757575',
+                        strokeColor: '#424242',
+                        textureColor: '#424242',
+                        opacity: 1.0,
+                        textureSpots: 3, // Number of texture spots
+                        strokeWidth: 2
+                    });
+                    
+                    // Merge with world-specific properties
+                    chunk.entities.push({
+                        ...rockEntity,
                         x: rockX,
                         y: rockY,
                         tileX: tileX,
                         tileY: tileY,
                         collision: true,
-                        collisionRadius: 12
+                        collisionRadius: 12 // Rock collision radius
                     });
-                    
-                    chunk.entities.push(rockEntity);
                 }
             }
         }
 
+        // Add starting position X marker if this chunk contains it
+        const startPos = this.getStartingPosition();
+        const startTile = this.pixelToTile(startPos.x, startPos.y);
+        if (startTile.x >= startTileX && startTile.x < endTileX && 
+            startTile.y >= startTileY && startTile.y < endTileY) {
+            chunk.entities.push({
+                type: 'letterTile',
+                letter: 'X',
+                x: startPos.x,
+                y: startPos.y,
+                renderType: 'shape', // 'shape' or 'sprite'
+                sprite: null, // Image object for sprite rendering
+                draw: function(ctx) {
+                    if (this.renderType === 'sprite' && this.sprite) {
+                        // Draw sprite
+                        const spriteWidth = this.sprite.width || 36;
+                        const spriteHeight = this.sprite.height || 36;
+                        ctx.drawImage(
+                            this.sprite,
+                            this.x - spriteWidth / 2,
+                            this.y - spriteHeight / 2,
+                            spriteWidth,
+                            spriteHeight
+                        );
+                    } else {
+                        // Draw shape (red X)
+                        ctx.fillStyle = 'red';
+                        ctx.font = 'bold 36px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(this.letter, this.x, this.y);
+                    }
+                }
+            });
+        }
+
         return chunk;
+    }
+
+    // Get starting position for the player
+    getStartingPosition() {
+        const startChunkX = this.config.startingChunkX;
+        const startChunkY = this.config.startingChunkY;
+        const chunkSize = this.config.chunkSize * this.config.tileSize;
+        
+        return {
+            x: startChunkX * chunkSize + chunkSize / 2,
+            y: startChunkY * chunkSize + chunkSize / 2
+        };
+    }
+
+    // Convert pixel coordinates to tile coordinates
+    pixelToTile(pixelX, pixelY) {
+        return {
+            x: Math.floor(pixelX / this.config.tileSize),
+            y: Math.floor(pixelY / this.config.tileSize)
+        };
+    }
+
+    // Get biome for a chunk
+    getChunkBiome(chunkX, chunkY) {
+        const key = this.getChunkKey(chunkX, chunkY);
+        const biome = this.chunkBiomeMap.get(key) || 'plains';
+        console.log(`[World] getChunkBiome(${chunkX}, ${chunkY}) = ${biome} (key: ${key})`);
+        return biome;
     }
 
     // Generate a single tile
@@ -323,61 +430,92 @@ export class World {
         };
     }
 
-    // Render world
-    render(ctx, cameraX, cameraY, cameraWidth, cameraHeight) {
-        // Draw world boundary
-        ctx.strokeStyle = '#ff0000';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(0, 0, this.width, this.height);
+    // Render the world
+    render(ctx, cameraX, cameraY, viewportWidth, viewportHeight) {
+        // Calculate visible chunk range
+        const chunkSize = this.config.chunkSize * this.config.tileSize;
+        const startChunkX = Math.floor((cameraX - viewportWidth / 2) / chunkSize);
+        const endChunkX = Math.floor((cameraX + viewportWidth / 2) / chunkSize);
+        const startChunkY = Math.floor((cameraY - viewportHeight / 2) / chunkSize);
+        const endChunkY = Math.floor((cameraY + viewportHeight / 2) / chunkSize);
 
-        // Load and render chunks within keepDistance of the player
-        const keepDistance = this.config.keepDistance;
-        const chunksToLoad = this.getChunksInRadius(cameraX, cameraY, keepDistance);
-        const keepChunkKeys = new Set();
-        
-        for (const {x, y} of chunksToLoad) {
-            const chunk = this.loadChunk(x, y);
-            this.renderChunk(ctx, chunk);
-            keepChunkKeys.add(this.getChunkKey(x, y));
-        }
-
-        // Clean up distant chunks
-        this.cleanupChunks(keepChunkKeys);
-
-        // Render grid overlay if enabled
-        if (this.showGrid) {
-            this.renderGrid(ctx, cameraX, cameraY, cameraWidth, cameraHeight);
+        // Load and render visible chunks
+        for (let chunkX = startChunkX; chunkX <= endChunkX; chunkX++) {
+            for (let chunkY = startChunkY; chunkY <= endChunkY; chunkY++) {
+                const chunk = this.loadChunk(chunkX, chunkY); // Changed from getChunk to loadChunk
+                if (chunk) {
+                    this.renderChunk(ctx, chunk);
+                }
+            }
         }
     }
 
     // Render a single chunk
     renderChunk(ctx, chunk) {
-        // Render biome background
-        const biome = this.chunkBiomeMap.get(this.getChunkKey(chunk.x, chunk.y)) || 'plains';
-        this.renderBiomeBackground(ctx, chunk, biome);
+        // Render biome background first
+        this.renderBiomeBackgroundSync(ctx, chunk, chunk.biome);
         
-        // Render chunk entities
-        if (chunk.entities && Array.isArray(chunk.entities)) {
-            // Sort entities for correct render order:
-            // 1. Grass
-            // 2. Non-fixedScreenAngle entities
-            // 3. fixedScreenAngle entities sorted by Y position
-            const grassEntities = chunk.entities.filter(e => e.type === 'grass');
-            const fixedAngleEntities = chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined);
-            const otherEntities = chunk.entities.filter(e => e.type !== 'grass' && (e.fixedScreenAngle === null || e.fixedScreenAngle === undefined));
-            
-            fixedAngleEntities.sort((a, b) => b.y - a.y);
-            const renderOrder = grassEntities.concat(otherEntities, fixedAngleEntities);
-            
-            renderOrder.forEach(entity => {
+        // Render entities on top
+        chunk.entities.forEach(entity => {
+            if (entity.type === 'letterTile') {
+                // Handle the starting position marker
+                if (entity.draw) {
+                    entity.draw(ctx);
+                }
+            } else if (entity.render) {
+                // Handle entities created by EntityRenderer
+                ctx.save();
+                ctx.translate(entity.x, entity.y);
                 entity.render(ctx);
-            });
-        }
+                ctx.restore();
+            }
+        });
     }
 
-    // Render biome background for a chunk
-    renderBiomeBackground(ctx, chunk, biome) {
+    // Synchronous biome background rendering (for immediate display)
+    renderBiomeBackgroundSync(ctx, chunk, biome) {
         const chunkSize = this.config.chunkSize * this.config.tileSize; // 2048 pixels
+        
+        console.log(`[World] renderBiomeBackgroundSync called for chunk (${chunk.x}, ${chunk.y}), biome: ${biome}`);
+        
+        // Try to load the biome background image from asset manager
+        if (window.game && window.game.assetManager) {
+            // Use the same cache key pattern as entityRenderer
+            const cacheKey = `image:background-${biome}`;
+            console.log(`[World] Looking for biome image with cache key: ${cacheKey}`);
+            
+            const biomeImage = window.game.assetManager.imageCache.get(cacheKey);
+            console.log(`[World] Asset manager cache lookup result:`, biomeImage);
+            
+            if (biomeImage && biomeImage.image) {
+                const img = biomeImage.image;
+                console.log(`[World] Found biome image object:`, img);
+                console.log(`[World] Image properties - complete: ${img.complete}, naturalWidth: ${img.naturalWidth}, width: ${img.width}, height: ${img.height}`);
+                
+                if (img.complete && img.naturalWidth > 0) {
+                    console.log(`[World] Drawing biome image at (${chunk.worldX}, ${chunk.worldY}) with size ${chunkSize}x${chunkSize}`);
+                    // Draw the biome image to cover the entire chunk
+                    ctx.drawImage(img, chunk.worldX, chunk.worldY, chunkSize, chunkSize);
+                    console.log(`[World] Successfully drew biome background for ${biome}`);
+                    return;
+                } else {
+                    console.warn(`[World] Biome image not ready - complete: ${img.complete}, naturalWidth: ${img.naturalWidth}`);
+                }
+            } else {
+                console.warn(`[World] No biome image found in asset manager cache for key: ${cacheKey}`);
+                console.log(`[World] Available asset manager cache keys:`, Array.from(window.game.assetManager.imageCache.keys()));
+            }
+        } else {
+            console.warn(`[World] Asset manager not available - window.game:`, !!window.game, 'assetManager:', !!window.game?.assetManager);
+        }
+        
+        // Fallback to procedural rendering if asset manager is not available
+        console.log(`[World] Falling back to procedural rendering for biome: ${biome}`);
+        this.renderBiomeBackgroundFallback(ctx, chunk, biome, chunkSize);
+    }
+
+    // Fallback biome background rendering
+    renderBiomeBackgroundFallback(ctx, chunk, biome, chunkSize) {
         const tileSize = this.config.tileSize; // 32 pixels
         
         ctx.save();
@@ -394,11 +532,11 @@ export class World {
 
     // Render plains biome background
     renderPlainsBackground(ctx, chunk, chunkSize, tileSize) {
-        // Base grass color
+        // Fill entire chunk with base grass color
         ctx.fillStyle = '#8FBC8F';
         ctx.fillRect(chunk.worldX, chunk.worldY, chunkSize, chunkSize);
         
-        // Add grass pattern variation
+        // Add grass pattern variation across entire chunk
         for (let tileY = 0; tileY < this.config.chunkSize; tileY++) {
             for (let tileX = 0; tileX < this.config.chunkSize; tileX++) {
                 const worldTileX = chunk.x * this.config.chunkSize + tileX;
@@ -420,11 +558,11 @@ export class World {
 
     // Render desert biome background
     renderDesertBackground(ctx, chunk, chunkSize, tileSize) {
-        // Base sand color
+        // Fill entire chunk with base sand color
         ctx.fillStyle = '#F4A460';
         ctx.fillRect(chunk.worldX, chunk.worldY, chunkSize, chunkSize);
         
-        // Add sand pattern variation
+        // Add sand pattern variation across entire chunk
         for (let tileY = 0; tileY < this.config.chunkSize; tileY++) {
             for (let tileX = 0; tileX < this.config.chunkSize; tileX++) {
                 const worldTileX = chunk.x * this.config.chunkSize + tileX;

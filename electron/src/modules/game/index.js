@@ -7,6 +7,7 @@ import { World } from './world.js';
 import { CollisionSystem } from './collision.js';
 import { InteractionSystem } from './interactions.js';
 import { WorldEnhancements } from './world-enhancements.js';
+import { AssetManager } from './assets.js';
 
 export class Game {
     constructor() {
@@ -21,6 +22,7 @@ export class Game {
         this.collisionSystem = null;
         this.interactionSystem = null;
         this.worldEnhancements = null;
+        this.assetManager = null;
         
         this.isRunning = false;
         this.lastTime = 0;
@@ -38,16 +40,35 @@ export class Game {
         this.collisionElement = null;
         this.interactionElement = null;
         this.enhancementsElement = null;
+        this.assetsElement = null;
     }
 
     async init() {
         try {
             console.log('[Game] Initializing game...');
             
-            // Initialize canvas
+            // Initialize canvas with proper error handling
             this.canvas = document.getElementById('game-canvas');
+            if (!this.canvas) {
+                throw new Error('Canvas element not found');
+            }
+            
             this.ctx = this.canvas.getContext('2d');
             this.canvasManager = new CanvasManager(this.canvas);
+            
+            // Wait for canvas to be properly initialized
+            if (!this.canvasManager.isInitialized()) {
+                console.log('[Game] Waiting for canvas initialization...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Initialize asset manager first
+            this.assetManager = new AssetManager();
+            await this.assetManager.initAssetDir();
+            
+            // Initialize all required images
+            console.log('[Game] Initializing required images...');
+            await this.assetManager.initializeImages();
             
             // Initialize game systems
             this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);
@@ -58,6 +79,9 @@ export class Game {
             this.collisionSystem = new CollisionSystem();
             this.interactionSystem = new InteractionSystem();
             this.worldEnhancements = new WorldEnhancements(this.world);
+            
+            // Make asset manager available globally for world system
+            window.game = this;
             
             // Setup systems
             this.inputManager.init();
@@ -112,7 +136,8 @@ export class Game {
             { id: 'world', text: 'World: --' },
             { id: 'collision', text: 'Collision: --' },
             { id: 'interaction', text: 'Interaction: --' },
-            { id: 'enhancements', text: 'Enhancements: --' }
+            { id: 'enhancements', text: 'Enhancements: --' },
+            { id: 'assets', text: 'Assets: --' }
         ];
         
         debugElements.forEach(({ id, text }) => {
@@ -131,6 +156,7 @@ export class Game {
         this.collisionElement = document.getElementById('collision');
         this.interactionElement = document.getElementById('interaction');
         this.enhancementsElement = document.getElementById('enhancements');
+        this.assetsElement = document.getElementById('assets');
         
         if (this.versionElement) {
             this.versionElement.textContent = `Version: ${version}`;
@@ -310,6 +336,11 @@ export class Game {
         if (this.enhancementsElement) {
             const enhancementsStats = this.worldEnhancements.getStats();
             this.enhancementsElement.textContent = `Enhancements: ${enhancementsStats.timeOfDay}, ${enhancementsStats.weather}`;
+        }
+        
+        if (this.assetsElement && this.assetManager) {
+            const availableImages = this.assetManager.getAvailableImages();
+            this.assetsElement.textContent = `Assets: ${availableImages.memory.length} cached`;
         }
     }
 

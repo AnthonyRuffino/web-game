@@ -1,141 +1,110 @@
+// Canvas management and responsive handling
+
 export class CanvasManager {
-    constructor() {
-        this.canvas = null;
-        this.ctx = null;
-        this.width = 0;
-        this.height = 0;
-        this.targetWidth = 1200;
-        this.targetHeight = 800;
-        this.aspectRatio = this.targetWidth / this.targetHeight;
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.isResizing = false;
+        
+        // Ensure canvas has proper dimensions
+        this.initializeCanvas();
+        
+        // Setup resize handling
+        this.setupResizeHandling();
     }
-    
-    async init() {
-        try {
-            // Get canvas element
-            this.canvas = document.getElementById('game-canvas');
-            if (!this.canvas) {
-                throw new Error('Canvas element not found');
+
+    initializeCanvas() {
+        if (!this.canvas) {
+            console.error('[CanvasManager] Canvas element is null');
+            return;
+        }
+
+        // Get the container dimensions
+        const container = this.canvas.parentElement || document.body;
+        const containerRect = container.getBoundingClientRect();
+        
+        // Set canvas size to match container
+        this.canvas.width = containerRect.width || 1200;
+        this.canvas.height = containerRect.height || 800;
+        
+        console.log(`[CanvasManager] Initialized canvas: ${this.canvas.width}x${this.canvas.height}`);
+    }
+
+    setupResizeHandling() {
+        // Debounced resize handler
+        let resizeTimeout;
+        const handleResize = () => {
+            if (resizeTimeout) {
+                clearTimeout(resizeTimeout);
             }
             
-            // Get 2D context
-            this.ctx = this.canvas.getContext('2d');
-            if (!this.ctx) {
-                throw new Error('Failed to get 2D context');
-            }
-            
-            // Set initial size
-            this.resize();
-            
-            // Setup canvas properties
-            this.setupCanvas();
-            
-            console.log('[CanvasManager] Canvas initialized successfully');
-            console.log(`[CanvasManager] Canvas size: ${this.width}x${this.height}`);
-            
-        } catch (error) {
-            console.error('[CanvasManager] Failed to initialize canvas:', error);
-            throw error;
+            resizeTimeout = setTimeout(() => {
+                this.resize();
+            }, 100);
+        };
+
+        // Listen for window resize
+        window.addEventListener('resize', handleResize);
+        
+        // Listen for container resize
+        if (this.canvas.parentElement) {
+            const resizeObserver = new ResizeObserver(handleResize);
+            resizeObserver.observe(this.canvas.parentElement);
         }
     }
-    
-    setupCanvas() {
-        // Set canvas properties for better rendering
-        this.ctx.imageSmoothingEnabled = true;
-        this.ctx.imageSmoothingQuality = 'high';
-        
-        // Set canvas style properties
-        this.canvas.style.display = 'block';
-        this.canvas.style.margin = 'auto';
-    }
-    
+
     resize() {
-        const container = document.getElementById('game-container');
-        if (!container) return;
+        if (this.isResizing) return;
         
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
+        this.isResizing = true;
         
-        // Calculate new size maintaining aspect ratio
-        let newWidth = containerWidth;
-        let newHeight = containerWidth / this.aspectRatio;
-        
-        if (newHeight > containerHeight) {
-            newHeight = containerHeight;
-            newWidth = containerHeight * this.aspectRatio;
+        try {
+            // Get the container dimensions
+            const container = this.canvas.parentElement || document.body;
+            const containerRect = container.getBoundingClientRect();
+            
+            // Set new canvas size
+            const newWidth = containerRect.width || 1200;
+            const newHeight = containerRect.height || 800;
+            
+            if (newWidth > 0 && newHeight > 0) {
+                this.canvas.width = newWidth;
+                this.canvas.height = newHeight;
+                
+                console.log(`[CanvasManager] Resized canvas to: ${newWidth}x${newHeight}`);
+                
+                // Notify other systems about the resize
+                this.onResize(newWidth, newHeight);
+            }
+        } catch (error) {
+            console.error('[CanvasManager] Error during resize:', error);
+        } finally {
+            this.isResizing = false;
         }
-        
-        // Set canvas size
-        this.width = Math.floor(newWidth);
-        this.height = Math.floor(newHeight);
-        
-        // Update canvas dimensions
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
-        
-        // Update canvas style
-        this.canvas.style.width = `${this.width}px`;
-        this.canvas.style.height = `${this.height}px`;
-        
-        console.log(`[CanvasManager] Canvas resized to ${this.width}x${this.height}`);
     }
-    
-    clear() {
-        if (!this.ctx) return;
-        
-        // Clear the entire canvas with a dark background to prevent smearing
-        this.ctx.fillStyle = '#1a1a1a';
-        this.ctx.fillRect(0, 0, this.width, this.height);
+
+    onResize(width, height) {
+        // This can be overridden by the game to handle resize events
+        if (window.game && window.game.camera) {
+            window.game.camera.resize(width, height);
+        }
     }
-    
-    clearWithColor(color = '#000000') {
-        if (!this.ctx) return;
-        
-        // Fill canvas with specified color
-        this.ctx.fillStyle = color;
-        this.ctx.fillRect(0, 0, this.width, this.height);
-    }
-    
+
     update(deltaTime) {
-        // Update canvas-related systems
-        // This will be expanded as we add more features
+        // Handle any canvas-specific updates
+        // Currently just a placeholder for future features
     }
-    
-    // Utility methods for drawing
-    drawRect(x, y, width, height, color = '#ffffff') {
-        if (!this.ctx) return;
-        
-        this.ctx.fillStyle = color;
-        this.ctx.fillRect(x, y, width, height);
-    }
-    
-    drawCircle(x, y, radius, color = '#ffffff') {
-        if (!this.ctx) return;
-        
-        this.ctx.fillStyle = color;
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, radius, 0, Math.PI * 2);
-        this.ctx.fill();
-    }
-    
-    drawText(text, x, y, font = '16px Arial', color = '#ffffff', align = 'left') {
-        if (!this.ctx) return;
-        
-        this.ctx.fillStyle = color;
-        this.ctx.font = font;
-        this.ctx.textAlign = align;
-        this.ctx.fillText(text, x, y);
-    }
-    
-    // Get canvas center coordinates
-    getCenter() {
+
+    // Get current canvas dimensions
+    getDimensions() {
         return {
-            x: this.width / 2,
-            y: this.height / 2
+            width: this.canvas ? this.canvas.width : 1200,
+            height: this.canvas ? this.canvas.height : 800
         };
     }
-    
-    // Check if coordinates are within canvas bounds
-    isInBounds(x, y) {
-        return x >= 0 && x <= this.width && y >= 0 && y <= this.height;
+
+    // Check if canvas is properly initialized
+    isInitialized() {
+        return this.canvas && this.canvas.width > 0 && this.canvas.height > 0;
     }
 } 

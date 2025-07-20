@@ -3,264 +3,235 @@
 export class WorldEnhancements {
     constructor(world) {
         this.world = world;
-        this.dayNightCycle = 0; // 0-1, where 0 is dawn, 0.25 is morning, 0.5 is noon, 0.75 is afternoon, 1 is dusk
         
-        // Configurable day/night cycle timing (in milliseconds)
-        this.cycleConfig = {
-            dawn: 60000,      // 1 minute
-            morning: 60000,   // 1 minute  
-            afternoon: 60000, // 1 minute
-            evening: 60000    // 1 minute
+        // Day/night cycle configuration
+        this.dayNightCycle = {
+            // Start in daytime (morning) instead of dawn
+            currentTime: 0.25, // 0.0 = dawn, 0.25 = morning, 0.5 = afternoon, 0.75 = evening, 1.0 = night
+            cycleDuration: 60000, // 1 minute per period (4 minutes total cycle)
+            periods: {
+                dawn: { start: 0.0, end: 0.25, duration: 60000 },
+                morning: { start: 0.25, end: 0.5, duration: 60000 },
+                afternoon: { start: 0.5, end: 0.75, duration: 60000 },
+                evening: { start: 0.75, end: 1.0, duration: 60000 }
+            }
         };
         
-        // Calculate total cycle time and speed
-        this.totalCycleTime = this.cycleConfig.dawn + this.cycleConfig.morning + 
-                             this.cycleConfig.afternoon + this.cycleConfig.evening;
-        this.cycleSpeed = 1 / this.totalCycleTime; // Progress per millisecond
-        
-        this.weather = 'clear'; // clear, rain, fog
-        this.weatherIntensity = 0; // 0-1 intensity
-        this.weatherTimer = 0;
-        this.weatherChangeInterval = 30000; // 30 seconds
-        
-        this.setupWeatherTransitions();
-    }
-
-    // Setup weather transition probabilities
-    setupWeatherTransitions() {
-        this.weatherTransitions = {
-            clear: { rain: 0.1, fog: 0.05, clear: 0.85 },
-            rain: { clear: 0.3, fog: 0.1, rain: 0.6 },
-            fog: { clear: 0.4, rain: 0.2, fog: 0.4 }
+        // Weather system
+        this.weather = {
+            type: 'clear',
+            intensity: 0.0,
+            windSpeed: 0.0,
+            windDirection: 0.0
         };
+        
+        // Atmospheric effects (stationary with parallax)
+        this.atmosphere = {
+            fog: {
+                enabled: true,
+                density: 0.3,
+                color: '#87CEEB',
+                parallaxFactor: 0.1 // Slow parallax movement
+            },
+            lighting: {
+                enabled: true,
+                intensity: 1.0,
+                color: '#FFFFFF'
+            }
+        };
+        
+        this.lastUpdate = performance.now();
     }
 
-    // Update day/night cycle
-    updateDayNightCycle(deltaTime) {
-        this.dayNightCycle += this.cycleSpeed * deltaTime;
+    update(deltaTime) {
+        const currentTime = performance.now();
+        const elapsed = currentTime - this.lastUpdate;
+        this.lastUpdate = currentTime;
+        
+        // Update day/night cycle
+        this.updateDayNightCycle(elapsed);
+        
+        // Update weather
+        this.updateWeather(elapsed);
+    }
+
+    updateDayNightCycle(elapsed) {
+        const cycle = this.dayNightCycle;
+        cycle.currentTime += elapsed / cycle.cycleDuration;
         
         // Wrap around
-        if (this.dayNightCycle >= 1) {
-            this.dayNightCycle = 0;
+        if (cycle.currentTime >= 1.0) {
+            cycle.currentTime -= 1.0;
         }
     }
 
-    // Update weather conditions
-    updateWeather(deltaTime) {
-        this.weatherTimer += deltaTime;
-        
-        if (this.weatherTimer >= this.weatherChangeInterval) {
-            this.weatherTimer = 0;
-            this.changeWeather();
+    updateWeather(elapsed) {
+        // Simple weather changes
+        if (Math.random() < 0.001) { // 0.1% chance per frame
+            const weatherTypes = ['clear', 'cloudy', 'rainy', 'foggy'];
+            this.weather.type = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
         }
     }
 
-    // Change weather based on transition probabilities
-    changeWeather() {
-        const transitions = this.weatherTransitions[this.weather];
-        const random = Math.random();
-        let cumulative = 0;
+    // Render atmospheric effects (stationary with parallax)
+    renderAtmosphere(ctx, cameraX, cameraY, viewportWidth, viewportHeight) {
+        // Apply parallax effect - atmosphere moves slower than camera
+        const parallaxX = cameraX * this.atmosphere.fog.parallaxFactor;
+        const parallaxY = cameraY * this.atmosphere.fog.parallaxFactor;
         
-        for (const [weather, probability] of Object.entries(transitions)) {
-            cumulative += probability;
-            if (random <= cumulative) {
-                this.weather = weather;
-                this.weatherIntensity = 0; // Start at 0 intensity
-                console.log(`[WorldEnhancements] Weather changed to: ${weather}`);
+        // Get current lighting based on time of day
+        const lighting = this.getCurrentLighting();
+        
+        // Apply global lighting overlay
+        if (this.atmosphere.lighting.enabled) {
+            this.renderLighting(ctx, viewportWidth, viewportHeight, lighting);
+        }
+        
+        // Render fog (stationary with parallax)
+        if (this.atmosphere.fog.enabled) {
+            this.renderFog(ctx, parallaxX, parallaxY, viewportWidth, viewportHeight);
+        }
+    }
+
+    renderLighting(ctx, width, height, lighting) {
+        // Create a lighting overlay based on time of day
+        const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height)/2);
+        
+        // Adjust lighting based on time of day
+        const timeOfDay = this.getTimeOfDay();
+        let alpha = 0.1; // Base alpha
+        
+        switch (timeOfDay) {
+            case 'dawn':
+                gradient.addColorStop(0, `rgba(255, 200, 150, ${alpha})`);
+                gradient.addColorStop(1, `rgba(255, 150, 100, ${alpha * 2})`);
                 break;
-            }
+            case 'morning':
+                gradient.addColorStop(0, `rgba(255, 255, 200, ${alpha * 0.5})`);
+                gradient.addColorStop(1, `rgba(255, 255, 150, ${alpha})`);
+                break;
+            case 'afternoon':
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.3})`);
+                gradient.addColorStop(1, `rgba(255, 255, 200, ${alpha * 0.6})`);
+                break;
+            case 'evening':
+                gradient.addColorStop(0, `rgba(255, 180, 120, ${alpha})`);
+                gradient.addColorStop(1, `rgba(255, 120, 80, ${alpha * 2})`);
+                break;
+            case 'night':
+                gradient.addColorStop(0, `rgba(50, 50, 150, ${alpha * 3})`);
+                gradient.addColorStop(1, `rgba(20, 20, 80, ${alpha * 4})`);
+                break;
         }
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
     }
 
-    // Get current lighting based on day/night cycle
-    getLighting() {
-        // Calculate lighting intensity based on time of day
-        let intensity = 1;
+    renderFog(ctx, parallaxX, parallaxY, width, height) {
+        // Create fog effect that's stationary relative to world, not camera
+        const fogDensity = this.atmosphere.fog.density;
+        const fogColor = this.atmosphere.fog.color;
         
-        if (this.dayNightCycle < 0.25) {
-            // Dawn: 0 to 1
-            intensity = this.dayNightCycle * 4;
-        } else if (this.dayNightCycle < 0.75) {
-            // Day: 1
-            intensity = 1;
-        } else {
-            // Dusk: 1 to 0
-            intensity = 1 - ((this.dayNightCycle - 0.75) * 4);
-        }
+        // Create a subtle fog overlay
+        const gradient = ctx.createRadialGradient(
+            width/2 + parallaxX * 0.1, 
+            height/2 + parallaxY * 0.1, 
+            0, 
+            width/2 + parallaxX * 0.1, 
+            height/2 + parallaxY * 0.1, 
+            Math.max(width, height) * 0.8
+        );
         
-        // Apply weather effects
-        if (this.weather === 'rain') {
-            intensity *= 0.7;
-        } else if (this.weather === 'fog') {
-            intensity *= 0.5;
-        }
+        gradient.addColorStop(0, `rgba(135, 206, 235, ${fogDensity * 0.1})`);
+        gradient.addColorStop(0.5, `rgba(135, 206, 235, ${fogDensity * 0.2})`);
+        gradient.addColorStop(1, `rgba(135, 206, 235, ${fogDensity * 0.3})`);
         
-        return Math.max(0.1, Math.min(1, intensity));
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
     }
 
-    // Get sky color based on time of day
-    getSkyColor() {
+    getCurrentLighting() {
+        const timeOfDay = this.getTimeOfDay();
         const cycle = this.dayNightCycle;
         
-        if (cycle < 0.25) {
-            // Dawn: dark blue to light blue
-            const t = cycle * 4;
-            return this.interpolateColor('#1a1a2e', '#87CEEB', t);
-        } else if (cycle < 0.75) {
-            // Day: light blue
-            return '#87CEEB';
-        } else {
-            // Dusk: light blue to dark blue
-            const t = (cycle - 0.75) * 4;
-            return this.interpolateColor('#87CEEB', '#1a1a2e', t);
-        }
-    }
-
-    // Interpolate between two colors
-    interpolateColor(color1, color2, t) {
-        const r1 = parseInt(color1.slice(1, 3), 16);
-        const g1 = parseInt(color1.slice(3, 5), 16);
-        const b1 = parseInt(color1.slice(5, 7), 16);
-        
-        const r2 = parseInt(color2.slice(1, 3), 16);
-        const g2 = parseInt(color2.slice(3, 5), 16);
-        const b2 = parseInt(color2.slice(5, 7), 16);
-        
-        const r = Math.round(r1 + (r2 - r1) * t);
-        const g = Math.round(g1 + (g2 - g1) * t);
-        const b = Math.round(b1 + (b2 - b1) * t);
-        
-        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-    }
-
-    // Render atmospheric effects
-    renderAtmosphere(ctx, cameraX, cameraY, cameraWidth, cameraHeight) {
-        ctx.save();
-        
-        // Apply lighting
-        const lighting = this.getLighting();
-        ctx.globalAlpha = 1 - lighting;
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, cameraWidth, cameraHeight);
-        
-        // Render weather effects
-        if (this.weather === 'rain') {
-            this.renderRain(ctx, cameraWidth, cameraHeight);
-        } else if (this.weather === 'fog') {
-            this.renderFog(ctx, cameraWidth, cameraHeight);
-        }
-        
-        ctx.restore();
-    }
-
-    // Render rain effect
-    renderRain(ctx, width, height) {
-        ctx.strokeStyle = '#87CEEB';
-        ctx.lineWidth = 1;
-        ctx.globalAlpha = 0.3;
-        
-        const raindrops = 100;
-        const time = Date.now() * 0.01;
-        
-        for (let i = 0; i < raindrops; i++) {
-            const x = (i * 37) % width;
-            const y = (i * 73 + time) % height;
-            
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + 2, y + 8);
-            ctx.stroke();
-        }
-    }
-
-    // Render fog effect
-    renderFog(ctx, width, height) {
-        ctx.fillStyle = '#ffffff';
-        ctx.globalAlpha = 0.2;
-        
-        const fogLayers = 3;
-        for (let layer = 0; layer < fogLayers; layer++) {
-            const alpha = 0.1 + (layer * 0.05);
-            ctx.globalAlpha = alpha;
-            
-            // Create fog patches
-            for (let i = 0; i < 10; i++) {
-                const x = (i * 123) % width;
-                const y = (i * 456) % height;
-                const size = 50 + (i * 20);
-                
-                ctx.beginPath();
-                ctx.arc(x, y, size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-    }
-
-    // Update all enhancements
-    update(deltaTime) {
-        this.updateDayNightCycle(deltaTime);
-        this.updateWeather(deltaTime);
-    }
-
-    // Get current time of day as string
-    getTimeOfDay() {
-        const cycle = this.dayNightCycle;
-        
-        if (cycle < 0.25) return 'Dawn';
-        if (cycle < 0.5) return 'Morning';
-        if (cycle < 0.75) return 'Afternoon';
-        return 'Evening';
-    }
-
-    // Get time remaining in current period
-    getTimeRemaining() {
-        const cycle = this.dayNightCycle;
-        let remainingMs = 0;
-        
-        if (cycle < 0.25) {
-            // Dawn period
-            remainingMs = (0.25 - cycle) / this.cycleSpeed;
-        } else if (cycle < 0.5) {
-            // Morning period
-            remainingMs = (0.5 - cycle) / this.cycleSpeed;
-        } else if (cycle < 0.75) {
-            // Afternoon period
-            remainingMs = (0.75 - cycle) / this.cycleSpeed;
-        } else {
-            // Evening period
-            remainingMs = (1 - cycle) / this.cycleSpeed;
-        }
-        
-        return Math.ceil(remainingMs / 1000); // Return seconds
-    }
-
-    // Set cycle timing for different periods
-    setCycleTiming(dawn, morning, afternoon, evening) {
-        this.cycleConfig = {
-            dawn: dawn || 60000,
-            morning: morning || 60000,
-            afternoon: afternoon || 60000,
-            evening: evening || 60000
+        return {
+            intensity: this.getLightingIntensity(timeOfDay),
+            color: this.getLightingColor(timeOfDay),
+            timeOfDay: timeOfDay
         };
-        
-        this.totalCycleTime = this.cycleConfig.dawn + this.cycleConfig.morning + 
-                             this.cycleConfig.afternoon + this.cycleConfig.evening;
-        this.cycleSpeed = 1 / this.totalCycleTime;
-        
-        console.log(`[WorldEnhancements] Cycle timing updated: ${this.totalCycleTime / 1000}s total`);
     }
 
-    // Get enhancement statistics for debugging
+    getLightingIntensity(timeOfDay) {
+        switch (timeOfDay) {
+            case 'dawn': return 0.6;
+            case 'morning': return 1.0;
+            case 'afternoon': return 1.0;
+            case 'evening': return 0.7;
+            case 'night': return 0.2;
+            default: return 1.0;
+        }
+    }
+
+    getLightingColor(timeOfDay) {
+        switch (timeOfDay) {
+            case 'dawn': return '#FFB366';
+            case 'morning': return '#FFFFFF';
+            case 'afternoon': return '#FFFFFF';
+            case 'evening': return '#FFB366';
+            case 'night': return '#1a1a2e';
+            default: return '#FFFFFF';
+        }
+    }
+
+    getTimeOfDay() {
+        const time = this.dayNightCycle.currentTime;
+        
+        if (time < 0.25) return 'dawn';
+        if (time < 0.5) return 'morning';
+        if (time < 0.75) return 'afternoon';
+        if (time < 1.0) return 'evening';
+        return 'night';
+    }
+
+    getTimeRemaining() {
+        const time = this.dayNightCycle.currentTime;
+        const currentPeriod = this.getTimeOfDay();
+        const periods = this.dayNightCycle.periods;
+        
+        let timeInCurrentPeriod = 0;
+        let periodDuration = 60000; // Default 1 minute
+        
+        switch (currentPeriod) {
+            case 'dawn':
+                timeInCurrentPeriod = time / 0.25;
+                periodDuration = periods.dawn.duration;
+                break;
+            case 'morning':
+                timeInCurrentPeriod = (time - 0.25) / 0.25;
+                periodDuration = periods.morning.duration;
+                break;
+            case 'afternoon':
+                timeInCurrentPeriod = (time - 0.5) / 0.25;
+                periodDuration = periods.afternoon.duration;
+                break;
+            case 'evening':
+                timeInCurrentPeriod = (time - 0.75) / 0.25;
+                periodDuration = periods.evening.duration;
+                break;
+        }
+        
+        const remainingInPeriod = (1 - timeInCurrentPeriod) * periodDuration;
+        return Math.ceil(remainingInPeriod / 1000); // Convert to seconds
+    }
+
     getStats() {
         return {
-            dayNightCycle: this.dayNightCycle,
             timeOfDay: this.getTimeOfDay(),
-            timeRemaining: this.getTimeRemaining(),
-            weather: this.weather,
-            weatherIntensity: this.weatherIntensity,
-            lighting: this.getLighting(),
-            skyColor: this.getSkyColor(),
-            totalCycleTime: this.totalCycleTime / 1000
+            weather: this.weather.type,
+            cycleProgress: Math.round(this.dayNightCycle.currentTime * 100),
+            fogEnabled: this.atmosphere.fog.enabled,
+            lightingEnabled: this.atmosphere.lighting.enabled
         };
     }
 } 
