@@ -169,7 +169,6 @@ export class Game {
             { id: 'collision', text: 'Collision: --' },
             { id: 'interaction', text: 'Interaction: --' },
             { id: 'time', text: 'Time: --' },
-            { id: 'weather', text: 'Weather: --' },
             { id: 'enhancements', text: 'Enhancements: --' },
             { id: 'assets', text: 'Assets: --' }
         ];
@@ -190,7 +189,6 @@ export class Game {
         this.collisionElement = document.getElementById('collision');
         this.interactionElement = document.getElementById('interaction');
         this.timeElement = document.getElementById('time');
-        this.weatherElement = document.getElementById('weather');
         this.enhancementsElement = document.getElementById('enhancements');
         this.assetsElement = document.getElementById('assets');
         
@@ -365,43 +363,8 @@ export class Game {
     }
 
     drawInstructions(ctx, width, height) {
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'left';
-        
-        const cameraMode = this.inputManager.cameraMode;
-        
-        const instructions = [
-            `Camera Mode: ${cameraMode} (Press P to toggle)`,
-            `Debug Info: Ctrl + \` to toggle`,
-            '',
-            cameraMode === 'fixed-angle' ? 
-                'Fixed-Angle Mode Controls:' :
-                'Player-Perspective Mode Controls:',
-            cameraMode === 'fixed-angle' ?
-                'WASD: Move in fixed directions' :
-                'A/D: Rotate player',
-            cameraMode === 'fixed-angle' ?
-                'Arrow Keys: Rotate camera view' :
-                'W: Move forward, S: Move backward (half speed)',
-            cameraMode === 'fixed-angle' ?
-                'Q/E: Strafe left/right' :
-                'Q/E: Strafe left/right',
-            '',
-            'R: Reset camera rotation to north',
-            'E: Interact with nearby objects',
-            'Mouse Wheel: Zoom in/out'
-        ];
-        
-        let y = 30;
-        instructions.forEach(instruction => {
-            if (instruction === '') {
-                y += 10; // Extra spacing for empty lines
-            } else {
-                ctx.fillText(instruction, 10, y);
-                y += 20;
-            }
-        });
+        // No text rendering on canvas - all info moved to debug panel
+        // This method is kept for potential future use but currently empty
     }
 
     updateFPS(currentTime) {
@@ -430,7 +393,8 @@ export class Game {
         
         if (this.cameraElement) {
             const cameraInfo = this.camera.getInfo();
-            this.cameraElement.textContent = `Camera: ${cameraInfo.position}, ${cameraInfo.zoom}`;
+            const cameraMode = this.inputManager.cameraMode;
+            this.cameraElement.textContent = `Camera: ${cameraInfo.position}, ${cameraInfo.zoom}, ${cameraInfo.rotation} (${cameraMode})`;
         }
         
         if (this.worldElement) {
@@ -452,10 +416,6 @@ export class Game {
             const timeOfDay = this.worldEnhancements.getTimeOfDay();
             const timeRemaining = this.worldEnhancements.getTimeRemaining();
             this.timeElement.textContent = `Time: ${timeOfDay} (${timeRemaining}s remaining)`;
-        }
-        
-        if (this.weatherElement) {
-            this.weatherElement.textContent = `Weather: ${this.worldEnhancements.weather}`;
         }
         
         if (this.enhancementsElement) {
