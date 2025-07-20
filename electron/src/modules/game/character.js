@@ -2,10 +2,10 @@ export class Player {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.angle = 0; // radians, 0 = up (north)
-        this.speed = 200; // pixels per second
-        this.rotSpeed = Math.PI * 0.001; // radians per second
         this.size = 20;
+        this.speed = 50; // Reduced from 200
+        this.rotSpeed = Math.PI * 2; // Increased from 0.8 to 2π radians per second (full rotation per second)
+        this.angle = 0;
         this.collisionRadius = 10;
         this.isMoving = false;
         this.colliding = false;
@@ -99,6 +99,7 @@ export class Player {
 
         // Rotation (A/D keys) - respect deltaTime properly
         const rotationAmount = this.rotSpeed * (deltaTime / 1000);
+        
         if (input.left) this.angle -= rotationAmount;
         if (input.right) this.angle += rotationAmount;
 
