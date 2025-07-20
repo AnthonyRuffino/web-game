@@ -1,4 +1,6 @@
 import { CanvasManager } from './canvas.js';
+import { Player } from './character.js';
+import { InputManager } from './input.js';
 
 class Game {
     constructor() {
@@ -12,11 +14,14 @@ class Game {
         
         // Initialize game systems
         this.canvasManager = new CanvasManager();
+        this.player = new Player();
+        this.inputManager = new InputManager();
         
         // Debug elements
         this.fpsElement = null;
         this.positionElement = null;
         this.versionElement = null;
+        this.inputElement = null;
     }
     
     async init() {
@@ -29,6 +34,15 @@ class Game {
             await this.canvasManager.init();
             this.canvas = this.canvasManager.canvas;
             this.ctx = this.canvasManager.ctx;
+            
+            // Initialize input system
+            this.inputManager.init();
+            
+            // Setup player
+            this.player.centerOnCanvas(this.canvas.width, this.canvas.height);
+            
+            // Setup input bindings
+            this.setupInputBindings();
             
             // Setup debug info
             this.setupDebugInfo(version);
@@ -50,10 +64,38 @@ class Game {
         }
     }
     
+    setupInputBindings() {
+        // Bind input to player movement
+        this.inputManager.bindAction('w', () => this.player.setKeyState('w', true));
+        this.inputManager.bindAction('s', () => this.player.setKeyState('s', true));
+        this.inputManager.bindAction('a', () => this.player.setKeyState('a', true));
+        this.inputManager.bindAction('d', () => this.player.setKeyState('d', true));
+        
+        this.inputManager.bindAction('ArrowUp', () => this.player.setKeyState('arrowup', true));
+        this.inputManager.bindAction('ArrowDown', () => this.player.setKeyState('arrowdown', true));
+        this.inputManager.bindAction('ArrowLeft', () => this.player.setKeyState('arrowleft', true));
+        this.inputManager.bindAction('ArrowRight', () => this.player.setKeyState('arrowright', true));
+        
+        // Handle key releases
+        document.addEventListener('keyup', (event) => {
+            this.player.setKeyState(event.key, false);
+        });
+    }
+    
     setupDebugInfo(version) {
         this.fpsElement = document.getElementById('fps');
         this.positionElement = document.getElementById('position');
         this.versionElement = document.getElementById('version');
+        
+        // Create input debug element if it doesn't exist
+        if (!document.getElementById('input')) {
+            const debugInfo = document.getElementById('debug-info');
+            const inputElement = document.createElement('div');
+            inputElement.id = 'input';
+            inputElement.textContent = 'Input: --';
+            debugInfo.appendChild(inputElement);
+        }
+        this.inputElement = document.getElementById('input');
         
         if (this.versionElement) {
             this.versionElement.textContent = `Version: ${version}`;
@@ -63,6 +105,8 @@ class Game {
     setupWindowResize() {
         window.electronAPI.onWindowResized(() => {
             this.canvasManager.resize();
+            // Re-center player on new canvas size
+            this.player.centerOnCanvas(this.canvas.width, this.canvas.height);
         });
     }
     
@@ -74,6 +118,7 @@ class Game {
     
     stop() {
         this.isRunning = false;
+        this.inputManager.destroy();
     }
     
     gameLoop(currentTime = performance.now()) {
@@ -99,6 +144,7 @@ class Game {
     update(deltaTime) {
         // Update game systems
         this.canvasManager.update(deltaTime);
+        this.player.update(deltaTime);
         
         // Update debug info
         this.updateDebugInfo();
@@ -117,25 +163,54 @@ class Game {
         const width = this.canvas.width;
         const height = this.canvas.height;
         
-        // Draw a simple message to show the game is working
+        // Draw background grid
+        this.drawGrid(ctx, width, height);
+        
+        // Draw player
+        this.player.render(ctx);
+        
+        // Draw instructions
+        this.drawInstructions(ctx, width, height);
+    }
+    
+    drawGrid(ctx, width, height) {
+        const gridSize = 50;
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 1;
+        
+        // Draw vertical lines
+        for (let x = 0; x <= width; x += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
+            ctx.stroke();
+        }
+        
+        // Draw horizontal lines
+        for (let y = 0; y <= height; y += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+        }
+    }
+    
+    drawInstructions(ctx, width, height) {
         ctx.fillStyle = '#ffffff';
-        ctx.font = '24px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Web Game - Electron', width / 2, height / 2 - 50);
-        
         ctx.font = '16px Arial';
-        ctx.fillText('Canvas is working!', width / 2, height / 2);
-        ctx.fillText('Press any key to continue...', width / 2, height / 2 + 30);
+        ctx.textAlign = 'left';
         
-        // Draw a simple shape to show rendering
-        ctx.fillStyle = '#00ff00';
-        ctx.fillRect(width / 2 - 25, height / 2 + 50, 50, 50);
+        const instructions = [
+            'Use WASD or Arrow Keys to move',
+            'Player position: (' + Math.round(this.player.x) + ', ' + Math.round(this.player.y) + ')',
+            'Moving: ' + (this.player.isMoving ? 'Yes' : 'No')
+        ];
         
-        // Draw a circle
-        ctx.fillStyle = '#ff0000';
-        ctx.beginPath();
-        ctx.arc(width / 2 + 100, height / 2 + 75, 25, 0, Math.PI * 2);
-        ctx.fill();
+        let y = 30;
+        instructions.forEach(instruction => {
+            ctx.fillText(instruction, 10, y);
+            y += 20;
+        });
     }
     
     updateFPS(currentTime) {
@@ -155,6 +230,11 @@ class Game {
         
         if (this.positionElement) {
             this.positionElement.textContent = `Canvas: ${this.canvas.width}x${this.canvas.height}`;
+        }
+        
+        if (this.inputElement) {
+            const pressedKeys = this.inputManager.getPressedKeys();
+            this.inputElement.textContent = `Input: ${pressedKeys.length > 0 ? pressedKeys.join(', ') : '--'}`;
         }
     }
     
