@@ -58,10 +58,11 @@ export class Player {
             moveY += Math.sin(cameraRotation);
         }
 
-        // Normalize diagonal movement
-        if (moveX !== 0 && moveY !== 0) {
-            moveX *= 0.707; // 1/√2
-            moveY *= 0.707;
+        // Normalize movement vector to ensure consistent speed
+        const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+        if (magnitude > 0) {
+            moveX /= magnitude;
+            moveY /= magnitude;
         }
 
         // Calculate new position
@@ -124,10 +125,11 @@ export class Player {
             moveY += Math.sin(this.angle);
         }
 
-        // Normalize diagonal movement
-        if (moveX !== 0 && moveY !== 0) {
-            moveX *= 0.707;
-            moveY *= 0.707;
+        // Normalize movement vector to ensure consistent speed
+        const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+        if (magnitude > 0) {
+            moveX /= magnitude;
+            moveY /= magnitude;
         }
 
         // Calculate new position

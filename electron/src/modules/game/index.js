@@ -1,13 +1,14 @@
-import { CanvasManager } from './canvas.js';
-import { Player } from './character.js';
 import { InputManager } from './input.js';
-import { DotsSystem } from './dots.js';
 import { Camera } from './camera.js';
-import { World } from './world.js';
+import { Player } from './character.js';
 import { CollisionSystem } from './collision.js';
 import { InteractionSystem } from './interactions.js';
-import { WorldEnhancements } from './world-enhancements.js';
+import { DotsSystem } from './dots.js';
+import { World } from './world.js';
 import { AssetManager } from './assets.js';
+import { WorldEnhancements } from './world-enhancements.js';
+import { CanvasManager } from './canvas.js';
+import { PersistenceSystem } from './persistence.js';
 
 export class Game {
     constructor() {
@@ -23,6 +24,7 @@ export class Game {
         this.interactionSystem = null;
         this.worldEnhancements = null;
         this.assetManager = null;
+        this.persistenceSystem = null;
         
         this.isRunning = false;
         this.lastTime = 0;
@@ -62,10 +64,12 @@ export class Game {
             this.interactionSystem = new InteractionSystem();
             this.worldEnhancements = new WorldEnhancements();
             this.assetManager = new AssetManager();
+            this.persistenceSystem = new PersistenceSystem();
             
             // Initialize systems
             this.inputManager.init();
             this.world.init();
+            this.persistenceSystem.init(this);
             
             // Load assets
             await this.assetManager.initializeImages();
@@ -139,11 +143,56 @@ export class Game {
                     console.log(`[Console] Current camera mode: ${this.inputManager.cameraMode}`);
                     break;
                     
+                case 'save':
+                    const saveSuccess = this.persistenceSystem.manualSave();
+                    console.log(`[Console] Manual save ${saveSuccess ? 'completed' : 'failed'}`);
+                    break;
+                    
+                case 'load':
+                    const loadSuccess = this.persistenceSystem.manualLoad();
+                    console.log(`[Console] Manual load ${loadSuccess ? 'completed' : 'failed'}`);
+                    break;
+                    
+                case 'clear':
+                    const clearSuccess = this.persistenceSystem.clearSavedState();
+                    console.log(`[Console] Save data ${clearSuccess ? 'cleared' : 'failed to clear'}`);
+                    break;
+                    
+                case 'saveinfo':
+                    const saveInfo = this.persistenceSystem.getSaveInfo();
+                    if (saveInfo) {
+                        console.log('[Console] Save info:', saveInfo);
+                    } else {
+                        console.log('[Console] No save data found');
+                    }
+                    break;
+                    
+                case 'setseed':
+                    const seed = parseInt(args[0]);
+                    if (isNaN(seed) || seed < 0) {
+                        console.log('[Console] Usage: cmd("setseed", <number>)');
+                    } else {
+                        this.world.setSeed(seed);
+                        console.log(`[Console] World seed set to: ${seed}`);
+                    }
+                    break;
+                    
+                case 'getseed':
+                    const currentSeed = this.world.getSeed();
+                    console.log(`[Console] Current world seed: ${currentSeed}`);
+                    break;
+                    
                 case 'help':
                     console.log('[Console] Available commands:');
                     console.log('  cmd("perspective") or cmd("toggle") - Toggle camera mode');
                     console.log('  cmd("reset") or cmd("resetcamera") - Reset camera rotation to north');
                     console.log('  cmd("mode") - Show current camera mode');
+                    console.log('  cmd("save") - Manual save game state');
+                    console.log('  cmd("load") - Manual load game state');
+                    console.log('  cmd("clear") - Clear saved game state');
+                    console.log('  cmd("saveinfo") - Show save information');
+                    console.log('  cmd("setseed", <number>) - Set world seed');
+                    console.log('  cmd("getseed") - Show current world seed');
                     console.log('  cmd("help") - Show this help');
                     break;
                     
@@ -280,6 +329,7 @@ export class Game {
         this.collisionSystem.update(deltaTime, this.world, this.player);
         this.interactionSystem.update?.(deltaTime);
         this.worldEnhancements.update?.(deltaTime);
+        this.persistenceSystem.update?.(deltaTime);
         
         // Update debug info
         this.updateDebugInfo();

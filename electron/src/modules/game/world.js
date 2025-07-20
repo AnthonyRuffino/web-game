@@ -73,6 +73,30 @@ export class World {
         console.log(`[World] World initialized with seed: ${this.config.seed}`);
     }
 
+    // Set world seed and regenerate world
+    setSeed(seed) {
+        if (typeof seed !== 'number' || seed < 0) {
+            console.warn('[World] Invalid seed provided, using default');
+            seed = 12345;
+        }
+        
+        console.log(`[World] Setting seed to: ${seed}`);
+        this.config.seed = seed;
+        
+        // Clear existing chunks to force regeneration with new seed
+        this.chunkCache.clear();
+        
+        // Re-initialize world with new seed
+        this.init();
+        
+        console.log(`[World] World regenerated with seed: ${this.config.seed}`);
+    }
+
+    // Get current seed
+    getSeed() {
+        return this.config.seed;
+    }
+
     // World dimensions
     get width() {
         return this.config.chunkCount * this.config.chunkSize * this.config.tileSize;
