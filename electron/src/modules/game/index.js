@@ -1,6 +1,8 @@
 import { CanvasManager } from './canvas.js';
 import { Player } from './character.js';
 import { InputManager } from './input.js';
+import { DotsSystem } from './dots.js';
+import { Camera } from './camera.js';
 
 class Game {
     constructor() {
@@ -16,12 +18,15 @@ class Game {
         this.canvasManager = new CanvasManager();
         this.player = new Player();
         this.inputManager = new InputManager();
+        this.dotsSystem = new DotsSystem();
+        this.camera = new Camera();
         
         // Debug elements
         this.fpsElement = null;
         this.positionElement = null;
         this.versionElement = null;
         this.inputElement = null;
+        this.cameraElement = null;
     }
     
     async init() {
@@ -34,6 +39,9 @@ class Game {
             await this.canvasManager.init();
             this.canvas = this.canvasManager.canvas;
             this.ctx = this.canvasManager.ctx;
+            
+            // Initialize camera
+            this.camera.init(this.canvas.width, this.canvas.height);
             
             // Initialize input system
             this.inputManager.init();
@@ -97,6 +105,16 @@ class Game {
         }
         this.inputElement = document.getElementById('input');
         
+        // Create camera debug element if it doesn't exist
+        if (!document.getElementById('camera')) {
+            const debugInfo = document.getElementById('debug-info');
+            const cameraElement = document.createElement('div');
+            cameraElement.id = 'camera';
+            cameraElement.textContent = 'Camera: --';
+            debugInfo.appendChild(cameraElement);
+        }
+        this.cameraElement = document.getElementById('camera');
+        
         if (this.versionElement) {
             this.versionElement.textContent = `Version: ${version}`;
         }
@@ -105,6 +123,7 @@ class Game {
     setupWindowResize() {
         window.electronAPI.onWindowResized(() => {
             this.canvasManager.resize();
+            this.camera.resize(this.canvas.width, this.canvas.height);
             // Re-center player on new canvas size
             this.player.centerOnCanvas(this.canvas.width, this.canvas.height);
         });
@@ -145,6 +164,10 @@ class Game {
         // Update game systems
         this.canvasManager.update(deltaTime);
         this.player.update(deltaTime);
+        this.camera.update(deltaTime);
+        
+        // Update camera to follow player
+        this.camera.follow(this.player.x, this.player.y);
         
         // Update debug info
         this.updateDebugInfo();
@@ -163,36 +186,21 @@ class Game {
         const width = this.canvas.width;
         const height = this.canvas.height;
         
-        // Draw background grid
-        this.drawGrid(ctx, width, height);
+        // Apply camera transform
+        ctx.save();
+        ctx.translate(-this.camera.x + width / 2, -this.camera.y + height / 2);
+        
+        // Draw background dots
+        this.dotsSystem.render(ctx, this.camera.x, this.camera.y, width, height, this.camera.zoom);
         
         // Draw player
         this.player.render(ctx);
         
-        // Draw instructions
+        // Restore transform
+        ctx.restore();
+        
+        // Draw UI elements (not affected by camera)
         this.drawInstructions(ctx, width, height);
-    }
-    
-    drawGrid(ctx, width, height) {
-        const gridSize = 50;
-        ctx.strokeStyle = '#333333';
-        ctx.lineWidth = 1;
-        
-        // Draw vertical lines
-        for (let x = 0; x <= width; x += gridSize) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, height);
-            ctx.stroke();
-        }
-        
-        // Draw horizontal lines
-        for (let y = 0; y <= height; y += gridSize) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(width, y);
-            ctx.stroke();
-        }
     }
     
     drawInstructions(ctx, width, height) {
@@ -203,6 +211,7 @@ class Game {
         const instructions = [
             'Use WASD or Arrow Keys to move',
             'Player position: (' + Math.round(this.player.x) + ', ' + Math.round(this.player.y) + ')',
+            'Camera position: (' + Math.round(this.camera.x) + ', ' + Math.round(this.camera.y) + ')',
             'Moving: ' + (this.player.isMoving ? 'Yes' : 'No')
         ];
         
@@ -235,6 +244,11 @@ class Game {
         if (this.inputElement) {
             const pressedKeys = this.inputManager.getPressedKeys();
             this.inputElement.textContent = `Input: ${pressedKeys.length > 0 ? pressedKeys.join(', ') : '--'}`;
+        }
+        
+        if (this.cameraElement) {
+            const cameraState = this.camera.getState();
+            this.cameraElement.textContent = `Camera: (${Math.round(cameraState.position.x)}, ${Math.round(cameraState.position.y)})`;
         }
     }
     
