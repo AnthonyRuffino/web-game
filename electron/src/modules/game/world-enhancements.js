@@ -3,8 +3,21 @@
 export class WorldEnhancements {
     constructor(world) {
         this.world = world;
-        this.dayNightCycle = 0; // 0-1, where 0 is dawn, 0.5 is noon, 1 is dusk
-        this.cycleSpeed = 0.001; // How fast the day/night cycle progresses
+        this.dayNightCycle = 0; // 0-1, where 0 is dawn, 0.25 is morning, 0.5 is noon, 0.75 is afternoon, 1 is dusk
+        
+        // Configurable day/night cycle timing (in milliseconds)
+        this.cycleConfig = {
+            dawn: 60000,      // 1 minute
+            morning: 60000,   // 1 minute  
+            afternoon: 60000, // 1 minute
+            evening: 60000    // 1 minute
+        };
+        
+        // Calculate total cycle time and speed
+        this.totalCycleTime = this.cycleConfig.dawn + this.cycleConfig.morning + 
+                             this.cycleConfig.afternoon + this.cycleConfig.evening;
+        this.cycleSpeed = 1 / this.totalCycleTime; // Progress per millisecond
+        
         this.weather = 'clear'; // clear, rain, fog
         this.weatherIntensity = 0; // 0-1 intensity
         this.weatherTimer = 0;
@@ -199,15 +212,55 @@ export class WorldEnhancements {
         return 'Evening';
     }
 
+    // Get time remaining in current period
+    getTimeRemaining() {
+        const cycle = this.dayNightCycle;
+        let remainingMs = 0;
+        
+        if (cycle < 0.25) {
+            // Dawn period
+            remainingMs = (0.25 - cycle) / this.cycleSpeed;
+        } else if (cycle < 0.5) {
+            // Morning period
+            remainingMs = (0.5 - cycle) / this.cycleSpeed;
+        } else if (cycle < 0.75) {
+            // Afternoon period
+            remainingMs = (0.75 - cycle) / this.cycleSpeed;
+        } else {
+            // Evening period
+            remainingMs = (1 - cycle) / this.cycleSpeed;
+        }
+        
+        return Math.ceil(remainingMs / 1000); // Return seconds
+    }
+
+    // Set cycle timing for different periods
+    setCycleTiming(dawn, morning, afternoon, evening) {
+        this.cycleConfig = {
+            dawn: dawn || 60000,
+            morning: morning || 60000,
+            afternoon: afternoon || 60000,
+            evening: evening || 60000
+        };
+        
+        this.totalCycleTime = this.cycleConfig.dawn + this.cycleConfig.morning + 
+                             this.cycleConfig.afternoon + this.cycleConfig.evening;
+        this.cycleSpeed = 1 / this.totalCycleTime;
+        
+        console.log(`[WorldEnhancements] Cycle timing updated: ${this.totalCycleTime / 1000}s total`);
+    }
+
     // Get enhancement statistics for debugging
     getStats() {
         return {
             dayNightCycle: this.dayNightCycle,
             timeOfDay: this.getTimeOfDay(),
+            timeRemaining: this.getTimeRemaining(),
             weather: this.weather,
             weatherIntensity: this.weatherIntensity,
             lighting: this.getLighting(),
-            skyColor: this.getSkyColor()
+            skyColor: this.getSkyColor(),
+            totalCycleTime: this.totalCycleTime / 1000
         };
     }
 } 

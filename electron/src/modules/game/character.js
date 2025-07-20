@@ -1,121 +1,98 @@
 export class Player {
-    constructor(x = 0, y = 0) {
+    constructor(x, y) {
         this.x = x;
         this.y = y;
         this.speed = 200; // pixels per second
         this.size = 20;
-        this.color = '#00ff00';
         this.velocity = { x: 0, y: 0 };
         this.isMoving = false;
-        
-        // Movement state
-        this.keys = {
-            up: false,
-            down: false,
-            left: false,
-            right: false
-        };
+        this.keyStates = new Map();
+        this.collisionRadius = 10; // Collision radius for the player
     }
-    
+
+    setKeyState(key, isPressed) {
+        this.keyStates.set(key.toLowerCase(), isPressed);
+    }
+
     update(deltaTime) {
-        // Convert deltaTime from milliseconds to seconds
-        const dt = deltaTime / 1000;
-        
-        // Reset velocity
-        this.velocity.x = 0;
-        this.velocity.y = 0;
-        
-        // Calculate movement based on pressed keys
-        if (this.keys.up) this.velocity.y -= this.speed;
-        if (this.keys.down) this.velocity.y += this.speed;
-        if (this.keys.left) this.velocity.x -= this.speed;
-        if (this.keys.right) this.velocity.x += this.speed;
-        
+        // Calculate movement based on key states
+        let moveX = 0;
+        let moveY = 0;
+
+        if (this.keyStates.get('w') || this.keyStates.get('arrowup')) moveY -= 1;
+        if (this.keyStates.get('s') || this.keyStates.get('arrowdown')) moveY += 1;
+        if (this.keyStates.get('a') || this.keyStates.get('arrowleft')) moveX -= 1;
+        if (this.keyStates.get('d') || this.keyStates.get('arrowright')) moveX += 1;
+
         // Normalize diagonal movement
-        if (this.velocity.x !== 0 && this.velocity.y !== 0) {
-            this.velocity.x *= 0.707; // 1/√2
-            this.velocity.y *= 0.707;
+        if (moveX !== 0 && moveY !== 0) {
+            moveX *= 0.707; // 1/√2
+            moveY *= 0.707;
         }
-        
-        // Update position
-        this.x += this.velocity.x * dt;
-        this.y += this.velocity.y * dt;
-        
+
+        // Calculate new position
+        const newX = this.x + moveX * this.speed * (deltaTime / 1000);
+        const newY = this.y + moveY * this.speed * (deltaTime / 1000);
+
+        // Check collision before moving (if collision system is available)
+        if (window.game && window.game.collisionSystem) {
+            const collisionResponse = window.game.collisionSystem.getCollisionResponse(
+                this.x, this.y, newX, newY, this.collisionRadius
+            );
+            
+            // Only move if not blocked
+            if (!collisionResponse.blocked) {
+                this.x = collisionResponse.x;
+                this.y = collisionResponse.y;
+            }
+        } else {
+            // Fallback: move without collision detection
+            this.x = newX;
+            this.y = newY;
+        }
+
+        // Update velocity for rendering
+        this.velocity.x = moveX * this.speed;
+        this.velocity.y = moveY * this.speed;
+
         // Update movement state
-        this.isMoving = this.velocity.x !== 0 || this.velocity.y !== 0;
+        this.isMoving = moveX !== 0 || moveY !== 0;
     }
-    
+
     render(ctx) {
-        // Save context state
         ctx.save();
-        
-        // Draw player as a circle
-        ctx.fillStyle = this.color;
+
+        // Draw player body
+        ctx.fillStyle = '#00ff00';
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
         ctx.fill();
-        
-        // Add a border
+
+        // Draw player border
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.stroke();
-        
-        // Add direction indicator if moving
+
+        // Draw direction indicator when moving
         if (this.isMoving) {
+            const angle = Math.atan2(this.velocity.y, this.velocity.x);
+            const indicatorLength = this.size / 2 + 5;
+            const endX = this.x + Math.cos(angle) * indicatorLength;
+            const endY = this.y + Math.sin(angle) * indicatorLength;
+
             ctx.strokeStyle = '#ffff00';
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(this.x, this.y);
-            ctx.lineTo(this.x + this.velocity.x * 0.1, this.y + this.velocity.y * 0.1);
+            ctx.lineTo(endX, endY);
             ctx.stroke();
         }
-        
-        // Restore context state
+
         ctx.restore();
     }
-    
-    // Input handling methods
-    setKeyState(key, pressed) {
-        switch (key.toLowerCase()) {
-            case 'w':
-            case 'arrowup':
-                this.keys.up = pressed;
-                break;
-            case 's':
-            case 'arrowdown':
-                this.keys.down = pressed;
-                break;
-            case 'a':
-            case 'arrowleft':
-                this.keys.left = pressed;
-                break;
-            case 'd':
-            case 'arrowright':
-                this.keys.right = pressed;
-                break;
-        }
-    }
-    
-    // Get player bounds for collision detection
-    getBounds() {
-        return {
-            left: this.x - this.size,
-            right: this.x + this.size,
-            top: this.y - this.size,
-            bottom: this.y + this.size
-        };
-    }
-    
-    // Check if player is within canvas bounds
-    isInBounds(canvasWidth, canvasHeight) {
-        const bounds = this.getBounds();
-        return bounds.left >= 0 && bounds.right <= canvasWidth &&
-               bounds.top >= 0 && bounds.bottom <= canvasHeight;
-    }
-    
-    // Center player on canvas
-    centerOnCanvas(canvasWidth, canvasHeight) {
-        this.x = canvasWidth / 2;
-        this.y = canvasHeight / 2;
+
+    centerOnCanvas(width, height) {
+        this.x = width / 2;
+        this.y = height / 2;
     }
 } 

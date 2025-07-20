@@ -352,6 +352,10 @@ export class World {
 
     // Render a single chunk
     renderChunk(ctx, chunk) {
+        // Render biome background
+        const biome = this.chunkBiomeMap.get(this.getChunkKey(chunk.x, chunk.y)) || 'plains';
+        this.renderBiomeBackground(ctx, chunk, biome);
+        
         // Render chunk entities
         if (chunk.entities && Array.isArray(chunk.entities)) {
             // Sort entities for correct render order:
@@ -368,6 +372,75 @@ export class World {
             renderOrder.forEach(entity => {
                 entity.render(ctx);
             });
+        }
+    }
+
+    // Render biome background for a chunk
+    renderBiomeBackground(ctx, chunk, biome) {
+        const chunkSize = this.config.chunkSize * this.config.tileSize; // 2048 pixels
+        const tileSize = this.config.tileSize; // 32 pixels
+        
+        ctx.save();
+        
+        // Set biome-specific colors and patterns
+        if (biome === 'plains') {
+            this.renderPlainsBackground(ctx, chunk, chunkSize, tileSize);
+        } else if (biome === 'desert') {
+            this.renderDesertBackground(ctx, chunk, chunkSize, tileSize);
+        }
+        
+        ctx.restore();
+    }
+
+    // Render plains biome background
+    renderPlainsBackground(ctx, chunk, chunkSize, tileSize) {
+        // Base grass color
+        ctx.fillStyle = '#8FBC8F';
+        ctx.fillRect(chunk.worldX, chunk.worldY, chunkSize, chunkSize);
+        
+        // Add grass pattern variation
+        for (let tileY = 0; tileY < this.config.chunkSize; tileY++) {
+            for (let tileX = 0; tileX < this.config.chunkSize; tileX++) {
+                const worldTileX = chunk.x * this.config.chunkSize + tileX;
+                const worldTileY = chunk.y * this.config.chunkSize + tileY;
+                
+                // Use hash for deterministic variation
+                const hash = this.simpleHash(`${this.config.seed}-${worldTileX}-${worldTileY}`);
+                
+                if (hash % 4 === 0) {
+                    // Add darker grass patches
+                    ctx.fillStyle = '#7CB342';
+                    const x = chunk.worldX + tileX * tileSize;
+                    const y = chunk.worldY + tileY * tileSize;
+                    ctx.fillRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
+                }
+            }
+        }
+    }
+
+    // Render desert biome background
+    renderDesertBackground(ctx, chunk, chunkSize, tileSize) {
+        // Base sand color
+        ctx.fillStyle = '#F4A460';
+        ctx.fillRect(chunk.worldX, chunk.worldY, chunkSize, chunkSize);
+        
+        // Add sand pattern variation
+        for (let tileY = 0; tileY < this.config.chunkSize; tileY++) {
+            for (let tileX = 0; tileX < this.config.chunkSize; tileX++) {
+                const worldTileX = chunk.x * this.config.chunkSize + tileX;
+                const worldTileY = chunk.y * this.config.chunkSize + tileY;
+                
+                // Use hash for deterministic variation
+                const hash = this.simpleHash(`${this.config.seed}-${worldTileX}-${worldTileY}`);
+                
+                if (hash % 3 === 0) {
+                    // Add lighter sand patches
+                    ctx.fillStyle = '#DEB887';
+                    const x = chunk.worldX + tileX * tileSize;
+                    const y = chunk.worldY + tileY * tileSize;
+                    ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+                }
+            }
         }
     }
 

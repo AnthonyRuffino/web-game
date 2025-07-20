@@ -242,6 +242,9 @@ export class Game {
         ctx.font = '16px Arial';
         ctx.textAlign = 'left';
         
+        const timeOfDay = this.worldEnhancements.getTimeOfDay();
+        const timeRemaining = this.worldEnhancements.getTimeRemaining();
+        
         const instructions = [
             'Use WASD or Arrow Keys to move',
             'Press E to interact with nearby objects',
@@ -249,7 +252,7 @@ export class Game {
             'Camera position: (' + Math.round(this.camera.x) + ', ' + Math.round(this.camera.y) + ')',
             'Moving: ' + (this.player.isMoving ? 'Yes' : 'No'),
             'Loaded chunks: ' + this.world.chunkCache.size,
-            'Time: ' + this.worldEnhancements.getTimeOfDay(),
+            'Time: ' + timeOfDay + ' (' + timeRemaining + 's remaining)',
             'Weather: ' + this.worldEnhancements.weather
         ];
         
