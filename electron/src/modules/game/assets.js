@@ -1,6 +1,10 @@
 // Asset management system with 3-tier fallback
 // Filesystem → localStorage → procedural generation
 
+import { GrassEntity } from './entities/grass.js';
+import { TreeEntity } from './entities/tree.js';
+import { RockEntity } from './entities/rock.js';
+
 export class AssetManager {
     constructor() {
         // Asset directory in user's home folder
@@ -36,15 +40,26 @@ export class AssetManager {
     async initializeImages() {
         console.log('[AssetManager] Initializing all required images...');
         
-        // Also clear any localStorage entries
-        localStorage.removeItem('image:background-plains');
-        localStorage.removeItem('image:background-desert');
-        
         const requiredImages = [
-            // Entity images
-            { type: 'entity', name: 'grass', config: { size: 32, bladeColor: '#81C784', bladeWidth: 1.5, clusterCount: 3, bladeCount: 5, bladeLength: 10, bladeAngleVariation: 30, opacity: 1.0 } },
-            { type: 'entity', name: 'tree', config: { size: 32, imageHeight: 96, trunkWidth: 12, trunkHeight: 60, trunkColor: '#5C4033', foliageColor: '#1B5E20', foliageRadius: 24, opacity: 1.0 } },
-            { type: 'entity', name: 'rock', config: { size: 20, baseColor: '#757575', strokeColor: '#424242', textureColor: '#424242', opacity: 1.0, textureSpots: 3, strokeWidth: 2 } },
+            // Entity images - use entity class cache keys
+            { 
+                type: 'entity', 
+                name: 'grass', 
+                entityClass: GrassEntity,
+                config: { size: 32, bladeColor: '#81C784', bladeWidth: 1.5, clusterCount: 3, bladeCount: 5, bladeLength: 10, bladeAngleVariation: 30, opacity: 1.0 } 
+            },
+            { 
+                type: 'entity', 
+                name: 'tree', 
+                entityClass: TreeEntity,
+                config: { size: 24, imageHeight: 72, trunkWidth: 12, trunkHeight: 45, trunkColor: '#5C4033', foliageColor: '#1B5E20', foliageRadius: 18, opacity: 1.0, fixedScreenAngle: 0, drawOffsetY: -42 } 
+            },
+            { 
+                type: 'entity', 
+                name: 'rock', 
+                entityClass: RockEntity,
+                config: { size: 20, baseColor: '#757575', strokeColor: '#424242', textureColor: '#424242', opacity: 1.0, textureSpots: 3, strokeWidth: 2 } 
+            },
             
             // Biome images - using the same cache keys as entityRenderer
             { type: 'background', name: 'plains', config: { size: 640, tileSize: 32, chunkSize: 64, seed: 12345 } },
@@ -53,7 +68,7 @@ export class AssetManager {
 
         console.log('[AssetManager] Required images:', requiredImages.map(img => `${img.type}-${img.name}`));
 
-        const promises = requiredImages.map(image => this.ensureImageLoaded(image.type, image.name, image.config));
+        const promises = requiredImages.map(image => this.ensureImageLoaded(image.type, image.name, image.config, image.entityClass));
         
         try {
             await Promise.all(promises);
@@ -65,9 +80,16 @@ export class AssetManager {
     }
 
     // Ensure an image is loaded (filesystem → localStorage → generation)
-    async ensureImageLoaded(type, imageName, config = {}) {
-        // Use the same cache key pattern as entityRenderer for backgrounds
-        const cacheKey = type === 'background' ? `image:background-${imageName}` : `image:${type}-${imageName}`;
+    async ensureImageLoaded(type, imageName, config = {}, entityClass = null) {
+        // Use entity class cache key for entities, otherwise use background pattern
+        let cacheKey;
+        if (type === 'entity' && entityClass) {
+            cacheKey = entityClass.getCacheKey(config);
+        } else if (type === 'background') {
+            cacheKey = `image:background-${imageName}`;
+        } else {
+            cacheKey = `image:${type}-${imageName}`;
+        }
         
         console.log(`[AssetManager] ensureImageLoaded called for: ${cacheKey}`);
         
@@ -98,10 +120,10 @@ export class AssetManager {
                     img.onload = () => {
                         const cacheObj = {
                             image: img,
-                            size: img.width || 640,
-                            fixedScreenAngle: null,
-                            drawOffsetX: 0,
-                            drawOffsetY: 0
+                            size: img.width || config.size || 640,
+                            fixedScreenAngle: config.fixedScreenAngle || null,
+                            drawOffsetX: config.drawOffsetX || 0,
+                            drawOffsetY: config.drawOffsetY || 0
                         };
                         this.imageCache.set(cacheKey, cacheObj);
                         console.log(`[AssetManager] Cached image object from localStorage: ${cacheKey}, size: ${img.width}x${img.height}`);
@@ -115,7 +137,7 @@ export class AssetManager {
 
             // Tier 3: Procedural generation
             console.log(`[AssetManager] Generating image: ${cacheKey}`);
-            const generatedImage = await this.generateImage(type, imageName, config);
+            const generatedImage = await this.generateImage(type, imageName, config, entityClass);
             if (generatedImage) {
                 console.log(`[AssetManager] Generated image data URL for: ${cacheKey}`);
                 // Cache the generated image
@@ -128,10 +150,10 @@ export class AssetManager {
                     img.onload = () => {
                         const cacheObj = {
                             image: img,
-                            size: img.width || 640,
-                            fixedScreenAngle: null,
-                            drawOffsetX: 0,
-                            drawOffsetY: 0
+                            size: img.width || config.size || 640,
+                            fixedScreenAngle: config.fixedScreenAngle || null,
+                            drawOffsetX: config.drawOffsetX || 0,
+                            drawOffsetY: config.drawOffsetY || 0
                         };
                         this.imageCache.set(cacheKey, cacheObj);
                         console.log(`[AssetManager] Cached generated image object: ${cacheKey}, size: ${img.width}x${img.height}`);
@@ -186,7 +208,7 @@ export class AssetManager {
     }
 
     // Generate image based on type and name
-    async generateImage(type, imageName, config = {}) {
+    async generateImage(type, imageName, config = {}, entityClass = null) {
         try {
             let svgData = null;
 
@@ -196,7 +218,7 @@ export class AssetManager {
                     svgData = this.generateBackgroundSVG(imageName, config);
                     break;
                 case 'entity':
-                    svgData = this.generateEntitySVG(imageName, config);
+                    svgData = this.generateEntitySVG(imageName, config, entityClass);
                     break;
                 default:
                     console.warn(`[AssetManager] Unknown image type: ${type}`);
@@ -228,7 +250,7 @@ export class AssetManager {
     }
 
     // Generate entity SVG
-    generateEntitySVG(entityName, config) {
+    generateEntitySVG(entityName, config, entityClass) {
         switch (entityName) {
             case 'grass':
                 return this.generateGrassSVG(config);

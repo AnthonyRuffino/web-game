@@ -204,29 +204,49 @@ export class Game {
     }
 
     update(deltaTime) {
-        // Update game systems
-        this.canvasManager.update(deltaTime);
-        this.player.update(deltaTime);
+        // Update input
+        this.inputManager.update?.(deltaTime);
+        
+        // Handle mouse wheel zoom
+        const wheelDelta = this.inputManager.getMouseWheelDelta();
+        if (wheelDelta !== 0) {
+            this.camera.handleZoom(wheelDelta);
+        }
+        
+        // Update camera
         this.camera.update(deltaTime);
-        this.worldEnhancements.update(deltaTime);
+        
+        // Update player
+        this.player.update(deltaTime);
         
         // Update camera to follow player
         this.camera.follow(this.player.x, this.player.y);
         
-        // Update collision system
-        this.collisionSystem.updateCollisions(this.world, this.player);
-        
-        // Update debug info
-        this.updateDebugInfo();
+        // Update other systems
+        this.dotsSystem.update?.(deltaTime);
+        this.world.update?.(deltaTime);
+        this.collisionSystem.update(deltaTime, this.world, this.player);
+        this.interactionSystem.update?.(deltaTime);
+        this.worldEnhancements.update?.(deltaTime);
     }
 
     render() {
-        // Clear canvas completely before rendering
-        this.ctx.fillStyle = '#1a1a1a';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        if (!this.ctx) return;
         
-        // Render game content
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Apply camera transform
+        this.camera.applyTransform(this.ctx);
+        
+        // Render game content (world space)
         this.renderGameContent();
+        
+        // Restore camera transform
+        this.camera.restoreTransform(this.ctx);
+        
+        // Render UI elements (screen space)
+        this.renderUI();
     }
 
     renderGameContent() {
@@ -234,18 +254,34 @@ export class Game {
         const width = this.canvas.width;
         const height = this.canvas.height;
         
-        // Apply camera transform for world rendering
-        ctx.save();
-        ctx.translate(-this.camera.x + width / 2, -this.camera.y + height / 2);
-        
         // Draw background dots (dots handle their own world coordinates)
         this.dotsSystem.render(ctx, this.camera.x, this.camera.y, width, height, this.camera.zoom);
         
         // Draw world (chunks, entities, etc.) - world handles its own transforms
-        this.world.render(ctx, this.camera.x, this.camera.y, width, height);
+        // Returns fixed angle entities for rendering after player
+        const fixedAngleEntities = this.world.render(ctx, this.camera.x, this.camera.y, width, height);
         
         // Draw player (player coordinates are in world space)
         this.player.render(ctx);
+        
+        // Draw fixed angle entities (trees) after player (matching core/world.js logic)
+        if (fixedAngleEntities && Array.isArray(fixedAngleEntities)) {
+            // Sort by Y position (descending - higher Y renders first)
+            fixedAngleEntities.sort((a, b) => b.y - a.y);
+            
+            fixedAngleEntities.forEach(entity => {
+                if (entity.render) {
+                    ctx.save();
+                    
+                    // Use renderY if specified, otherwise use entity.y
+                    const renderY = entity.renderY !== undefined ? entity.renderY : entity.y;
+                    ctx.translate(entity.x, renderY);
+                    
+                    entity.render(ctx);
+                    ctx.restore();
+                }
+            });
+        }
         
         // Draw interaction indicators
         this.interactionSystem.renderInteractionIndicators(ctx, this.world, this.player);
@@ -253,14 +289,14 @@ export class Game {
         // Draw collision debug (if enabled)
         // this.collisionSystem.renderCollisionDebug(ctx, this.world, this.player);
         
-        // Restore camera transform
-        ctx.restore();
-        
         // Draw atmospheric effects (in screen space)
         this.worldEnhancements.renderAtmosphere(ctx, this.camera.x, this.camera.y, width, height);
-        
-        // Draw UI elements (not affected by camera) - in screen space
-        this.drawInstructions(ctx, width, height);
+    }
+
+    renderUI() {
+        // UI elements that should not be affected by camera transform
+        // This is called after camera.restoreTransform() in the main render method
+        this.drawInstructions(this.ctx, this.canvas.width, this.canvas.height);
     }
 
     drawInstructions(ctx, width, height) {
@@ -309,13 +345,13 @@ export class Game {
         }
         
         if (this.inputElement) {
-            const pressedKeys = this.inputManager.getPressedKeys();
-            this.inputElement.textContent = `Input: ${pressedKeys.length > 0 ? pressedKeys.join(', ') : '--'}`;
+            const inputState = this.inputManager.getInputState();
+            this.inputElement.textContent = `Input: ${inputState.pressedKeys}`;
         }
         
         if (this.cameraElement) {
-            const cameraState = this.camera.getState();
-            this.cameraElement.textContent = `Camera: (${Math.round(cameraState.position.x)}, ${Math.round(cameraState.position.y)})`;
+            const cameraInfo = this.camera.getInfo();
+            this.cameraElement.textContent = `Camera: ${cameraInfo.position}, ${cameraInfo.zoom}`;
         }
         
         if (this.worldElement) {

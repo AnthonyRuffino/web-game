@@ -1,110 +1,95 @@
 export class Camera {
-    constructor() {
+    constructor(width, height) {
         this.x = 0;
         this.y = 0;
-        this.width = 0;
-        this.height = 0;
+        this.width = width;
+        this.height = height;
         this.zoom = 1;
-        this.targetX = 0;
-        this.targetY = 0;
-        this.followSpeed = 0.1; // Smooth following speed
+        this.minZoom = 0.5;
+        this.maxZoom = 3.0;
+        this.zoomSpeed = 0.1;
+        this.followSpeed = 0.1;
+        this.targetZoom = 1;
     }
-    
-    // Initialize camera with canvas dimensions
-    init(canvasWidth, canvasHeight) {
-        this.width = canvasWidth;
-        this.height = canvasHeight;
-        this.x = canvasWidth / 2;
-        this.y = canvasHeight / 2;
-        this.targetX = this.x;
-        this.targetY = this.y;
-        
-        console.log('[Camera] Camera initialized:', { width: this.width, height: this.height });
+
+    // Handle mouse wheel zoom
+    handleZoom(delta) {
+        // Calculate zoom change based on wheel delta
+        // delta > 0 means scroll down (zoom out), delta < 0 means scroll up (zoom in)
+        const zoomChange = delta > 0 ? 0.9 : 1.1;
+        this.targetZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * zoomChange));
     }
-    
-    // Update camera position (called each frame)
+
+    // Update zoom with smooth transitions
     update(deltaTime) {
-        // Smooth follow target
-        const dt = deltaTime / 1000;
-        const speed = this.followSpeed * dt * 60; // Normalize to 60 FPS
-        
-        this.x += (this.targetX - this.x) * speed;
-        this.y += (this.targetY - this.y) * speed;
+        // Smooth zoom transition
+        if (Math.abs(this.zoom - this.targetZoom) > 0.01) {
+            this.zoom += (this.targetZoom - this.zoom) * this.zoomSpeed;
+        }
     }
-    
-    // Set camera to follow a target (like the player)
+
+    // Follow a target with smooth movement
     follow(targetX, targetY) {
-        this.targetX = targetX;
-        this.targetY = targetY;
+        this.x += (targetX - this.x) * this.followSpeed;
+        this.y += (targetY - this.y) * this.followSpeed;
     }
-    
-    // Set camera position directly
-    setPosition(x, y) {
-        this.x = x;
-        this.y = y;
-        this.targetX = x;
-        this.targetY = y;
+
+    // Apply camera transform to context
+    applyTransform(ctx) {
+        ctx.save();
+        
+        // Apply zoom and translation
+        ctx.translate(this.width / 2, this.height / 2);
+        ctx.scale(this.zoom, this.zoom);
+        ctx.translate(-this.x, -this.y);
     }
-    
-    // Get camera bounds for rendering calculations
+
+    // Restore camera transform
+    restoreTransform(ctx) {
+        ctx.restore();
+    }
+
+    // Convert screen coordinates to world coordinates
+    screenToWorld(screenX, screenY) {
+        const worldX = (screenX - this.width / 2) / this.zoom + this.x;
+        const worldY = (screenY - this.height / 2) / this.zoom + this.y;
+        return { x: worldX, y: worldY };
+    }
+
+    // Convert world coordinates to screen coordinates
+    worldToScreen(worldX, worldY) {
+        const screenX = (worldX - this.x) * this.zoom + this.width / 2;
+        const screenY = (worldY - this.y) * this.zoom + this.height / 2;
+        return { x: screenX, y: screenY };
+    }
+
+    // Get camera bounds in world coordinates
     getBounds() {
-        const halfWidth = this.width / 2;
-        const halfHeight = this.height / 2;
+        const halfWidth = this.width / (2 * this.zoom);
+        const halfHeight = this.height / (2 * this.zoom);
         
         return {
             left: this.x - halfWidth,
             right: this.x + halfWidth,
             top: this.y - halfHeight,
             bottom: this.y + halfHeight,
-            width: this.width,
-            height: this.height
+            width: this.width / this.zoom,
+            height: this.height / this.zoom
         };
     }
-    
-    // Convert world coordinates to screen coordinates
-    worldToScreen(worldX, worldY) {
+
+    // Resize camera for new window size
+    resize(width, height) {
+        this.width = width;
+        this.height = height;
+        console.log('[Camera] Camera resized:', { width, height });
+    }
+
+    // Get camera info for debugging
+    getInfo() {
         return {
-            x: worldX - this.x + this.width / 2,
-            y: worldY - this.y + this.height / 2
-        };
-    }
-    
-    // Convert screen coordinates to world coordinates
-    screenToWorld(screenX, screenY) {
-        return {
-            x: screenX + this.x - this.width / 2,
-            y: screenY + this.y - this.height / 2
-        };
-    }
-    
-    // Check if a world position is visible in the camera view
-    isVisible(worldX, worldY, margin = 0) {
-        const bounds = this.getBounds();
-        return worldX >= bounds.left - margin &&
-               worldX <= bounds.right + margin &&
-               worldY >= bounds.top - margin &&
-               worldY <= bounds.bottom + margin;
-    }
-    
-    // Resize camera for new canvas dimensions
-    resize(newWidth, newHeight) {
-        this.width = newWidth;
-        this.height = newHeight;
-        console.log('[Camera] Camera resized:', { width: this.width, height: this.height });
-    }
-    
-    // Set zoom level
-    setZoom(zoom) {
-        this.zoom = Math.max(0.1, Math.min(5, zoom)); // Clamp between 0.1 and 5
-    }
-    
-    // Get camera state for debugging
-    getState() {
-        return {
-            position: { x: this.x, y: this.y },
-            target: { x: this.targetX, y: this.targetY },
-            dimensions: { width: this.width, height: this.height },
-            zoom: this.zoom,
+            position: `(${this.x.toFixed(1)}, ${this.y.toFixed(1)})`,
+            zoom: `${this.zoom.toFixed(2)}x`,
             bounds: this.getBounds()
         };
     }

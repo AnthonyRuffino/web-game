@@ -155,9 +155,8 @@ export class World {
                     const grassX = tileX * this.config.tileSize + this.config.tileSize / 2;
                     const grassY = tileY * this.config.tileSize + this.config.tileSize / 2;
                     
-                    // Create grass using EntityRenderer
-                    const grassEntity = EntityRenderer.createGrass({
-                        isSprite: false,
+                    // Create grass using GrassEntity class
+                    const grassEntity = GrassEntity.create({
                         size: 32,
                         bladeColor: '#81C784',
                         bladeWidth: 1.5,
@@ -183,15 +182,18 @@ export class World {
                     const treeX = tileX * this.config.tileSize + this.config.tileSize / 2;
                     const treeY = tileY * this.config.tileSize + this.config.tileSize / 2;
                     
-                    // Create tree using EntityRenderer
-                    const treeEntity = EntityRenderer.createTree({
-                        isSprite: false,
+                    // Create tree using TreeEntity class with proper configuration
+                    const treeEntity = TreeEntity.create({
                         size: 24,
+                        imageHeight: 72, // 3x size for tall trees
+                        trunkWidth: 12,
+                        trunkHeight: 45,
                         trunkColor: '#5C4033',
                         foliageColor: '#1B5E20',
-                        trunkWidth: 12,
-                        foliageRadius: 12,
+                        foliageRadius: 18,
                         opacity: 1.0,
+                        fixedScreenAngle: 0,
+                        drawOffsetY: -42 // Render tree higher so player can walk behind
                     });
                     
                     // Merge with world-specific properties
@@ -202,7 +204,8 @@ export class World {
                         tileX: tileX,
                         tileY: tileY,
                         collision: true,
-                        collisionRadius: 18 // Tree collision radius
+                        collisionRadius: 12, // Tree collision radius at base
+                        fixedScreenAngle: 0 // Trees render last (matching core/world.js logic)
                     });
                 }
                 
@@ -210,15 +213,14 @@ export class World {
                     const rockX = tileX * this.config.tileSize + this.config.tileSize / 2;
                     const rockY = tileY * this.config.tileSize + this.config.tileSize / 2;
                     
-                    // Create rock using EntityRenderer
-                    const rockEntity = EntityRenderer.createRock({
-                        isSprite: false,
+                    // Create rock using RockEntity class
+                    const rockEntity = RockEntity.create({
                         size: 20,
                         baseColor: '#757575',
                         strokeColor: '#424242',
                         textureColor: '#424242',
                         opacity: 1.0,
-                        textureSpots: 3, // Number of texture spots
+                        textureSpots: 3,
                         strokeWidth: 2
                     });
                     
@@ -230,7 +232,7 @@ export class World {
                         tileX: tileX,
                         tileY: tileY,
                         collision: true,
-                        collisionRadius: 12 // Rock collision radius
+                        collisionRadius: 8 // Rock collision radius (20 * 0.4 = 8)
                     });
                 }
             }
@@ -428,31 +430,62 @@ export class World {
 
     // Render the world
     render(ctx, cameraX, cameraY, viewportWidth, viewportHeight) {
-        // Calculate visible chunk range
-        const chunkSize = this.config.chunkSize * this.config.tileSize;
-        const startChunkX = Math.floor((cameraX - viewportWidth / 2) / chunkSize);
-        const endChunkX = Math.floor((cameraX + viewportWidth / 2) / chunkSize);
-        const startChunkY = Math.floor((cameraY - viewportHeight / 2) / chunkSize);
-        const endChunkY = Math.floor((cameraY + viewportHeight / 2) / chunkSize);
-
-        // Load and render visible chunks
-        for (let chunkX = startChunkX; chunkX <= endChunkX; chunkX++) {
-            for (let chunkY = startChunkY; chunkY <= endChunkY; chunkY++) {
-                const chunk = this.loadChunk(chunkX, chunkY); // Changed from getChunk to loadChunk
-                if (chunk) {
-                    this.renderChunk(ctx, chunk);
-                }
+        // Get visible chunks
+        const visibleChunks = this.getVisibleChunks(cameraX, cameraY, viewportWidth, viewportHeight);
+        
+        // Load chunks and collect all fixed angle entities
+        const allFixedAngleEntities = [];
+        
+        visibleChunks.forEach(chunkInfo => {
+            const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
+            
+            // Render chunk background and non-fixed angle entities
+            this.renderChunkBackground(ctx, chunk);
+            this.renderChunkEntities(ctx, chunk, false); // false = exclude fixed angle entities
+            
+            // Collect fixed angle entities for later rendering
+            if (chunk.entities && Array.isArray(chunk.entities)) {
+                const fixedAngleEntities = chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined);
+                allFixedAngleEntities.push(...fixedAngleEntities);
             }
-        }
+        });
+        
+        // Clean up distant chunks
+        const keepChunkKeys = new Set(visibleChunks.map(chunk => chunk.key));
+        this.cleanupChunks(keepChunkKeys);
+        
+        // Return fixed angle entities for rendering after player
+        return allFixedAngleEntities;
     }
 
-    // Render a single chunk
-    renderChunk(ctx, chunk) {
-        // Render biome background first
+    // Render chunk background only
+    renderChunkBackground(ctx, chunk) {
         this.renderBiomeBackgroundSync(ctx, chunk, chunk.biome);
+    }
+
+    // Render chunk entities (with option to exclude fixed angle entities)
+    renderChunkEntities(ctx, chunk, includeFixedAngle = true) {
+        if (!chunk.entities || !Array.isArray(chunk.entities)) return;
         
-        // Render entities on top
-        chunk.entities.forEach(entity => {
+        // Sort entities for correct render order (matching core/world.js logic):
+        // 1. Grass entities
+        // 2. Non-fixedScreenAngle entities  
+        // 3. fixedScreenAngle entities (only if includeFixedAngle is true)
+        const grassEntities = chunk.entities.filter(e => e.type === 'grass');
+        const fixedAngleEntities = includeFixedAngle ? 
+            chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined) : [];
+        const otherEntities = chunk.entities.filter(e => 
+            e.type !== 'grass' && 
+            (e.fixedScreenAngle === null || e.fixedScreenAngle === undefined)
+        );
+        
+        // Sort fixed angle entities by Y position (descending - higher Y renders first)
+        fixedAngleEntities.sort((a, b) => b.y - a.y);
+        
+        // Render in order: grass, other entities, fixed angle entities (if included)
+        const renderOrder = grassEntities.concat(otherEntities, fixedAngleEntities);
+        
+        renderOrder.forEach(entity => {
             if (entity.type === 'letterTile') {
                 // Handle the starting position marker
                 if (entity.draw) {
@@ -461,7 +494,11 @@ export class World {
             } else if (entity.render) {
                 // Handle entities created by EntityRenderer
                 ctx.save();
-                ctx.translate(entity.x, entity.y);
+                
+                // Use renderY if specified, otherwise use entity.y
+                const renderY = entity.renderY !== undefined ? entity.renderY : entity.y;
+                ctx.translate(entity.x, renderY);
+                
                 entity.render(ctx);
                 ctx.restore();
             }
