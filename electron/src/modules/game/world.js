@@ -118,7 +118,6 @@ export class World {
         const chunk = this.generateChunk(chunkX, chunkY);
         this.chunkCache.set(key, chunk);
         
-        console.log(`[World] Generated chunk: ${key}`);
         return chunk;
     }
 
@@ -138,8 +137,6 @@ export class World {
         // Determine biome for this chunk
         const biome = this.getChunkBiome(chunkX, chunkY);
         chunk.biome = biome;
-        
-        console.log(`[World] Generated chunk (${chunkX}, ${chunkY}) with biome: ${biome}`);
 
         // Generate tiles for this chunk
         const startTileX = chunkX * this.config.chunkSize;
@@ -302,7 +299,6 @@ export class World {
     getChunkBiome(chunkX, chunkY) {
         const key = this.getChunkKey(chunkX, chunkY);
         const biome = this.chunkBiomeMap.get(key) || 'plains';
-        console.log(`[World] getChunkBiome(${chunkX}, ${chunkY}) = ${biome} (key: ${key})`);
         return biome;
     }
 
@@ -476,41 +472,25 @@ export class World {
     renderBiomeBackgroundSync(ctx, chunk, biome) {
         const chunkSize = this.config.chunkSize * this.config.tileSize; // 2048 pixels
         
-        console.log(`[World] renderBiomeBackgroundSync called for chunk (${chunk.x}, ${chunk.y}), biome: ${biome}`);
-        
         // Try to load the biome background image from asset manager
         if (window.game && window.game.assetManager) {
             // Use the same cache key pattern as entityRenderer
             const cacheKey = `image:background-${biome}`;
-            console.log(`[World] Looking for biome image with cache key: ${cacheKey}`);
             
             const biomeImage = window.game.assetManager.imageCache.get(cacheKey);
-            console.log(`[World] Asset manager cache lookup result:`, biomeImage);
             
             if (biomeImage && biomeImage.image) {
                 const img = biomeImage.image;
-                console.log(`[World] Found biome image object:`, img);
-                console.log(`[World] Image properties - complete: ${img.complete}, naturalWidth: ${img.naturalWidth}, width: ${img.width}, height: ${img.height}`);
                 
                 if (img.complete && img.naturalWidth > 0) {
-                    console.log(`[World] Drawing biome image at (${chunk.worldX}, ${chunk.worldY}) with size ${chunkSize}x${chunkSize}`);
                     // Draw the biome image to cover the entire chunk
                     ctx.drawImage(img, chunk.worldX, chunk.worldY, chunkSize, chunkSize);
-                    console.log(`[World] Successfully drew biome background for ${biome}`);
                     return;
-                } else {
-                    console.warn(`[World] Biome image not ready - complete: ${img.complete}, naturalWidth: ${img.naturalWidth}`);
                 }
-            } else {
-                console.warn(`[World] No biome image found in asset manager cache for key: ${cacheKey}`);
-                console.log(`[World] Available asset manager cache keys:`, Array.from(window.game.assetManager.imageCache.keys()));
             }
-        } else {
-            console.warn(`[World] Asset manager not available - window.game:`, !!window.game, 'assetManager:', !!window.game?.assetManager);
         }
         
         // Fallback to procedural rendering if asset manager is not available
-        console.log(`[World] Falling back to procedural rendering for biome: ${biome}`);
         this.renderBiomeBackgroundFallback(ctx, chunk, biome, chunkSize);
     }
 
