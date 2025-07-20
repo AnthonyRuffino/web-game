@@ -1,12 +1,12 @@
 export class DotsSystem {
     constructor() {
         this.config = {
-            dotSize: 4,
+            dotSize: 2,
             dotSpacing: 32,
-            dotColor: '#ffffff',
-            dotAlpha: 0.8
+            dotColor: '#666666',
+            dotAlpha: 0.6
         };
-        this.testMode = true; // Enable test mode for debugging
+        this.testMode = false; // Disable test mode to prevent multiple draws
     }
     
     // Render background dots across the visible world area
@@ -35,16 +35,6 @@ export class DotsSystem {
         const gridStartX = Math.floor(startX / spacing) * spacing;
         const gridStartY = Math.floor(startY / spacing) * spacing;
         
-        // Debug logging (only log occasionally to avoid spam)
-        if (Math.random() < 0.01) { // 1% chance to log
-            console.log('[DotsSystem] Rendering dots:', {
-                camera: { x: cameraX, y: cameraY },
-                area: { startX, endX, startY, endY },
-                grid: { startX: gridStartX, startY: gridStartY },
-                config: this.config
-            });
-        }
-        
         // Since we're already in camera-transformed coordinates, we need to draw dots
         // at their world positions, which will be transformed to screen positions
         for (let worldX = gridStartX; worldX <= endX; worldX += spacing) {
@@ -53,26 +43,6 @@ export class DotsSystem {
                 ctx.beginPath();
                 ctx.arc(worldX, worldY, dotSize, 0, Math.PI * 2);
                 ctx.fill();
-            }
-        }
-        
-        // Test mode: Draw some obvious dots at fixed positions
-        if (this.testMode) {
-            ctx.fillStyle = '#ff0000';
-            ctx.globalAlpha = 1.0;
-            
-            // Draw a red dot at the origin
-            ctx.beginPath();
-            ctx.arc(0, 0, 10, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw red dots at regular intervals
-            for (let x = -200; x <= 200; x += 100) {
-                for (let y = -200; y <= 200; y += 100) {
-                    ctx.beginPath();
-                    ctx.arc(x, y, 5, 0, Math.PI * 2);
-                    ctx.fill();
-                }
             }
         }
         

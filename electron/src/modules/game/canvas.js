@@ -12,7 +12,7 @@ export class CanvasManager {
     async init() {
         try {
             // Get canvas element
-            this.canvas = document.getElementById('gameCanvas');
+            this.canvas = document.getElementById('game-canvas');
             if (!this.canvas) {
                 throw new Error('Canvas element not found');
             }
@@ -82,8 +82,9 @@ export class CanvasManager {
     clear() {
         if (!this.ctx) return;
         
-        // Clear the entire canvas
-        this.ctx.clearRect(0, 0, this.width, this.height);
+        // Clear the entire canvas with a dark background to prevent smearing
+        this.ctx.fillStyle = '#1a1a1a';
+        this.ctx.fillRect(0, 0, this.width, this.height);
     }
     
     clearWithColor(color = '#000000') {
