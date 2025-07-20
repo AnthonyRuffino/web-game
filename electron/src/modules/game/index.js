@@ -243,9 +243,8 @@ export class Game {
         // Handle camera rotation in fixed-angle mode
         const input = this.inputManager.getMovementInput();
         if (this.inputManager.cameraMode === 'fixed-angle') {
-            const rotationSpeed = this.player.rotSpeed * 0.1; // Much slower rotation
-            if (input.cameraLeft) this.camera.rotateCamera(-rotationSpeed * deltaTime);
-            if (input.cameraRight) this.camera.rotateCamera(rotationSpeed * deltaTime);
+            if (input.cameraLeft) this.camera.rotateCamera(-this.camera.rotationSpeed * (deltaTime / 1000));
+            if (input.cameraRight) this.camera.rotateCamera(this.camera.rotationSpeed * (deltaTime / 1000));
         }
         
         // Update camera
