@@ -132,18 +132,34 @@ export class InteractionSystem {
             ctx.beginPath();
             ctx.arc(entity.x, entity.y, this.interactionRange, 0, Math.PI * 2);
             ctx.stroke();
-            
-            // Draw interaction prompt
+        }
+        
+        ctx.restore();
+        
+        // Store interaction data for UI rendering (text will be rendered in screen space)
+        this.currentInteractions = interactableEntities;
+    }
+
+    // Render interaction text in screen space (called from UI layer)
+    renderInteractionText(ctx, camera) {
+        if (!this.currentInteractions || this.currentInteractions.length === 0) return;
+        
+        ctx.save();
+        
+        for (const { entity, distance, interaction } of this.currentInteractions) {
             if (distance <= this.interactionRange) {
+                // Convert world position to screen position
+                const screenPos = camera.worldToScreen(entity.x, entity.y);
+                
                 ctx.fillStyle = '#ffffff';
                 ctx.font = '14px Arial';
                 ctx.textAlign = 'center';
                 ctx.globalAlpha = 0.8;
-                ctx.fillText(interaction.name, entity.x, entity.y - 30);
+                ctx.fillText(interaction.name, screenPos.x, screenPos.y - 30);
                 
                 // Draw key hint
                 ctx.font = '12px Arial';
-                ctx.fillText('Press E', entity.x, entity.y - 15);
+                ctx.fillText('Press E', screenPos.x, screenPos.y - 15);
             }
         }
         

@@ -46,20 +46,33 @@ body {
     position: absolute;
     top: 10px;
     left: 10px;
-    background-color: rgba(0, 0, 0, 0.7);
-    padding: 10px;
-    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 12px;
+    border-radius: 8px;
     font-size: 12px;
     font-family: 'Courier New', monospace;
-    z-index: 100;
+    z-index: 50;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    min-width: 200px;
+    transition: opacity 0.2s ease;
+}
+
+#debug-info.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 #debug-info div {
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+    line-height: 1.2;
 }
 
 #debug-info div:last-child {
     margin-bottom: 0;
+}
+
+#debug-info div:empty {
+    display: none;
 }
 
 /* Hide loading message when game is ready */

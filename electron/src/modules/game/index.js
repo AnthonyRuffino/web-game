@@ -111,6 +111,11 @@ export class Game {
         this.inputManager.bindAction('e', () => {
             this.interactionSystem.handleInput(this.world, this.player, 'e');
         });
+        
+        // Bind debug info toggle (Ctrl + `)
+        this.inputManager.bindAction('`', () => {
+            this.toggleDebugInfo();
+        });
     }
 
     setupConsoleCommands() {
@@ -163,6 +168,8 @@ export class Game {
             { id: 'world', text: 'World: --' },
             { id: 'collision', text: 'Collision: --' },
             { id: 'interaction', text: 'Interaction: --' },
+            { id: 'time', text: 'Time: --' },
+            { id: 'weather', text: 'Weather: --' },
             { id: 'enhancements', text: 'Enhancements: --' },
             { id: 'assets', text: 'Assets: --' }
         ];
@@ -182,11 +189,24 @@ export class Game {
         this.worldElement = document.getElementById('world');
         this.collisionElement = document.getElementById('collision');
         this.interactionElement = document.getElementById('interaction');
+        this.timeElement = document.getElementById('time');
+        this.weatherElement = document.getElementById('weather');
         this.enhancementsElement = document.getElementById('enhancements');
         this.assetsElement = document.getElementById('assets');
         
         if (this.versionElement) {
             this.versionElement.textContent = `Version: ${version}`;
+        }
+        
+        // Update debug info immediately
+        this.updateDebugInfo();
+    }
+
+    toggleDebugInfo() {
+        const debugInfo = document.getElementById('debug-info');
+        if (debugInfo) {
+            debugInfo.classList.toggle('hidden');
+            console.log('[Game] Debug info toggled');
         }
     }
 
@@ -262,6 +282,9 @@ export class Game {
         this.collisionSystem.update(deltaTime, this.world, this.player);
         this.interactionSystem.update?.(deltaTime);
         this.worldEnhancements.update?.(deltaTime);
+        
+        // Update debug info
+        this.updateDebugInfo();
     }
 
     render() {
@@ -336,6 +359,9 @@ export class Game {
         // UI elements that should not be affected by camera transform
         // This is called after camera.restoreTransform() in the main render method
         this.drawInstructions(this.ctx, this.canvas.width, this.canvas.height);
+        
+        // Render interaction text in screen space (always upright)
+        this.interactionSystem.renderInteractionText(this.ctx, this.camera);
     }
 
     drawInstructions(ctx, width, height) {
@@ -343,14 +369,11 @@ export class Game {
         ctx.font = '16px Arial';
         ctx.textAlign = 'left';
         
-        const timeOfDay = this.worldEnhancements.getTimeOfDay();
-        const timeRemaining = this.worldEnhancements.getTimeRemaining();
         const cameraMode = this.inputManager.cameraMode;
-        const playerInfo = this.player.getInfo();
-        const cameraInfo = this.camera.getInfo();
         
         const instructions = [
             `Camera Mode: ${cameraMode} (Press P to toggle)`,
+            `Debug Info: Ctrl + \` to toggle`,
             '',
             cameraMode === 'fixed-angle' ? 
                 'Fixed-Angle Mode Controls:' :
@@ -367,14 +390,7 @@ export class Game {
             '',
             'R: Reset camera rotation to north',
             'E: Interact with nearby objects',
-            'Mouse Wheel: Zoom in/out',
-            '',
-            `Player: ${playerInfo.position}, ${playerInfo.angle}`,
-            `Camera: ${cameraInfo.position}, ${cameraInfo.zoom}, ${cameraInfo.rotation}`,
-            `Moving: ${this.player.isMoving ? 'Yes' : 'No'}`,
-            `Loaded chunks: ${this.world.chunkCache.size}`,
-            `Time: ${timeOfDay} (${timeRemaining}s remaining)`,
-            `Weather: ${this.worldEnhancements.weather}`
+            'Mouse Wheel: Zoom in/out'
         ];
         
         let y = 30;
@@ -430,6 +446,16 @@ export class Game {
         if (this.interactionElement) {
             const interactionStats = this.interactionSystem.getInteractionStats(this.world, this.player);
             this.interactionElement.textContent = `Interaction: ${interactionStats.totalInteractable} nearby`;
+        }
+        
+        if (this.timeElement) {
+            const timeOfDay = this.worldEnhancements.getTimeOfDay();
+            const timeRemaining = this.worldEnhancements.getTimeRemaining();
+            this.timeElement.textContent = `Time: ${timeOfDay} (${timeRemaining}s remaining)`;
+        }
+        
+        if (this.weatherElement) {
+            this.weatherElement.textContent = `Weather: ${this.worldEnhancements.weather}`;
         }
         
         if (this.enhancementsElement) {

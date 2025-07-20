@@ -95,6 +95,14 @@ export class InputManager {
         const key = event.key;
         this.keys.set(key, true);
         
+        // Handle Ctrl + ` combination for debug info toggle
+        if (key === '`' && event.ctrlKey) {
+            event.preventDefault();
+            // Trigger the toggle action
+            this.triggerAction('`');
+            return;
+        }
+        
         // Prevent default behavior for game keys
         if (this.isGameKey(key)) {
             event.preventDefault();

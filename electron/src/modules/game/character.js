@@ -182,15 +182,13 @@ export class Player {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Draw movement indicator when moving
-        if (this.isMoving) {
-            ctx.strokeStyle = '#ffff00';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(this.x, this.y);
-            ctx.lineTo(frontX, frontY);
-            ctx.stroke();
-        }
+        // Draw direction indicator (always visible)
+        ctx.strokeStyle = '#ffff00';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(frontX, frontY);
+        ctx.stroke();
 
         ctx.restore();
     }
