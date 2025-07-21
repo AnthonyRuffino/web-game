@@ -45,6 +45,9 @@ export class Game {
         this.interactionElement = null;
         this.enhancementsElement = null;
         this.assetsElement = null;
+
+        this.hoveredGridCell = null;
+        this.inputBlocked = false;
     }
 
     async init() {
@@ -88,6 +91,9 @@ export class Game {
             
             // Setup console commands
             this.setupConsoleCommands();
+
+            // Setup input event listeners for advanced input handling
+            this.setupAdvancedInputListeners();
             
             // Start the game
             this.start();
@@ -548,6 +554,74 @@ export class Game {
         });
     }
 
+    setupAdvancedInputListeners() {
+        // --- Mouse grid cell hover/click tracking ---
+        const canvas = this.canvas;
+        const camera = this.camera;
+        const player = this.player;
+        const world = this.world;
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            let x = (e.clientX - rect.left);
+            let y = (e.clientY - rect.top);
+            // Use camera transform to get world coordinates
+            const { x: worldX, y: worldY } = camera.screenToWorld(x, y, player.angle);
+            const tileSize = world ? world.config.tileSize : 32;
+            const tileX = Math.floor(worldX / tileSize);
+            const tileY = Math.floor(worldY / tileSize);
+            this.hoveredGridCell = { tileX, tileY };
+        });
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            let x = (e.clientX - rect.left);
+            let y = (e.clientY - rect.top);
+            const { x: worldX, y: worldY } = camera.screenToWorld(x, y, player.angle);
+            const tileSize = world ? world.config.tileSize : 32;
+            const tileX = Math.floor(worldX / tileSize);
+            const tileY = Math.floor(worldY / tileSize);
+            console.log('[Canvas Click]', {
+                canvas: { x: Math.round(x), y: Math.round(y) },
+                world: { x: worldX, y: worldY },
+                cell: { tileX, tileY }
+            });
+            // Entity lookup at clicked cell
+            if (world && typeof world.loadChunk === 'function') {
+                const chunkSize = world.config.chunkSize;
+                const chunkX = Math.floor(tileX / chunkSize);
+                const chunkY = Math.floor(tileY / chunkSize);
+                const chunk = world.loadChunk(chunkX, chunkY);
+                if (chunk && Array.isArray(chunk.entities)) {
+                    const entitiesAtCell = chunk.entities.filter(e => e.tileX === tileX && e.tileY === tileY);
+                    if (entitiesAtCell.length > 0) {
+                        console.log('[Entity Click]', entitiesAtCell);
+                    }
+                }
+            }
+        });
+        // --- Input blocking for text fields ---
+        const blockInput = () => { this.inputBlocked = true; InputManager.setInputBlocked(true); };
+        const unblockInput = () => { this.inputBlocked = false; InputManager.setInputBlocked(false); };
+        const isBlockingInputElement = (el) => {
+            return (
+                (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) ||
+                el.tagName === 'TEXTAREA'
+            );
+        };
+        document.addEventListener('focusin', (e) => {
+            if (isBlockingInputElement(e.target)) blockInput();
+        });
+        document.addEventListener('focusout', (e) => {
+            if (isBlockingInputElement(e.target)) {
+                setTimeout(() => {
+                    const el = document.activeElement;
+                    if (!isBlockingInputElement(el)) {
+                        unblockInput();
+                    }
+                }, 0);
+            }
+        });
+    }
+
     start() {
         this.isRunning = true;
         this.lastTime = performance.now();
@@ -683,6 +757,18 @@ export class Game {
         
         // Draw atmospheric effects (in screen space)
         this.worldEnhancements.renderAtmosphere(ctx, this.camera.x, this.camera.y, width, height);
+
+        // --- Render hovered grid cell highlight ---
+        if (this.hoveredGridCell && this.world) {
+            const tileSize = this.world.config.tileSize;
+            const { tileX, tileY } = this.hoveredGridCell;
+            ctx.save();
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.7;
+            ctx.strokeRect(tileX * tileSize, tileY * tileSize, tileSize, tileSize);
+            ctx.restore();
+        }
     }
 
     renderUI() {

@@ -1,4 +1,8 @@
 export class InputManager {
+    static inputBlocked = false;
+    static setInputBlocked(blocked) {
+        InputManager.inputBlocked = blocked;
+    }
     constructor() {
         this.keys = new Map();
         this.bindings = new Map();
@@ -92,6 +96,7 @@ export class InputManager {
     }
 
     handleKeyDown(event) {
+        if (InputManager.inputBlocked) return;
         const key = event.key;
         this.keys.set(key, true);
         
@@ -113,6 +118,7 @@ export class InputManager {
     }
 
     handleKeyUp(event) {
+        if (InputManager.inputBlocked) return;
         const key = event.key;
         this.keys.set(key, false);
         
