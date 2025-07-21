@@ -123,6 +123,12 @@ export class Game {
         this.inputManager.bindAction('`', () => {
             this.toggleDebugInfo();
         });
+
+        // Bind grid overlay toggle (g)
+        this.inputManager.bindAction('g', () => {
+            this.world.showGrid = !this.world.showGrid;
+            console.log(`[Game] Grid overlay ${this.world.showGrid ? 'enabled' : 'disabled'}`);
+        });
     }
 
     setupConsoleCommands() {

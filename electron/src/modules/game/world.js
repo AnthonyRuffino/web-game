@@ -460,13 +460,21 @@ export class World {
         // Load chunks and collect all fixed angle entities
         const allFixedAngleEntities = [];
         
+        // Render chunk backgrounds first
         visibleChunks.forEach(chunkInfo => {
             const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
-            
-            // Render chunk background and non-fixed angle entities
             this.renderChunkBackground(ctx, chunk);
+        });
+        
+        // Render grid overlay after backgrounds, before entities
+        if (this.showGrid) {
+            this.renderGrid(ctx, cameraX, cameraY, viewportWidth, viewportHeight);
+        }
+        
+        // Now render entities (excluding fixed angle entities)
+        visibleChunks.forEach(chunkInfo => {
+            const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
             this.renderChunkEntities(ctx, chunk, false); // false = exclude fixed angle entities
-            
             // Collect fixed angle entities for later rendering
             if (chunk.entities && Array.isArray(chunk.entities)) {
                 const fixedAngleEntities = chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined);
