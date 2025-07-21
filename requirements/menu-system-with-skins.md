@@ -401,6 +401,13 @@ if (cachedImage && cachedImage.image) {
 4. ✅ Fix styling to match existing menu aesthetics
 5. ✅ Implement proper event handling and z-index management
 
+#### Phase 1.6: Perfecting the Menus ✅ COMPLETED
+1. ✅ Fix viewport resize bug - preserve user modifications (position/size)
+2. ✅ Fix internal scaling - all elements scale with menu size changes
+3. ✅ Implement dynamic config updates for user modifications
+4. ✅ Add proper resize event handling for all menu components
+5. ✅ Test responsive behavior across different viewport sizes
+
 #### Phase 2: Menu Components
 1. Implement tabs system
 2. Add grid buttons with image support
@@ -457,22 +464,25 @@ if (cachedImage && cachedImage.image) {
 - **Plugin System**: Third-party menu components
 - **Advanced Features**: Animation, transitions, themes
 
-## Phase 1 & 1.5 Completion Summary ✅
+## Phase 1, 1.5 & 1.6 Completion Summary ✅
 
-**Phase 1: Basic Menu System** and **Phase 1.5: Pattern Alignment** have been successfully completed:
+**Phase 1: Basic Menu System**, **Phase 1.5: Pattern Alignment**, and **Phase 1.6: Perfecting the Menus** have been successfully completed:
 
 ### ✅ Completed Features:
 - **MenuManager Class**: Created with full viewport-relative positioning and scaling
 - **Dynamic Menu Creation**: Menus can be created through console commands with config objects
 - **Viewport-Relative Scaling**: All positions, sizes, fonts, padding, margins, borders, and spacing scale with viewport dimensions
 - **Event Handling**: Draggable menus, keyboard shortcuts (Escape to close), focus management
-- **Console Integration**: Added menu commands (`menu`, `menus`, `close`, `closeall`, `testmenu`, `testtabs`, `testcallbacks`)
+- **Console Integration**: Added menu commands (`menu`, `menus`, `close`, `closeall`, `testmenu`, `testtabs`, `testcallbacks`, `testresize`)
 - **Complete Viewport-Relative Styling**: No absolute pixel values - everything scales proportionally with viewport size
 - **Tabs Support**: Basic tabs system with viewport-relative styling and button integration
 - **Pattern Alignment**: ✅ Now follows existing menu system patterns from `ui/menuManager.js`
 - **Callback System**: ✅ Proper onClick and onClickMenu support with child menu creation
 - **Layering System**: ✅ Proper z-index management and blocking overlays
 - **Styling**: ✅ Matches existing menu aesthetics with dark theme and proper styling
+- **User Modification Preservation**: ✅ Menu position and size changes are preserved on viewport resize
+- **Internal Scaling**: ✅ All menu elements scale proportionally when menu size changes
+- **ResizeObserver Integration**: ✅ Real-time tracking of menu size changes for dynamic scaling
 
 ### ✅ Issues Fixed:
 - **Styling**: ✅ Now matches existing menu aesthetics with proper dark theme
@@ -483,6 +493,7 @@ if (cachedImage && cachedImage.image) {
 ### 🎯 Current Status:
 - **Phase 1**: ✅ COMPLETED - Basic menu system working
 - **Phase 1.5**: ✅ COMPLETED - Pattern alignment and callback system
+- **Phase 1.6**: ✅ COMPLETED - Perfecting menus (fix resize bugs, internal scaling)
 - **Phase 2**: ⏳ NEXT - Menu components (tabs, grid buttons, forms)
 - **Phase 3**: ⏳ PENDING - Skins menu with upload functionality
 - **Phase 4**: ⏳ PENDING - Integration and optimization
@@ -493,6 +504,7 @@ The menu system can be tested with:
 cmd("testmenu")      // Creates a test menu
 cmd("testtabs")      // Creates a tabs menu with buttons and callbacks
 cmd("testcallbacks") // Tests onClick and onClickMenu callback system
+cmd("testresize")    // Tests resize preservation and internal scaling
 cmd("menus")         // Lists all menus
 cmd("closeall")      // Closes all menus
 ```
@@ -513,6 +525,24 @@ The Electron menu system should follow patterns from existing systems:
 - **Styling**: Match existing menu aesthetics and behavior
 - **Event Handling**: Proper event isolation and coordination
 - **Component System**: Follow `data/ui/menuBuilder.js` component patterns
+
+### 🐛 Critical Bugs to Fix (Phase 1.6):
+
+#### Bug 1: Viewport Resize Loses User Modifications
+**Problem**: When user moves/resizes a menu, then resizes the viewport, menu jumps back to original position/size
+**Root Cause**: Menu config not updated with user modifications
+**Solution**: 
+- Track user modifications in real-time
+- Update menu config when user drags or resizes
+- Apply preserved modifications on viewport resize
+
+#### Bug 2: Internal Elements Don't Scale
+**Problem**: When menu size changes, internal elements (fonts, buttons, etc.) don't scale proportionally
+**Root Cause**: Internal elements use fixed sizes or viewport-relative scaling instead of menu-relative scaling
+**Solution**:
+- Make all internal elements scale relative to menu size
+- Use menu dimensions as base for internal scaling
+- Implement proper resize event handling for all components
 
 ## Conclusion
 

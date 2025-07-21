@@ -389,6 +389,67 @@ export class Game {
                     console.log(`[Console] Created callback test menu: ${callbackMenuId}`);
                     break;
                     
+                case 'testresize':
+                    const resizeMenuConfig = {
+                        id: 'resize-test-menu',
+                        title: 'Resize & Scale Test',
+                        viewportX: 0.1,
+                        viewportY: 0.1,
+                        viewportWidth: 0.8,
+                        viewportHeight: 0.8,
+                        content: '<h3>Resize Test Menu</h3><p>Try resizing this menu and then resizing the viewport. The menu should maintain its position and size, and all internal elements should scale properly.</p>',
+                        buttons: [
+                            {
+                                text: 'Test Button',
+                                icon: '🧪',
+                                onClick: (e) => {
+                                    console.log('[Console] Test button clicked');
+                                    alert('Button scaling works!');
+                                }
+                            }
+                        ],
+                        radioGroups: [
+                            {
+                                label: 'Test Radio Group',
+                                name: 'test-radio',
+                                options: [
+                                    { text: 'Option 1', value: '1' },
+                                    { text: 'Option 2', value: '2' },
+                                    { text: 'Option 3', value: '3' }
+                                ],
+                                onChange: (value) => {
+                                    console.log('[Console] Radio changed to:', value);
+                                }
+                            }
+                        ],
+                        gridButtons: [
+                            {
+                                label: 'Test Grid',
+                                rows: 2,
+                                cols: 3,
+                                cellSize: 80,
+                                gap: 10,
+                                buttons: [
+                                    { name: 'Cell 1', onClick: () => console.log('Cell 1 clicked') },
+                                    { name: 'Cell 2', onClick: () => console.log('Cell 2 clicked') },
+                                    { name: 'Cell 3', onClick: () => console.log('Cell 3 clicked') },
+                                    { name: 'Cell 4', onClick: () => console.log('Cell 4 clicked') },
+                                    { name: 'Cell 5', onClick: () => console.log('Cell 5 clicked') },
+                                    { name: 'Cell 6', onClick: () => console.log('Cell 6 clicked') }
+                                ]
+                            }
+                        ]
+                    };
+                    const resizeMenuId = this.menuManager.createMenu(resizeMenuConfig);
+                    this.menuManager.showMenu(resizeMenuId);
+                    console.log(`[Console] Created resize test menu: ${resizeMenuId}`);
+                    console.log('[Console] Instructions:');
+                    console.log('  1. Resize the menu by dragging its corner');
+                    console.log('  2. Move the menu by dragging its header');
+                    console.log('  3. Resize the browser window');
+                    console.log('  4. The menu should maintain its position/size and scale internally');
+                    break;
+                    
                 case 'help':
                     console.log('[Console] Available commands:');
                     console.log('  cmd("perspective") or cmd("toggle") - Toggle camera mode');
@@ -407,6 +468,7 @@ export class Game {
                     console.log('  cmd("testmenu") - Create test menu');
                     console.log('  cmd("testtabs") - Create tabs menu with buttons');
                     console.log('  cmd("testcallbacks") - Test callback system');
+                    console.log('  cmd("testresize") - Test resize and scaling');
                     console.log('  cmd("help") - Show this help');
                     break;
                     

@@ -17,6 +17,13 @@ class Menu {
         this.overlay = null;
         this.tabs = [];
         
+        // Track user modifications for viewport resize preservation
+        this.userModifications = {
+            position: { x: null, y: null },
+            size: { width: null, height: null },
+            hasBeenModified: false
+        };
+        
         this.createMenuElement();
     }
     
@@ -279,6 +286,7 @@ class Menu {
     
     createButton(buttonConfig) {
         const button = document.createElement('button');
+        button.className = 'menu-button';
         const viewportScale = Math.min(window.innerWidth, window.innerHeight) / 1000;
         
         // Add icon if present
@@ -322,6 +330,7 @@ class Menu {
     
     createRadioGroup(radioGroup) {
         const container = document.createElement('div');
+        container.className = 'radio-group';
         const viewportScale = Math.min(window.innerWidth, window.innerHeight) / 1000;
         const containerPadding = Math.max(12, viewportScale * 12);
         const containerMargin = Math.max(12, viewportScale * 12);
@@ -339,6 +348,7 @@ class Menu {
         // Group label
         if (radioGroup.label) {
             const label = document.createElement('div');
+            label.className = 'radio-group-label';
             label.textContent = radioGroup.label;
             const labelFontSize = Math.max(14, viewportScale * 14);
             const labelMargin = Math.max(8, viewportScale * 8);
@@ -356,6 +366,7 @@ class Menu {
         if (radioGroup.options && Array.isArray(radioGroup.options)) {
             radioGroup.options.forEach((option, index) => {
                 const optionContainer = document.createElement('div');
+                optionContainer.className = 'radio-option';
                 const optionMargin = Math.max(6, viewportScale * 6);
                 
                 optionContainer.style.cssText = `
@@ -408,6 +419,7 @@ class Menu {
     
     createGridButtons(gridConfig) {
         const container = document.createElement('div');
+        container.className = 'grid-container';
         const viewportScale = Math.min(window.innerWidth, window.innerHeight) / 1000;
         const containerMargin = Math.max(12, viewportScale * 12);
         
@@ -418,6 +430,7 @@ class Menu {
         // Grid label
         if (gridConfig.label) {
             const label = document.createElement('div');
+            label.className = 'grid-label';
             label.textContent = gridConfig.label;
             const labelFontSize = Math.max(14, viewportScale * 14);
             const labelMargin = Math.max(12, viewportScale * 12);
@@ -452,6 +465,7 @@ class Menu {
         
         for (let i = 0; i < totalCells; i++) {
             const cell = document.createElement('div');
+            cell.className = 'grid-cell';
             const cellBorderRadius = Math.max(8, viewportScale * 8);
             const cellPadding = Math.max(8, viewportScale * 8);
             const cellBorderWidth = Math.max(1, viewportScale * 1);
@@ -494,6 +508,7 @@ class Menu {
                 }
                 
                 const name = document.createElement('div');
+                name.className = 'cell-name';
                 name.textContent = button.name || `Button ${i + 1}`;
                 const nameFontSize = Math.max(12, viewportScale * 12);
                 
@@ -597,6 +612,9 @@ class Menu {
                 isDragging = false;
                 document.onmousemove = null;
                 document.onmouseup = null;
+                
+                // Update user modifications with new position
+                this.updateUserModifications();
             };
         };
         
@@ -608,6 +626,198 @@ class Menu {
             // Bring menu to front when clicked
             this.bringToFront();
         };
+        
+        // Add resize observer to track size changes
+        this.setupResizeObserver();
+    }
+    
+    setupResizeObserver() {
+        // Create resize observer to track menu size changes
+        this.resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.target === this.element) {
+                    // Update user modifications with new size
+                    this.updateUserModifications();
+                    // Update internal scaling
+                    this.updateInternalScaling();
+                }
+            }
+        });
+        
+        this.resizeObserver.observe(this.element);
+    }
+    
+    updateUserModifications() {
+        const rect = this.element.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Calculate relative position and size
+        this.userModifications.position.x = rect.left / viewportWidth;
+        this.userModifications.position.y = rect.top / viewportHeight;
+        this.userModifications.size.width = rect.width / viewportWidth;
+        this.userModifications.size.height = rect.height / viewportHeight;
+        this.userModifications.hasBeenModified = true;
+        
+        console.log(`[MenuManager] Updated user modifications for menu: ${this.id}`, this.userModifications);
+    }
+    
+    updateInternalScaling() {
+        const rect = this.element.getBoundingClientRect();
+        const menuWidth = rect.width;
+        const menuHeight = rect.height;
+        const menuScale = Math.min(menuWidth, menuHeight) / 1000; // Base scale factor
+        
+        // Update all internal elements to scale with menu size
+        this.updateElementScaling(menuScale);
+    }
+    
+    updateElementScaling(menuScale) {
+        // Update header styling
+        const header = this.element.querySelector('.menu-header');
+        if (header) {
+            const headerPadding = Math.max(8, menuScale * 12);
+            const headerBorderWidth = Math.max(1, menuScale * 1);
+            
+            header.style.padding = `${headerPadding}px`;
+            header.style.borderBottomWidth = `${headerBorderWidth}px`;
+            
+            // Update title font size
+            const title = header.querySelector('span');
+            if (title) {
+                const titleFontSize = Math.max(14, menuScale * 14);
+                title.style.fontSize = `${titleFontSize}px`;
+            }
+            
+            // Update close button
+            const closeBtn = header.querySelector('button');
+            if (closeBtn) {
+                const closeBtnSize = Math.max(20, menuScale * 20);
+                const closeBtnFontSize = Math.max(18, menuScale * 18);
+                const closeBtnBorderRadius = Math.max(3, menuScale * 3);
+                
+                closeBtn.style.width = `${closeBtnSize}px`;
+                closeBtn.style.height = `${closeBtnSize}px`;
+                closeBtn.style.fontSize = `${closeBtnFontSize}px`;
+                closeBtn.style.borderRadius = `${closeBtnBorderRadius}px`;
+            }
+        }
+        
+        // Update content area padding
+        const contentArea = this.element.querySelector('.tab-content');
+        if (contentArea) {
+            const contentPadding = Math.max(12, menuScale * 12);
+            contentArea.style.padding = `${contentPadding}px`;
+        }
+        
+        // Update tab buttons
+        const tabButtons = this.element.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => {
+            const tabPadding = Math.max(12, menuScale * 12);
+            const tabMargin = Math.max(4, menuScale * 4);
+            const tabBorderRadius = Math.max(6, menuScale * 6);
+            const tabFontSize = Math.max(13, menuScale * 13);
+            
+            button.style.padding = `${tabPadding}px ${tabPadding * 1.5}px`;
+            button.style.marginRight = `${tabMargin}px`;
+            button.style.borderRadius = `${tabBorderRadius}px ${tabBorderRadius}px 0 0`;
+            button.style.fontSize = `${tabFontSize}px`;
+        });
+        
+        // Update menu buttons
+        const menuButtons = this.element.querySelectorAll('.menu-button');
+        menuButtons.forEach(button => {
+            const buttonPadding = Math.max(6, menuScale * 6);
+            const buttonBorderRadius = Math.max(4, menuScale * 4);
+            const buttonFontSize = Math.max(12, menuScale * 12);
+            
+            button.style.padding = `${buttonPadding}px ${buttonPadding * 2}px`;
+            button.style.borderRadius = `${buttonBorderRadius}px`;
+            button.style.fontSize = `${buttonFontSize}px`;
+        });
+        
+        // Update radio groups
+        const radioGroups = this.element.querySelectorAll('.radio-group');
+        radioGroups.forEach(group => {
+            const groupPadding = Math.max(12, menuScale * 12);
+            const groupMargin = Math.max(12, menuScale * 12);
+            const groupBorderRadius = Math.max(6, menuScale * 6);
+            const groupBorderWidth = Math.max(1, menuScale * 1);
+            
+            group.style.padding = `${groupPadding}px`;
+            group.style.margin = `${groupMargin}px 0`;
+            group.style.borderRadius = `${groupBorderRadius}px`;
+            group.style.borderWidth = `${groupBorderWidth}px`;
+            
+            // Update radio group labels
+            const labels = group.querySelectorAll('.radio-group-label');
+            labels.forEach(label => {
+                const labelFontSize = Math.max(14, menuScale * 14);
+                const labelMargin = Math.max(8, menuScale * 8);
+                
+                label.style.fontSize = `${labelFontSize}px`;
+                label.style.marginBottom = `${labelMargin}px`;
+            });
+            
+            // Update radio options
+            const options = group.querySelectorAll('.radio-option');
+            options.forEach(option => {
+                const optionMargin = Math.max(6, menuScale * 6);
+                option.style.margin = `${optionMargin}px 0`;
+                
+                const optionLabel = option.querySelector('label');
+                if (optionLabel) {
+                    const optionFontSize = Math.max(13, menuScale * 13);
+                    optionLabel.style.fontSize = `${optionFontSize}px`;
+                }
+            });
+        });
+        
+        // Update grid buttons
+        const gridContainers = this.element.querySelectorAll('.grid-container');
+        gridContainers.forEach(container => {
+            const containerMargin = Math.max(12, menuScale * 12);
+            container.style.margin = `${containerMargin}px 0`;
+            
+            // Update grid labels
+            const gridLabels = container.querySelectorAll('.grid-label');
+            gridLabels.forEach(label => {
+                const labelFontSize = Math.max(14, menuScale * 14);
+                const labelMargin = Math.max(12, menuScale * 12);
+                
+                label.style.fontSize = `${labelFontSize}px`;
+                label.style.marginBottom = `${labelMargin}px`;
+            });
+            
+            // Update grid cells
+            const gridCells = container.querySelectorAll('.grid-cell');
+            gridCells.forEach(cell => {
+                const cellBorderRadius = Math.max(8, menuScale * 8);
+                const cellPadding = Math.max(8, menuScale * 8);
+                const cellBorderWidth = Math.max(1, menuScale * 1);
+                
+                cell.style.borderRadius = `${cellBorderRadius}px`;
+                cell.style.padding = `${cellPadding}px`;
+                cell.style.borderWidth = `${cellBorderWidth}px`;
+                
+                // Update cell images
+                const images = cell.querySelectorAll('img');
+                images.forEach(img => {
+                    const imgBorderRadius = Math.max(6, menuScale * 6);
+                    const imgMargin = Math.max(6, menuScale * 6);
+                    
+                    img.style.borderRadius = `${imgBorderRadius}px`;
+                    img.style.marginBottom = `${imgMargin}px`;
+                });
+                
+                // Update cell names
+                const names = cell.querySelectorAll('.cell-name');
+                names.forEach(name => {
+                    const nameFontSize = Math.max(12, menuScale * 12);
+                    name.style.fontSize = `${nameFontSize}px`;
+                });
+            });
+        });
     }
     
     show() {
@@ -745,10 +955,22 @@ export class MenuManager {
         const viewportHeight = window.innerHeight;
         const viewportScale = Math.min(viewportWidth, viewportHeight) / 1000;
         
-        const left = (menu.config.viewportX || 0.1) * viewportWidth;
-        const top = (menu.config.viewportY || 0.1) * viewportHeight;
-        const width = (menu.config.viewportWidth || 0.8) * viewportWidth;
-        const height = (menu.config.viewportHeight || 0.8) * viewportHeight;
+        // Use user modifications if available, otherwise use original config
+        let left, top, width, height;
+        
+        if (menu.userModifications.hasBeenModified) {
+            // Use preserved user modifications
+            left = menu.userModifications.position.x * viewportWidth;
+            top = menu.userModifications.position.y * viewportHeight;
+            width = menu.userModifications.size.width * viewportWidth;
+            height = menu.userModifications.size.height * viewportHeight;
+        } else {
+            // Use original config values
+            left = (menu.config.viewportX || 0.1) * viewportWidth;
+            top = (menu.config.viewportY || 0.1) * viewportHeight;
+            width = (menu.config.viewportWidth || 0.8) * viewportWidth;
+            height = (menu.config.viewportHeight || 0.8) * viewportHeight;
+        }
         
         // Update position and size
         menu.element.style.left = `${left}px`;
@@ -758,6 +980,44 @@ export class MenuManager {
         
         // Update styling based on new viewport scale
         this.updateMenuStyling(menu, viewportScale);
+        
+        // Update internal scaling based on new menu size
+        menu.updateInternalScaling();
+    }
+    
+    updateMenuPosition(menu) {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const viewportScale = Math.min(viewportWidth, viewportHeight) / 1000;
+        
+        // Use user modifications if available, otherwise use original config
+        let left, top, width, height;
+        
+        if (menu.userModifications.hasBeenModified) {
+            // Use preserved user modifications
+            left = menu.userModifications.position.x * viewportWidth;
+            top = menu.userModifications.position.y * viewportHeight;
+            width = menu.userModifications.size.width * viewportWidth;
+            height = menu.userModifications.size.height * viewportHeight;
+        } else {
+            // Use original config values
+            left = (menu.config.viewportX || 0.1) * viewportWidth;
+            top = (menu.config.viewportY || 0.1) * viewportHeight;
+            width = (menu.config.viewportWidth || 0.8) * viewportWidth;
+            height = (menu.config.viewportHeight || 0.8) * viewportHeight;
+        }
+        
+        // Update position and size
+        menu.element.style.left = `${left}px`;
+        menu.element.style.top = `${top}px`;
+        menu.element.style.width = `${width}px`;
+        menu.element.style.height = `${height}px`;
+        
+        // Update styling based on new viewport scale
+        this.updateMenuStyling(menu, viewportScale);
+        
+        // Update internal scaling based on new menu size
+        menu.updateInternalScaling();
     }
     
     updateMenuStyling(menu, viewportScale) {
