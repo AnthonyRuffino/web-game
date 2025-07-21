@@ -920,10 +920,100 @@ export class MenuManager {
         this.nextZIndex = 1000;
         this.setupEscapeKeyHandler();
         this.setupWindowResizeHandler();
-        
         console.log('[MenuManager] Menu system initialized');
     }
-    
+
+    createMenu(config) {
+        if (!config.id) {
+            throw new Error('Menu config must include an id property');
+        }
+        if (this.menus.has(config.id)) {
+            throw new Error(`Menu with id '${config.id}' already exists`);
+        }
+        const menu = new Menu(config);
+        this.menus.set(menu.id, menu);
+        console.log(`[MenuManager] Created menu: ${menu.id}`);
+        return menu.id;
+    }
+
+    showMenu(menuId) {
+        let menu = this.menus.get(menuId);
+        if (!menu) {
+            // Create skeleton menu config based on menuId
+            let config = null;
+            if (menuId === 'skins') {
+                config = this.createSkinsMenuConfig();
+            } else if (menuId === 'macro') {
+                config = this.createMacroMenuConfig();
+            } else if (menuId === 'character') {
+                config = this.createCharacterMenuConfig();
+            }
+            if (config) {
+                this.createMenu(config);
+                menu = this.menus.get(menuId);
+            }
+        }
+        if (menu) {
+            // Bump z-index for this menu
+            this.bringMenuToFront(menu);
+            menu.show();
+            console.log(`[MenuManager] Showed menu: ${menuId}`);
+        } else {
+            console.warn(`[MenuManager] Menu not found: ${menuId}`);
+        }
+    }
+
+    hideMenu(menuId) {
+        const menu = this.menus.get(menuId);
+        if (menu) {
+            menu.hide();
+            console.log(`[MenuManager] Hid menu: ${menuId}`);
+        } else {
+            console.warn(`[MenuManager] Menu not found: ${menuId}`);
+        }
+    }
+
+    removeMenu(menuId) {
+        const menu = this.menus.get(menuId);
+        if (menu) {
+            menu.destroy();
+            this.menus.delete(menuId);
+            console.log(`[MenuManager] Removed menu: ${menuId}`);
+        } else {
+            console.warn(`[MenuManager] Menu not found: ${menuId}`);
+        }
+    }
+
+    bringMenuToFront(menu) {
+        // Find the highest z-index currently in use
+        let maxZIndex = 1000;
+        this.menus.forEach(m => {
+            if (m.visible && m.zIndex > maxZIndex) {
+                maxZIndex = m.zIndex;
+            }
+        });
+        // Set this menu's z-index higher than the current maximum
+        menu.zIndex = maxZIndex + 2;
+        menu.element.style.zIndex = menu.zIndex;
+        // If blocking, set overlay z-index just below menu
+        if (menu.isBlocking && menu.overlay) {
+            menu.overlay.style.zIndex = menu.zIndex - 1;
+        }
+        console.log(`[MenuManager] Brought menu ${menu.id} to front with z-index: ${menu.zIndex}`);
+    }
+
+    getTopMenu() {
+        let topMenu = null;
+        let highestZIndex = 0;
+        this.menus.forEach(menu => {
+            if (menu.visible && menu.zIndex > highestZIndex) {
+                highestZIndex = menu.zIndex;
+                topMenu = menu;
+            }
+        });
+        return topMenu;
+    }
+
     setupEscapeKeyHandler() {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -935,226 +1025,170 @@ export class MenuManager {
             }
         });
     }
-    
+
     setupWindowResizeHandler() {
         window.addEventListener('resize', () => {
-            this.handleWindowResize();
+            this.menus.forEach(menu => {
+                if (menu.visible) {
+                    // Optionally update menu position/size here
+                }
+            });
         });
     }
-    
-    handleWindowResize() {
-        this.menus.forEach(menu => {
-            if (menu.visible) {
-                this.updateMenuPosition(menu);
+
+    // --- Skeleton menu configs ---
+    createSkinsMenuConfig() {
+        return {
+            id: 'skins',
+            title: 'Skins & Customization',
+            viewportX: 0.15,
+            viewportY: 0.12,
+            viewportWidth: 0.7,
+            viewportHeight: 0.7,
+            isBlocking: false,
+            tabs: [
+                {
+                    name: 'Entities',
+                    content: '<h3>Entity Skins</h3><p>Upload and customize entity images...</p>',
+                    gridButtons: [
+                        {
+                            label: 'Entity Skins',
+                            rows: 2,
+                            cols: 3,
+                            cellSize: 80,
+                            gap: 10,
+                            buttons: this.getImageGridButtons(['tree', 'grass', 'rock'])
+                        }
+                    ]
+                },
+                {
+                    name: 'Backgrounds',
+                    content: '<h3>Biome Backgrounds</h3><p>Customize biome backgrounds...</p>',
+                    gridButtons: [
+                        {
+                            label: 'Background Skins',
+                            rows: 1,
+                            cols: 2,
+                            cellSize: 120,
+                            gap: 15,
+                            buttons: this.getImageGridButtons(['plains', 'desert'], 'background')
+                        }
+                    ]
+                }
+            ],
+            onClose: () => {
+                this.hideMenu('skins');
             }
+        };
+    }
+
+    createMacroMenuConfig() {
+        return {
+            id: 'macro',
+            title: 'Macro Menu',
+            viewportX: 0.2,
+            viewportY: 0.18,
+            viewportWidth: 0.6,
+            viewportHeight: 0.6,
+            isBlocking: true,
+            content: '<h3>Macro Grid</h3><p>Click a cell to log action.</p>',
+            gridButtons: [
+                {
+                    label: 'Macros',
+                    rows: 4,
+                    cols: 4,
+                    cellSize: 80,
+                    gap: 10,
+                    buttons: this.getMacroGridButtons()
+                }
+            ],
+            onClose: () => {
+                this.hideMenu('macro');
+            }
+        };
+    }
+
+    createCharacterMenuConfig() {
+        return {
+            id: 'character',
+            title: 'Character',
+            viewportX: 0.22,
+            viewportY: 0.15,
+            viewportWidth: 0.56,
+            viewportHeight: 0.65,
+            isBlocking: true,
+            tabs: [
+                {
+                    name: 'Info',
+                    content: '<h3>Character Info</h3><p>Placeholder info tab.</p>',
+                    buttons: [
+                        { text: 'Log Info', onClick: () => console.log('Character Info button clicked') }
+                    ]
+                },
+                {
+                    name: 'Stats',
+                    content: '<h3>Stats</h3><p>Placeholder stats tab.</p>',
+                    buttons: [
+                        { text: 'Log Stats', onClick: () => console.log('Character Stats button clicked') }
+                    ]
+                },
+                {
+                    name: 'Inventory',
+                    content: '<h3>Inventory</h3><p>Placeholder inventory tab.</p>',
+                    buttons: [
+                        { text: 'Log Inventory', onClick: () => console.log('Character Inventory button clicked') }
+                    ]
+                }
+            ],
+            onClose: () => {
+                this.hideMenu('character');
+            }
+        };
+    }
+
+    // --- Helpers for grid buttons ---
+    getImageGridButtons(names, type = 'entity') {
+        // Use assetManager if available, else just placeholder
+        const assetManager = window.game && window.game.assetManager;
+        return names.map(name => {
+            let imageDataUrl = null;
+            if (assetManager) {
+                const key = type === 'entity' ? `image:entity:${name}` : `image:background:${name}`;
+                const cached = assetManager.imageCache.get(key);
+                if (cached && cached.image) {
+                    // Draw to canvas and get data URL
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 64;
+                    canvas.height = 64;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(cached.image, 0, 0, 64, 64);
+                    imageDataUrl = canvas.toDataURL();
+                }
+            }
+            return {
+                name: name.charAt(0).toUpperCase() + name.slice(1),
+                imageDataUrl,
+                onClick: () => console.log(`[SkinsMenu] Clicked ${type}: ${name}`),
+                tooltip: `Select ${name}`
+            };
         });
     }
-    
-    updateMenuPosition(menu) {
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const viewportScale = Math.min(viewportWidth, viewportHeight) / 1000;
-        
-        // Use user modifications if available, otherwise use original config
-        let left, top, width, height;
-        
-        if (menu.userModifications.hasBeenModified) {
-            // Use preserved user modifications
-            left = menu.userModifications.position.x * viewportWidth;
-            top = menu.userModifications.position.y * viewportHeight;
-            width = menu.userModifications.size.width * viewportWidth;
-            height = menu.userModifications.size.height * viewportHeight;
-        } else {
-            // Use original config values
-            left = (menu.config.viewportX || 0.1) * viewportWidth;
-            top = (menu.config.viewportY || 0.1) * viewportHeight;
-            width = (menu.config.viewportWidth || 0.8) * viewportWidth;
-            height = (menu.config.viewportHeight || 0.8) * viewportHeight;
+
+    getMacroGridButtons() {
+        // 16 cells, some with icons, some empty
+        const buttons = [];
+        for (let i = 0; i < 16; i++) {
+            buttons.push({
+                name: `Macro ${i + 1}`,
+                imageDataUrl: null, // Could use assetManager for icons
+                onClick: () => console.log(`[MacroMenu] Clicked macro cell ${i + 1}`),
+                tooltip: `Macro slot ${i + 1}`
+            });
         }
-        
-        // Update position and size
-        menu.element.style.left = `${left}px`;
-        menu.element.style.top = `${top}px`;
-        menu.element.style.width = `${width}px`;
-        menu.element.style.height = `${height}px`;
-        
-        // Update styling based on new viewport scale
-        this.updateMenuStyling(menu, viewportScale);
-        
-        // Update internal scaling based on new menu size
-        menu.updateInternalScaling();
+        return buttons;
     }
-    
-    updateMenuPosition(menu) {
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const viewportScale = Math.min(viewportWidth, viewportHeight) / 1000;
-        
-        // Use user modifications if available, otherwise use original config
-        let left, top, width, height;
-        
-        if (menu.userModifications.hasBeenModified) {
-            // Use preserved user modifications
-            left = menu.userModifications.position.x * viewportWidth;
-            top = menu.userModifications.position.y * viewportHeight;
-            width = menu.userModifications.size.width * viewportWidth;
-            height = menu.userModifications.size.height * viewportHeight;
-        } else {
-            // Use original config values
-            left = (menu.config.viewportX || 0.1) * viewportWidth;
-            top = (menu.config.viewportY || 0.1) * viewportHeight;
-            width = (menu.config.viewportWidth || 0.8) * viewportWidth;
-            height = (menu.config.viewportHeight || 0.8) * viewportHeight;
-        }
-        
-        // Update position and size
-        menu.element.style.left = `${left}px`;
-        menu.element.style.top = `${top}px`;
-        menu.element.style.width = `${width}px`;
-        menu.element.style.height = `${height}px`;
-        
-        // Update styling based on new viewport scale
-        this.updateMenuStyling(menu, viewportScale);
-        
-        // Update internal scaling based on new menu size
-        menu.updateInternalScaling();
-    }
-    
-    updateMenuStyling(menu, viewportScale) {
-        // Update border width
-        const borderWidth = Math.max(1, viewportScale * 2);
-        menu.element.style.borderWidth = `${borderWidth}px`;
-        
-        // Update border radius
-        const borderRadius = Math.max(4, viewportScale * 8);
-        menu.element.style.borderRadius = `${borderRadius}px`;
-        
-        // Update box shadow
-        const boxShadowBlur = Math.max(2, viewportScale * 4);
-        const boxShadowSpread = Math.max(1, viewportScale * 2);
-        menu.element.style.boxShadow = `0 ${boxShadowBlur}px ${boxShadowSpread}px rgba(0, 0, 0, 0.5)`;
-        
-        // Update header styling
-        const header = menu.element.querySelector('.menu-header');
-        if (header) {
-            const headerPadding = Math.max(8, viewportScale * 12);
-            const headerBorderWidth = Math.max(1, viewportScale * 1);
-            
-            header.style.padding = `${headerPadding}px`;
-            header.style.borderBottomWidth = `${headerBorderWidth}px`;
-            
-            // Update title font size
-            const title = header.querySelector('span');
-            if (title) {
-                const titleFontSize = Math.max(14, viewportScale * 14);
-                title.style.fontSize = `${titleFontSize}px`;
-            }
-            
-            // Update close button
-            const closeBtn = header.querySelector('button');
-            if (closeBtn) {
-                const closeBtnSize = Math.max(20, viewportScale * 20);
-                const closeBtnFontSize = Math.max(18, viewportScale * 18);
-                const closeBtnBorderRadius = Math.max(3, viewportScale * 3);
-                
-                closeBtn.style.width = `${closeBtnSize}px`;
-                closeBtn.style.height = `${closeBtnSize}px`;
-                closeBtn.style.fontSize = `${closeBtnFontSize}px`;
-                closeBtn.style.borderRadius = `${closeBtnBorderRadius}px`;
-            }
-        }
-        
-        // Update content area padding
-        const contentArea = menu.element.querySelector('.tab-content');
-        if (contentArea) {
-            const contentPadding = Math.max(12, viewportScale * 12);
-            contentArea.style.padding = `${contentPadding}px`;
-        }
-    }
-    
-    createMenu(config) {
-        if (!config.id) {
-            throw new Error('Menu config must include an id property');
-        }
-        
-        if (this.menus.has(config.id)) {
-            throw new Error(`Menu with id '${config.id}' already exists`);
-        }
-        
-        const menu = new Menu(config);
-        this.menus.set(menu.id, menu);
-        console.log(`[MenuManager] Created menu: ${menu.id}`);
-        return menu.id;
-    }
-    
-    showMenu(menuId) {
-        const menu = this.menus.get(menuId);
-        if (menu) {
-            menu.show();
-            console.log(`[MenuManager] Showed menu: ${menuId}`);
-        } else {
-            console.warn(`[MenuManager] Menu not found: ${menuId}`);
-        }
-    }
-    
-    hideMenu(menuId) {
-        const menu = this.menus.get(menuId);
-        if (menu) {
-            menu.hide();
-            console.log(`[MenuManager] Hid menu: ${menuId}`);
-        } else {
-            console.warn(`[MenuManager] Menu not found: ${menuId}`);
-        }
-    }
-    
-    removeMenu(menuId) {
-        const menu = this.menus.get(menuId);
-        if (menu) {
-            menu.destroy();
-            this.menus.delete(menuId);
-            console.log(`[MenuManager] Removed menu: ${menuId}`);
-        } else {
-            console.warn(`[MenuManager] Menu not found: ${menuId}`);
-        }
-    }
-    
-    bringMenuToFront(menu) {
-        // Check if menu is already on top
-        const topMenu = this.getTopMenu();
-        if (topMenu && topMenu.id === menu.id) {
-            return;
-        }
-        
-        // Find the highest z-index currently in use
-        let maxZIndex = 1000;
-        this.menus.forEach(m => {
-            if (m.visible && m.zIndex > maxZIndex) {
-                maxZIndex = m.zIndex;
-            }
-        });
-        
-        // Set this menu's z-index higher than the current maximum
-        menu.zIndex = maxZIndex + 1;
-        menu.element.style.zIndex = menu.zIndex;
-        
-        console.log(`[MenuManager] Brought menu ${menu.id} to front with z-index: ${menu.zIndex}`);
-    }
-    
-    getTopMenu() {
-        let topMenu = null;
-        let highestZIndex = 0;
-        
-        this.menus.forEach(menu => {
-            if (menu.visible && menu.zIndex > highestZIndex) {
-                highestZIndex = menu.zIndex;
-                topMenu = menu;
-            }
-        });
-        
-        return topMenu;
-    }
-    
-    // List all menus
+
+    // Debug methods
     listMenus() {
         const menuList = Array.from(this.menus.values()).map(menu => ({
             id: menu.id,
@@ -1162,27 +1196,17 @@ export class MenuManager {
             visible: menu.visible,
             zIndex: menu.zIndex
         }));
-        
         console.log('[MenuManager] Active menus:', menuList);
         return menuList;
     }
-    
-    // Close all menus
-    closeAllMenus() {
-        this.menus.forEach(menu => {
-            this.hideMenu(menu.id);
-        });
-        console.log('[MenuManager] Closed all menus');
-    }
-    
-    // Debug methods
+
     getMenu(menuId) {
         return this.menus.get(menuId);
     }
-    
-    // Cleanup on destroy
+
     destroy() {
-        this.closeAllMenus();
+        this.menus.forEach(menu => menu.destroy());
+        this.menus.clear();
         console.log('[MenuManager] Menu system destroyed');
     }
 } 

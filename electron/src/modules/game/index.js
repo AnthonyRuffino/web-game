@@ -10,6 +10,7 @@ import { WorldEnhancements } from './world-enhancements.js';
 import { CanvasManager } from './canvas.js';
 import { PersistenceSystem } from './persistence.js';
 import { MenuManager } from './menuManager.js';
+import MenuBarElectron from './menuBarElectron.js';
 
 export class Game {
     constructor() {
@@ -27,6 +28,7 @@ export class Game {
         this.assetManager = null;
         this.persistenceSystem = null;
         this.menuManager = null;
+        this.menuBarElectron = null;
         
         this.isRunning = false;
         this.lastTime = 0;
@@ -94,6 +96,9 @@ export class Game {
 
             // Setup input event listeners for advanced input handling
             this.setupAdvancedInputListeners();
+            
+            // Setup Electron menu bar (after menuManager is ready)
+            this.menuBarElectron = new MenuBarElectron(this.menuManager);
             
             // Start the game
             this.start();
