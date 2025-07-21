@@ -517,14 +517,23 @@ export class World {
                 }
             } else if (entity.render) {
                 // Handle entities created by EntityRenderer
-                ctx.save();
-                
-                // Use renderY if specified, otherwise use entity.y
-                const renderY = entity.renderY !== undefined ? entity.renderY : entity.y;
-                ctx.translate(entity.x, renderY);
-                
-                entity.render(ctx);
-                ctx.restore();
+                // Try new rendering system first, fallback to old system
+                try {
+                    // Use new EntityRenderer.renderEntity() method
+                    EntityRenderer.renderEntity(ctx, entity);
+                } catch (error) {
+                    console.warn(`[World] New render method failed for ${entity.type}, using fallback:`, error);
+                    
+                    // Fallback to old rendering system
+                    ctx.save();
+                    
+                    // Use renderY if specified, otherwise use entity.y
+                    const renderY = entity.renderY !== undefined ? entity.renderY : entity.y;
+                    ctx.translate(entity.x, renderY);
+                    
+                    entity.render(ctx);
+                    ctx.restore();
+                }
             }
         });
     }

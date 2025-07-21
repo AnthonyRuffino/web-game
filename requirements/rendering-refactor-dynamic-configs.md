@@ -165,10 +165,10 @@ entity.create() → simple data setup → EntityRenderer.renderEntity(ctx, entit
 2. ✅ Create `renderEntity(ctx, entity)` method
 3. ✅ Test new render method alongside existing system
 
-#### Phase 3: Entity Integration
-1. Add optional `imageCacheKey` and `imageConfig` properties to entities
-2. Update entity creation to use new render method
-3. Test both rendering paths work (most entities use type defaults)
+#### Phase 3: Entity Integration ✅ COMPLETED
+1. ✅ Add optional `imageCacheKey` and `imageConfig` properties to entities
+2. ✅ Update entity creation to support new render method
+3. ✅ Test both rendering paths work (most entities use type defaults)
 
 #### Phase 4: World Integration
 1. Update world rendering to use new render method

@@ -40,8 +40,28 @@ export class EntityRenderer {
             config = { size: 32, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 };
         }
 
-        // Get cache key: entity-specific key OR default key for entity type
-        const cacheKey = entity.imageCacheKey || EntityRenderer.generateEntityCacheKey(entity.type);
+        // Get cache key: entity-specific key OR use the same logic as createEntityWithBoilerplate
+        let cacheKey = entity.imageCacheKey;
+        if (!cacheKey) {
+            // Use the same cache key generation as the old system
+            // This requires the entity to have been created with the proper entityModule
+            if (entity.entityModule && entity.entityModule.getCacheKey) {
+                cacheKey = entity.entityModule.getCacheKey(entity.config || {});
+            } else {
+                // Fallback: try to find a cached image with the entity type pattern
+                const assetManager = window.game?.assetManager;
+                if (assetManager) {
+                    // Look for any cache key that starts with the entity type
+                    for (const key of assetManager.imageCache.keys()) {
+                        if (key.startsWith(entity.type + '-')) {
+                            cacheKey = key;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
         const cachedImage = EntityRenderer.getCachedImage(cacheKey);
         
         if (cachedImage && cachedImage.image && cachedImage.image.complete) {
@@ -114,6 +134,8 @@ export class EntityRenderer {
         const entity = {
             type: type,
             size: config.size || 32,
+            config: config, // Store config for new render method
+            entityModule: entityModule, // Store entityModule for new render method
             render: function(ctx) {
                 // Use cached image if available
                 const cacheKey = entityModule.getCacheKey(config);

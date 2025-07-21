@@ -3,7 +3,7 @@ export class Player {
         this.x = x;
         this.y = y;
         this.size = 20;
-        this.speed = 1000; // Reduced from 200
+        this.speed = 350; // Reduced from 200
         this.rotSpeed = Math.PI * 2; // Increased from 0.8 to 2π radians per second (full rotation per second)
         this.angle = 0;
         this.collisionRadius = 10;
