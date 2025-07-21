@@ -1,4 +1,4 @@
-# Progress Update (2024-06-09, Overlay/Menu Stack Refactor)
+# Progress Update (Overlay/Menu Stack Refactor)
 
 ## Overlay/Menu Stack Requirements
 - Overlay logic is managed exclusively by `@menuManager.js`.
@@ -20,7 +20,7 @@
 
 ---
 
-# Progress Update (2024-06-09, Commit: Overlay & Skeleton Menus Integration)
+# Progress Update (Commit: Overlay & Skeleton Menus Integration)
 
 ## What Was Achieved
 - **Overlay Logic Refactored**: The opaque black overlay is now managed by the menu/modal system (`menuManager.js`), not the menu bar. It appears when any menu is open and blocks all UI/canvas below, and is hidden when all menus are closed.
@@ -42,7 +42,7 @@
 
 ---
 
-# Progress Update (2024-06-09)
+# Progress Update
 
 ## Current Status
 - **Menu Bar UI**: Complete. The menu bar is styled, fixed at the bottom, and buttons highlight when toggled.

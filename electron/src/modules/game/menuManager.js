@@ -16,6 +16,7 @@ class Menu {
         this.isBlocking = config.isBlocking || false;
         this.overlay = null;
         this.tabs = [];
+        this.onCloseParent = config.onCloseParent;
         
         // Track user modifications for viewport resize preservation
         this.userModifications = {
@@ -846,6 +847,7 @@ class Menu {
                 console.log(`[MenuManager] Auto-destroyed menu: ${this.id}`);
             }
         }
+        this.onCloseParent ? this.onCloseParent() : null;
     }
     
     bringToFront() {
@@ -938,21 +940,6 @@ export class MenuManager {
 
     showMenu(menuId) {
         let menu = this.menus.get(menuId);
-        if (!menu) {
-            // Create skeleton menu config based on menuId
-            let config = null;
-            if (menuId === 'skins') {
-                config = this.createSkinsMenuConfig();
-            } else if (menuId === 'macro') {
-                config = this.createMacroMenuConfig();
-            } else if (menuId === 'character') {
-                config = this.createCharacterMenuConfig();
-            }
-            if (config) {
-                this.createMenu(config);
-                menu = this.menus.get(menuId);
-            }
-        }
         if (menu) {
             // Bump z-index for this menu
             this.bringMenuToFront(menu);
@@ -1037,9 +1024,9 @@ export class MenuManager {
     }
 
     // --- Skeleton menu configs ---
-    createSkinsMenuConfig() {
+    createSkinsMenuConfig(id, onCloseParent) {
         return {
-            id: 'skins',
+            id: id,
             title: 'Skins & Customization',
             viewportX: 0.15,
             viewportY: 0.12,
@@ -1078,13 +1065,15 @@ export class MenuManager {
             ],
             onClose: () => {
                 this.hideMenu('skins');
-            }
+                console.log('onCloseParent', onCloseParent);
+            },
+            onCloseParent: onCloseParent
         };
     }
 
-    createMacroMenuConfig() {
+    createMacroMenuConfig(id, onCloseParent) {
         return {
-            id: 'macro',
+            id: id,
             title: 'Macro Menu',
             viewportX: 0.2,
             viewportY: 0.18,
@@ -1103,14 +1092,16 @@ export class MenuManager {
                 }
             ],
             onClose: () => {
+                console.log('onCloseParent', onCloseParent);
                 this.hideMenu('macro');
-            }
+            },
+            onCloseParent: onCloseParent
         };
     }
 
-    createCharacterMenuConfig() {
+    createCharacterMenuConfig(id, onCloseParent) {
         return {
-            id: 'character',
+            id: id,
             title: 'Character',
             viewportX: 0.22,
             viewportY: 0.15,
@@ -1141,8 +1132,10 @@ export class MenuManager {
                 }
             ],
             onClose: () => {
+                console.log('onCloseParent', onCloseParent);
                 this.hideMenu('character');
-            }
+            },
+            onCloseParent: onCloseParent
         };
     }
 

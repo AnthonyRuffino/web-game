@@ -68,6 +68,14 @@ class MenuBarElectron {
       btn.onclick = () => this.toggleMenu(menuId);
       bar.appendChild(btn);
       this.menuButtons[menuId] = btn;
+      if (menuId == 'skins') {
+        this.menuManager.createMenu(this.menuManager.createSkinsMenuConfig(menuId, () => this.updateButtonStates()));
+      } else if (menuId == 'macro') {
+        this.menuManager.createMenu(this.menuManager.createMacroMenuConfig(menuId, () => this.updateButtonStates()));
+      } else if (menuId == 'character') {
+        this.menuManager.createMenu(this.menuManager.createCharacterMenuConfig(menuId, () => this.updateButtonStates()));
+      }
+      
     });
 
     document.body.appendChild(bar);
@@ -82,6 +90,8 @@ class MenuBarElectron {
       default: return menuId;
     }
   }
+
+
 
   applyButtonStyle(btn, active) {
     btn.style.height = MENU_BAR_CONFIG.button.height;
