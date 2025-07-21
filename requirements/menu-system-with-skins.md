@@ -6,7 +6,12 @@ The game needs a comprehensive menu system that can be created dynamically throu
 
 ## Current State
 
-After the reversion, we have no menu system at all. We need to rebuild the entire dynamic menu infrastructure from scratch, with proper viewport-relative scaling and image support.
+We have existing menu systems in the codebase that provide excellent patterns:
+- **`ui/menuManager.js`**: Mature menu system with proper layering, blocking overlays, and callback support
+- **`data/ui/menuBuilder.js`**: Visual menu builder with component system
+- **`requirements/menu-creation-system.md`**: Comprehensive requirements for menu architecture
+
+The Electron-based menu system needs to align with these existing patterns while adapting to the Electron environment and viewport-relative scaling requirements.
 
 ## Solution: Dynamic Menu System with Skins
 
@@ -17,6 +22,9 @@ After the reversion, we have no menu system at all. We need to rebuild the entir
 3. **Image Support**: Load images from asset cache for buttons and displays
 4. **Modular Design**: Reusable components (tabs, grids, forms, buttons)
 5. **Skins Integration**: First official menu for entity/biome customization
+6. **Pattern Alignment**: Follow existing menu system patterns from `ui/menuManager.js`
+7. **Callback Support**: Proper event handling with onClick, onClickMenu callbacks
+8. **Layering System**: Proper z-index management and blocking overlays
 
 ### Architecture Overview
 
@@ -52,11 +60,30 @@ const menuConfig = {
   viewportY: 0.1,        // 10% from top edge
   viewportWidth: 0.8,    // 80% of viewport width
   viewportHeight: 0.8,   // 80% of viewport height
+  destroyOnClose: false, // Whether to destroy menu when closed
+  isBlocking: false,     // Whether to show blocking overlay
   tabs: [...],           // Tab configuration
   content: '...',        // HTML content
-  buttons: [...],        // Button configuration
+  buttons: [...],        // Button configuration with callbacks
   gridButtons: [...],    // Grid button configuration
   radioGroups: [...]     // Radio group configuration
+};
+```
+
+#### 1.3 Button Configuration with Callbacks
+```javascript
+const buttonConfig = {
+  text: 'Upload Tree',
+  icon: '🌳',           // Optional icon
+  onClick: (e) => {     // Direct callback function
+    console.log('Button clicked');
+    // Handle button action
+  },
+  onClickMenu: {        // Or open child menu
+    id: 'upload-menu',
+    title: 'Upload Options',
+    // ... child menu config
+  }
 };
 ```
 
@@ -78,8 +105,22 @@ const tabConfig = {
   name: 'Entities',
   content: '<h3>Entity Skins</h3><p>Customize entity appearances...</p>',
   buttons: [
-    { text: 'Upload Tree', action: 'uploadTree' },
-    { text: 'Upload Grass', action: 'uploadGrass' }
+    { 
+      text: 'Upload Tree', 
+      icon: '🌳',
+      onClick: (e) => {
+        console.log('Upload Tree clicked');
+        // Handle upload action
+      }
+    },
+    { 
+      text: 'Upload Grass', 
+      icon: '🌱',
+      onClick: (e) => {
+        console.log('Upload Grass clicked');
+        // Handle upload action
+      }
+    }
   ],
   gridButtons: [
     {
@@ -89,8 +130,18 @@ const tabConfig = {
       cellSize: 60,
       gap: 8,
       buttons: [
-        { name: 'Pine Tree', imageDataUrl: 'data:image/png;base64,...' },
-        { name: 'Oak Tree', imageDataUrl: 'data:image/png;base64,...' }
+        { 
+          name: 'Pine Tree', 
+          imageDataUrl: 'data:image/png;base64,...',
+          onClick: (e) => console.log('Pine Tree selected'),
+          tooltip: 'Select Pine Tree skin'
+        },
+        { 
+          name: 'Oak Tree', 
+          imageDataUrl: 'data:image/png;base64,...',
+          onClick: (e) => console.log('Oak Tree selected'),
+          tooltip: 'Select Oak Tree skin'
+        }
       ]
     }
   ]
@@ -119,9 +170,11 @@ const radioGroupConfig = {
 
 #### 2.4 Buttons
 - **Types**: Regular buttons, image buttons, upload buttons
-- **Actions**: Custom actions, file uploads, config updates
-- **Styling**: Consistent with game theme
+- **Callbacks**: Direct onClick functions or onClickMenu for child menus
+- **Icons**: Optional icons for visual enhancement
+- **Styling**: Consistent with game theme using existing patterns
 - **Scaling**: Button size and text scale with viewport
+- **Event Handling**: Proper event isolation and callback execution
 
 ### 3. Skins Menu (First Official Menu)
 
@@ -320,16 +373,18 @@ if (cachedImage && cachedImage.image) {
 ### 7. Event Handling
 
 #### 7.1 Menu Events
-- **Drag**: Menus can be dragged around viewport
+- **Drag**: Menus can be dragged around viewport (following existing patterns)
 - **Resize**: Menus can be resized (if enabled)
-- **Close**: Close button and Escape key
-- **Focus**: Bring menu to front when clicked
+- **Close**: Close button and Escape key (proper layering)
+- **Focus**: Bring menu to front when clicked (z-index management)
+- **Blocking**: Optional blocking overlays for modal menus
 
 #### 7.2 Game Integration
 - **Input Isolation**: Menu events don't interfere with game
-- **Pause**: Option to pause game when menu is open
-- **Overlay**: Menu appears over game content
-- **Transparency**: Optional background overlay
+- **Layering System**: Proper z-index management following existing patterns
+- **Blocking Overlays**: Modal menus can block game interaction
+- **Event Coordination**: Proper event handling between canvas and UI layers
+- **Callback Execution**: Direct function calls or child menu creation
 
 ### 8. Implementation Phases
 
@@ -338,6 +393,13 @@ if (cachedImage && cachedImage.image) {
 2. ✅ Implement viewport-relative positioning
 3. ✅ Add basic menu creation and display
 4. ✅ Test with simple menu
+
+#### Phase 1.5: Pattern Alignment ✅ COMPLETED
+1. ✅ Align with existing menu system patterns from `ui/menuManager.js`
+2. ✅ Implement proper callback system (onClick, onClickMenu)
+3. ✅ Add layering and blocking overlay support
+4. ✅ Fix styling to match existing menu aesthetics
+5. ✅ Implement proper event handling and z-index management
 
 #### Phase 2: Menu Components
 1. Implement tabs system
@@ -395,30 +457,44 @@ if (cachedImage && cachedImage.image) {
 - **Plugin System**: Third-party menu components
 - **Advanced Features**: Animation, transitions, themes
 
-## Phase 1 Completion Summary ✅
+## Phase 1 & 1.5 Completion Summary ✅
 
-**Phase 1: Basic Menu System** has been successfully completed:
+**Phase 1: Basic Menu System** and **Phase 1.5: Pattern Alignment** have been successfully completed:
 
 ### ✅ Completed Features:
 - **MenuManager Class**: Created with full viewport-relative positioning and scaling
 - **Dynamic Menu Creation**: Menus can be created through console commands with config objects
 - **Viewport-Relative Scaling**: All positions, sizes, fonts, padding, margins, borders, and spacing scale with viewport dimensions
 - **Event Handling**: Draggable menus, keyboard shortcuts (Escape to close), focus management
-- **Console Integration**: Added menu commands (`menu`, `menus`, `close`, `closeall`, `testmenu`)
+- **Console Integration**: Added menu commands (`menu`, `menus`, `close`, `closeall`, `testmenu`, `testtabs`, `testcallbacks`)
 - **Complete Viewport-Relative Styling**: No absolute pixel values - everything scales proportionally with viewport size
+- **Tabs Support**: Basic tabs system with viewport-relative styling and button integration
+- **Pattern Alignment**: ✅ Now follows existing menu system patterns from `ui/menuManager.js`
+- **Callback System**: ✅ Proper onClick and onClickMenu support with child menu creation
+- **Layering System**: ✅ Proper z-index management and blocking overlays
+- **Styling**: ✅ Matches existing menu aesthetics with dark theme and proper styling
+
+### ✅ Issues Fixed:
+- **Styling**: ✅ Now matches existing menu aesthetics with proper dark theme
+- **Callbacks**: ✅ Button configs now support onClick and onClickMenu
+- **Layering**: ✅ Proper z-index management and blocking overlays implemented
+- **Pattern Alignment**: ✅ Now follows patterns from `ui/menuManager.js`
 
 ### 🎯 Current Status:
 - **Phase 1**: ✅ COMPLETED - Basic menu system working
+- **Phase 1.5**: ✅ COMPLETED - Pattern alignment and callback system
 - **Phase 2**: ⏳ NEXT - Menu components (tabs, grid buttons, forms)
 - **Phase 3**: ⏳ PENDING - Skins menu with upload functionality
 - **Phase 4**: ⏳ PENDING - Integration and optimization
 
 ### 🧪 Testing:
-The basic menu system can be tested with:
+The menu system can be tested with:
 ```javascript
-cmd("testmenu")  // Creates a test menu
-cmd("menus")     // Lists all menus
-cmd("closeall")  // Closes all menus
+cmd("testmenu")      // Creates a test menu
+cmd("testtabs")      // Creates a tabs menu with buttons and callbacks
+cmd("testcallbacks") // Tests onClick and onClickMenu callback system
+cmd("menus")         // Lists all menus
+cmd("closeall")      // Closes all menus
 ```
 
 ### 📏 Viewport-Relative Styling Implementation:
@@ -428,6 +504,15 @@ All styling now uses viewport-relative calculations:
 - **Proportional Scaling**: All elements maintain their relative proportions as viewport changes
 - **Dynamic Updates**: All styling updates automatically on window resize
 - **No Absolute Pixels**: Removed all hardcoded pixel values from styling
+
+### 🔄 Existing Pattern Integration:
+The Electron menu system should follow patterns from existing systems:
+- **Menu Class**: Follow `ui/menuManager.js` Menu class structure
+- **Layering**: Use proper z-index management and blocking overlays
+- **Callbacks**: Support onClick and onClickMenu patterns
+- **Styling**: Match existing menu aesthetics and behavior
+- **Event Handling**: Proper event isolation and coordination
+- **Component System**: Follow `data/ui/menuBuilder.js` component patterns
 
 ## Conclusion
 

@@ -235,6 +235,160 @@ export class Game {
                     console.log(`[Console] Created test menu: ${testMenuId}`);
                     break;
                     
+                case 'testtabs':
+                    const tabsMenuConfig = {
+                        id: 'tabs-menu',
+                        title: 'Tabs & Buttons Test',
+                        viewportX: 0.05,
+                        viewportY: 0.05,
+                        viewportWidth: 0.9,
+                        viewportHeight: 0.9,
+                        tabs: [
+                            {
+                                name: 'Entities',
+                                content: '<h3>Entity Management</h3><p>Manage entity types and their configurations.</p>',
+                                buttons: [
+                                    { 
+                                        text: 'Upload Tree', 
+                                        icon: '🌳',
+                                        onClick: (e) => {
+                                            console.log('[Console] Upload Tree clicked');
+                                            // TODO: Implement upload functionality
+                                        }
+                                    },
+                                    { 
+                                        text: 'Upload Grass', 
+                                        icon: '🌱',
+                                        onClick: (e) => {
+                                            console.log('[Console] Upload Grass clicked');
+                                            // TODO: Implement upload functionality
+                                        }
+                                    },
+                                    { 
+                                        text: 'Upload Rock', 
+                                        icon: '🪨',
+                                        onClick: (e) => {
+                                            console.log('[Console] Upload Rock clicked');
+                                            // TODO: Implement upload functionality
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                name: 'Settings',
+                                content: '<h3>Game Settings</h3><p>Configure game options and preferences.</p>',
+                                buttons: [
+                                    { 
+                                        text: 'Save Settings', 
+                                        icon: '💾',
+                                        onClick: (e) => {
+                                            console.log('[Console] Save Settings clicked');
+                                            // TODO: Implement save functionality
+                                        }
+                                    },
+                                    { 
+                                        text: 'Reset Defaults', 
+                                        icon: '🔄',
+                                        onClick: (e) => {
+                                            console.log('[Console] Reset Defaults clicked');
+                                            // TODO: Implement reset functionality
+                                        }
+                                    },
+                                    { 
+                                        text: 'Export Config', 
+                                        icon: '📤',
+                                        onClick: (e) => {
+                                            console.log('[Console] Export Config clicked');
+                                            // TODO: Implement export functionality
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                name: 'Help',
+                                content: '<h3>Help & Information</h3><p>Get help and view game information.</p>',
+                                buttons: [
+                                    { 
+                                        text: 'View Controls', 
+                                        icon: '⌨️',
+                                        onClick: (e) => {
+                                            console.log('[Console] View Controls clicked');
+                                            // TODO: Show controls help
+                                        }
+                                    },
+                                    { 
+                                        text: 'About Game', 
+                                        icon: 'ℹ️',
+                                        onClick: (e) => {
+                                            console.log('[Console] About Game clicked');
+                                            // TODO: Show about dialog
+                                        }
+                                    },
+                                    { 
+                                        text: 'Report Bug', 
+                                        icon: '🐛',
+                                        onClick: (e) => {
+                                            console.log('[Console] Report Bug clicked');
+                                            // TODO: Open bug report form
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    };
+                    const tabsMenuId = this.menuManager.createMenu(tabsMenuConfig);
+                    this.menuManager.showMenu(tabsMenuId);
+                    console.log(`[Console] Created tabs menu: ${tabsMenuId}`);
+                    break;
+                    
+                case 'testcallbacks':
+                    const callbackMenuConfig = {
+                        id: 'callback-test-menu',
+                        title: 'Callback System Test',
+                        viewportX: 0.1,
+                        viewportY: 0.1,
+                        viewportWidth: 0.8,
+                        viewportHeight: 0.8,
+                        content: '<h3>Callback System Test</h3><p>Test the onClick and onClickMenu callback system.</p>',
+                        buttons: [
+                            {
+                                text: 'Direct Callback',
+                                icon: '🎯',
+                                onClick: (e) => {
+                                    console.log('[Console] Direct callback executed!');
+                                    alert('Direct callback works!');
+                                }
+                            },
+                            {
+                                text: 'Open Child Menu',
+                                icon: '📂',
+                                onClickMenu: {
+                                    id: 'child-menu',
+                                    title: 'Child Menu',
+                                    viewportX: 0.2,
+                                    viewportY: 0.2,
+                                    viewportWidth: 0.6,
+                                    viewportHeight: 0.6,
+                                    content: '<h3>Child Menu</h3><p>This is a child menu opened via onClickMenu callback.</p>',
+                                    buttons: [
+                                        {
+                                            text: 'Close Child',
+                                            icon: '❌',
+                                            onClick: (e) => {
+                                                console.log('[Console] Closing child menu');
+                                                window.game.menuManager.hideMenu('child-menu');
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    };
+                    const callbackMenuId = this.menuManager.createMenu(callbackMenuConfig);
+                    this.menuManager.showMenu(callbackMenuId);
+                    console.log(`[Console] Created callback test menu: ${callbackMenuId}`);
+                    break;
+                    
                 case 'help':
                     console.log('[Console] Available commands:');
                     console.log('  cmd("perspective") or cmd("toggle") - Toggle camera mode');
@@ -251,6 +405,8 @@ export class Game {
                     console.log('  cmd("close", <menuId>) - Close specific menu');
                     console.log('  cmd("closeall") - Close all menus');
                     console.log('  cmd("testmenu") - Create test menu');
+                    console.log('  cmd("testtabs") - Create tabs menu with buttons');
+                    console.log('  cmd("testcallbacks") - Test callback system');
                     console.log('  cmd("help") - Show this help');
                     break;
                     
