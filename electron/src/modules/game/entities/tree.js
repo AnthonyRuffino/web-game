@@ -56,6 +56,15 @@ export const TreeEntity = {
         entity.fixedScreenAngle = mergedConfig.fixedScreenAngle;
         entity.drawOffsetX = mergedConfig.drawOffsetX;
         entity.drawOffsetY = mergedConfig.drawOffsetY;
+        
+        // Add optional properties for new rendering system
+        if (config.imageCacheKey) {
+            entity.imageCacheKey = config.imageCacheKey;
+        }
+        if (config.imageConfig) {
+            entity.imageConfig = config.imageConfig;
+        }
+        
         return entity;
     }
 }; 

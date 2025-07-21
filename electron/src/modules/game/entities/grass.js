@@ -48,6 +48,16 @@ export const GrassEntity = {
     // Create a grass entity with unified rendering
     create(config = {}) {
         const mergedConfig = { ...this.defaultConfig, ...config };
-        return EntityRenderer.createEntityWithBoilerplate('grass', mergedConfig, EntityRenderer, GrassEntity);
+        const entity = EntityRenderer.createEntityWithBoilerplate('grass', mergedConfig, EntityRenderer, GrassEntity);
+        
+        // Add optional properties for new rendering system
+        if (config.imageCacheKey) {
+            entity.imageCacheKey = config.imageCacheKey;
+        }
+        if (config.imageConfig) {
+            entity.imageConfig = config.imageConfig;
+        }
+        
+        return entity;
     }
 }; 

@@ -10,6 +10,105 @@ export class EntityRenderer {
         return null;
     }
 
+    // Get entity type config from asset manager
+    static getEntityTypeConfig(entityType) {
+        if (window.game && window.game.assetManager) {
+            return window.game.assetManager.getEntityTypeConfig(entityType);
+        }
+        return null;
+    }
+
+    // Generate default cache key for entity type
+    static generateEntityCacheKey(entityType) {
+        return `image:entity:${entityType}`;
+    }
+
+    // Render entity with dynamic config (extracted from createEntityWithBoilerplate)
+    static renderEntity(ctx, entity) {
+        if (!entity || !entity.type) {
+            console.warn('[EntityRenderer] Entity missing or no type:', entity);
+            return;
+        }
+
+        // Get config: entity-specific config OR entity type config OR fallback
+        let config = entity.imageConfig; // Optional entity-specific config
+        if (!config) {
+            config = EntityRenderer.getEntityTypeConfig(`entity:${entity.type}`); // Entity type config
+        }
+        if (!config) {
+            // Hardcoded fallback config
+            config = { size: 32, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 };
+        }
+
+        // Get cache key: entity-specific key OR default key for entity type
+        const cacheKey = entity.imageCacheKey || EntityRenderer.generateEntityCacheKey(entity.type);
+        const cachedImage = EntityRenderer.getCachedImage(cacheKey);
+        
+        if (cachedImage && cachedImage.image && cachedImage.image.complete) {
+            // Draw cached image
+            const img = cachedImage.image;
+            const width = config.size || img.width || 32;
+            const height = config.size || img.height || 32;
+            
+            // Apply draw offset if specified
+            const offsetX = config.drawOffsetX || 0;
+            const offsetY = config.drawOffsetY || 0;
+            
+            // Handle fixed screen angle if specified
+            if (config.fixedScreenAngle !== null && config.fixedScreenAngle !== undefined) {
+                // Get current camera mode and rotation
+                const cameraMode = window.game?.inputManager?.cameraMode || 'fixed-angle';
+                const cameraRotation = window.game?.camera?.rotation || 0;
+                const playerAngle = window.game?.player?.angle || 0;
+                
+                let angle = 0;
+                if (cameraMode === 'player-perspective') {
+                    // In player-perspective mode, undo world rotation and apply fixed angle
+                    angle = playerAngle + (config.fixedScreenAngle * Math.PI / 180);
+                } else {
+                    // In fixed-angle mode, apply camera rotation and fixed angle
+                    angle = cameraRotation + (config.fixedScreenAngle * Math.PI / 180);
+                }
+                
+                // Apply rotation
+                ctx.save();
+                ctx.translate(entity.x, entity.y);
+                ctx.rotate(angle);
+                ctx.drawImage(
+                    img,
+                    -width / 2 + offsetX,
+                    -height / 2 + offsetY,
+                    width,
+                    height
+                );
+                ctx.restore();
+            } else {
+                // No rotation - draw normally
+                ctx.drawImage(
+                    img,
+                    entity.x - width / 2 + offsetX,
+                    entity.y - height / 2 + offsetY,
+                    width,
+                    height
+                );
+            }
+        } else {
+            // No cached image available - draw error placeholder
+            const size = config.size || 32;
+            ctx.save();
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(entity.x - size / 2, entity.y - size / 2, size, size);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(entity.x - size / 2, entity.y - size / 2, size, size);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `${Math.max(8, size/4)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText('?', entity.x, entity.y + size/8);
+            ctx.restore();
+        }
+    }
+
     // Create entity with proper boilerplate (matching core system)
     static createEntityWithBoilerplate(type, config, entityRenderer, entityModule) {
         const entity = {

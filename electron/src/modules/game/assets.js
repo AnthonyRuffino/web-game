@@ -10,7 +10,9 @@ export class AssetManager {
         // Asset directory in user's home folder
         this.assetDir = null;
         this.imageCache = new Map(); // In-memory cache for loaded images
+        this.entityTypeConfigs = new Map(); // In-memory cache for entity type configs
         this.initAssetDir();
+        this.initImageConfigs(); // Initialize entity type configs at startup
     }
 
     async initAssetDir() {
@@ -30,6 +32,103 @@ export class AssetManager {
             // Fallback to localStorage only
             this.assetDir = null;
         }
+    }
+
+    // Initialize centralized entity type configurations
+    initImageConfigs() {
+        console.log('[AssetManager] Initializing entity type configurations...');
+        
+        // Load existing configs from localStorage
+        const savedConfigs = localStorage.getItem('entity-type-configs');
+        if (savedConfigs) {
+            try {
+                const configs = JSON.parse(savedConfigs);
+                console.log('[AssetManager] Loaded entity type configs from localStorage:', configs);
+                
+                // Store in memory cache
+                Object.entries(configs).forEach(([key, config]) => {
+                    this.entityTypeConfigs.set(key, config);
+                });
+            } catch (error) {
+                console.error('[AssetManager] Error parsing saved entity type configs:', error);
+            }
+        }
+
+        // Ensure all required entity type configs exist
+        this.ensureAllEntityTypeConfigs();
+    }
+
+    // Ensure all required entity type configs exist in memory and localStorage
+    ensureAllEntityTypeConfigs() {
+        const requiredEntityTypes = [
+            { name: 'grass', defaultConfig: { size: 32, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 } },
+            { name: 'tree', defaultConfig: { size: 24, fixedScreenAngle: 0, drawOffsetX: 0, drawOffsetY: -42 } },
+            { name: 'rock', defaultConfig: { size: 20, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 } }
+        ];
+
+        const requiredBackgroundTypes = [
+            { name: 'plains', defaultConfig: { size: 640, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 } },
+            { name: 'desert', defaultConfig: { size: 640, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 } }
+        ];
+
+        let configsChanged = false;
+
+        // Ensure entity type configs
+        requiredEntityTypes.forEach(entityType => {
+            const configKey = `entity:${entityType.name}`;
+            if (!this.entityTypeConfigs.has(configKey)) {
+                this.entityTypeConfigs.set(configKey, entityType.defaultConfig);
+                configsChanged = true;
+                console.log(`[AssetManager] Created default config for ${configKey}:`, entityType.defaultConfig);
+            }
+        });
+
+        // Ensure background type configs
+        requiredBackgroundTypes.forEach(backgroundType => {
+            const configKey = `background:${backgroundType.name}`;
+            if (!this.entityTypeConfigs.has(configKey)) {
+                this.entityTypeConfigs.set(configKey, backgroundType.defaultConfig);
+                configsChanged = true;
+                console.log(`[AssetManager] Created default config for ${configKey}:`, backgroundType.defaultConfig);
+            }
+        });
+
+        // Save to localStorage if any configs were added
+        if (configsChanged) {
+            this.saveAllEntityTypeConfigs();
+        }
+
+        console.log('[AssetManager] All entity type configs ensured:', Object.fromEntries(this.entityTypeConfigs));
+    }
+
+    // Save all entity type configs to localStorage
+    saveAllEntityTypeConfigs() {
+        try {
+            const configs = Object.fromEntries(this.entityTypeConfigs);
+            localStorage.setItem('entity-type-configs', JSON.stringify(configs));
+            console.log('[AssetManager] Entity type configs saved to localStorage');
+        } catch (error) {
+            console.error('[AssetManager] Error saving entity type configs:', error);
+        }
+    }
+
+    // Get entity type config from memory cache
+    getEntityTypeConfig(entityType) {
+        return this.entityTypeConfigs.get(entityType);
+    }
+
+    // Update entity type config in memory and localStorage
+    updateEntityTypeConfig(entityType, newConfig) {
+        this.entityTypeConfigs.set(entityType, newConfig);
+        this.saveAllEntityTypeConfigs();
+        console.log(`[AssetManager] Updated config for ${entityType}:`, newConfig);
+    }
+
+    // Save specific entity type config to localStorage
+    saveEntityTypeConfig(entityType, config) {
+        this.entityTypeConfigs.set(entityType, config);
+        this.saveAllEntityTypeConfigs();
+        console.log(`[AssetManager] Saved config for ${entityType}:`, config);
     }
 
     // Initialize all required images on startup

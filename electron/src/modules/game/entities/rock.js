@@ -45,6 +45,16 @@ export const RockEntity = {
     // Create a rock entity with unified rendering
     create(config = {}) {
         const mergedConfig = { ...this.defaultConfig, ...config };
-        return EntityRenderer.createEntityWithBoilerplate('rock', mergedConfig, EntityRenderer, RockEntity);
+        const entity = EntityRenderer.createEntityWithBoilerplate('rock', mergedConfig, EntityRenderer, RockEntity);
+        
+        // Add optional properties for new rendering system
+        if (config.imageCacheKey) {
+            entity.imageCacheKey = config.imageCacheKey;
+        }
+        if (config.imageConfig) {
+            entity.imageConfig = config.imageConfig;
+        }
+        
+        return entity;
     }
 }; 
