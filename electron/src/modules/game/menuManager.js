@@ -607,6 +607,15 @@ class Menu {
                 
                 this.element.style.left = `${newLeft}px`;
                 this.element.style.top = `${newTop}px`;
+                
+                // Update user modifications
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                this.userModifications.position.x = newLeft / viewportWidth;
+                this.userModifications.position.y = newTop / viewportHeight;
+                this.userModifications.size.width = (parseInt(this.element.style.width) || this.element.offsetWidth) / viewportWidth;
+                this.userModifications.size.height = (parseInt(this.element.style.height) || this.element.offsetHeight) / viewportHeight;
+                this.userModifications.hasBeenModified = true;
             };
             
             document.onmouseup = () => {
@@ -638,9 +647,14 @@ class Menu {
             for (const entry of entries) {
                 if (entry.target === this.element) {
                     // Update user modifications with new size
-                    this.updateUserModifications();
-                    // Update internal scaling
-                    this.updateInternalScaling();
+                    const rect = this.element.getBoundingClientRect();
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    this.userModifications.size.width = rect.width / viewportWidth;
+                    this.userModifications.size.height = rect.height / viewportHeight;
+                    this.userModifications.position.x = rect.left / viewportWidth;
+                    this.userModifications.position.y = rect.top / viewportHeight;
+                    this.userModifications.hasBeenModified = true;
                 }
             }
         });
@@ -914,6 +928,41 @@ class Menu {
             console.log(`[MenuManager] Removed blocking overlay for menu: ${this.id}`);
         }
     }
+
+    updateViewportPositionAndSize() {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const viewportScale = Math.min(viewportWidth, viewportHeight) / 1000;
+        let left, top, width, height;
+        if (this.userModifications.hasBeenModified) {
+            // Use preserved user modifications
+            left = this.userModifications.position.x * viewportWidth;
+            top = this.userModifications.position.y * viewportHeight;
+            width = this.userModifications.size.width * viewportWidth;
+            height = this.userModifications.size.height * viewportHeight;
+        } else {
+            // Use original config values
+            left = (this.config.viewportX || 0.1) * viewportWidth;
+            top = (this.config.viewportY || 0.1) * viewportHeight;
+            width = (this.config.viewportWidth || 0.8) * viewportWidth;
+            height = (this.config.viewportHeight || 0.8) * viewportHeight;
+        }
+        const borderWidth = Math.max(1, viewportScale * 2);
+        const borderRadius = Math.max(4, viewportScale * 8);
+        const boxShadowBlur = Math.max(2, viewportScale * 4);
+        const boxShadowSpread = Math.max(1, viewportScale * 2);
+        const minWidth = Math.max(300, viewportScale * 300);
+        const minHeight = Math.max(200, viewportScale * 200);
+        this.element.style.left = `${left}px`;
+        this.element.style.top = `${top}px`;
+        this.element.style.width = `${width}px`;
+        this.element.style.height = `${height}px`;
+        this.element.style.minWidth = `${minWidth}px`;
+        this.element.style.minHeight = `${minHeight}px`;
+        this.element.style.borderWidth = `${borderWidth}px`;
+        this.element.style.borderRadius = `${borderRadius}px`;
+        this.element.style.boxShadow = `0 ${boxShadowBlur}px ${boxShadowSpread}px rgba(0, 0, 0, 0.5)`;
+    }
 }
 
 export class MenuManager {
@@ -1016,8 +1065,8 @@ export class MenuManager {
     setupWindowResizeHandler() {
         window.addEventListener('resize', () => {
             this.menus.forEach(menu => {
-                if (menu.visible) {
-                    // Optionally update menu position/size here
+                if (menu.visible && typeof menu.updateViewportPositionAndSize === 'function') {
+                    menu.updateViewportPositionAndSize();
                 }
             });
         });
