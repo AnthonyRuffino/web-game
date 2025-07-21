@@ -9,6 +9,7 @@ import { AssetManager } from './assets.js';
 import { WorldEnhancements } from './world-enhancements.js';
 import { CanvasManager } from './canvas.js';
 import { PersistenceSystem } from './persistence.js';
+import { MenuManager } from './menuManager.js';
 
 export class Game {
     constructor() {
@@ -25,6 +26,7 @@ export class Game {
         this.worldEnhancements = null;
         this.assetManager = null;
         this.persistenceSystem = null;
+        this.menuManager = null;
         
         this.isRunning = false;
         this.lastTime = 0;
@@ -65,6 +67,7 @@ export class Game {
             this.worldEnhancements = new WorldEnhancements();
             this.assetManager = new AssetManager();
             this.persistenceSystem = new PersistenceSystem();
+            this.menuManager = new MenuManager();
             
             // Initialize systems
             this.inputManager.init();
@@ -182,6 +185,56 @@ export class Game {
                     console.log(`[Console] Current world seed: ${currentSeed}`);
                     break;
                     
+                case 'menu':
+                    try {
+                        const menuConfig = args[0];
+                        if (!menuConfig) {
+                            console.log('[Console] Usage: cmd("menu", <menuConfig>)');
+                            console.log('[Console] Example: cmd("menu", {id: "test", title: "Test Menu", viewportX: 0.1, viewportY: 0.1, viewportWidth: 0.8, viewportHeight: 0.8, content: "<h3>Test Content</h3>"})');
+                        } else {
+                            const menuId = this.menuManager.createMenu(menuConfig);
+                            this.menuManager.showMenu(menuId);
+                            console.log(`[Console] Created and showed menu: ${menuId}`);
+                        }
+                    } catch (error) {
+                        console.error('[Console] Error creating menu:', error);
+                    }
+                    break;
+                    
+                case 'menus':
+                    const menuList = this.menuManager.listMenus();
+                    break;
+                    
+                case 'close':
+                    const menuId = args[0];
+                    if (!menuId) {
+                        console.log('[Console] Usage: cmd("close", <menuId>)');
+                    } else {
+                        const closed = this.menuManager.hideMenu(menuId);
+                        console.log(`[Console] Menu ${menuId} ${closed ? 'closed' : 'not found'}`);
+                    }
+                    break;
+                    
+                case 'closeall':
+                    this.menuManager.closeAllMenus();
+                    console.log('[Console] All menus closed');
+                    break;
+                    
+                case 'testmenu':
+                    const testMenuConfig = {
+                        id: 'test-menu',
+                        title: 'Test Menu',
+                        viewportX: 0.1,
+                        viewportY: 0.1,
+                        viewportWidth: 0.8,
+                        viewportHeight: 0.8,
+                        content: '<h3>Test Menu Content</h3><p>This is a test menu with viewport-relative positioning and scaling.</p>'
+                    };
+                    const testMenuId = this.menuManager.createMenu(testMenuConfig);
+                    this.menuManager.showMenu(testMenuId);
+                    console.log(`[Console] Created test menu: ${testMenuId}`);
+                    break;
+                    
                 case 'help':
                     console.log('[Console] Available commands:');
                     console.log('  cmd("perspective") or cmd("toggle") - Toggle camera mode');
@@ -193,6 +246,11 @@ export class Game {
                     console.log('  cmd("saveinfo") - Show save information');
                     console.log('  cmd("setseed", <number>) - Set world seed');
                     console.log('  cmd("getseed") - Show current world seed');
+                    console.log('  cmd("menu", <config>) - Create and show menu');
+                    console.log('  cmd("menus") - List all open menus');
+                    console.log('  cmd("close", <menuId>) - Close specific menu');
+                    console.log('  cmd("closeall") - Close all menus');
+                    console.log('  cmd("testmenu") - Create test menu');
                     console.log('  cmd("help") - Show this help');
                     break;
                     
