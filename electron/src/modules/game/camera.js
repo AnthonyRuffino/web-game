@@ -112,20 +112,13 @@ export class Camera {
         // Undo zoom and center translation
         const x = (screenX - this.width / 2) / this.zoom;
         const y = (screenY - this.height / 2) / this.zoom;
+        const undoAngle = this.mode == 'player-perspective' ? playerAngle : this.rotation;
         
-        if (this.mode === 'player-perspective') {
-            // Undo player rotation
-            const cos = Math.cos(playerAngle);
-            const sin = Math.sin(playerAngle);
-            worldX = x * cos - y * sin + this.x;
-            worldY = x * sin + y * cos + this.y;
-        } else {
-            // Undo camera rotation
-            const cos = Math.cos(this.rotation);
-            const sin = Math.sin(this.rotation);
-            worldX = x * cos + y * sin + this.x;
-            worldY = -x * sin + y * cos + this.y;
-        }
+        // Undo rotation
+        const cos = Math.cos(undoAngle);
+        const sin = Math.sin(undoAngle);
+        worldX = x * cos - y * sin + this.x;
+        worldY = x * sin + y * cos + this.y;
         
         return { x: worldX, y: worldY };
     }
