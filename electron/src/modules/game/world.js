@@ -428,10 +428,13 @@ export class World {
         }
         
         // Now render entities (excluding fixed angle entities)
-        visibleChunks.forEach(chunkInfo => {
+        const fixedAngleEntityRenderFunctions = visibleChunks.map(chunkInfo => {
             const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
-            this.renderChunkEntities(ctx, chunk, player);
+            return this.renderChunkEntities(ctx, chunk);
         });
+
+        player.render(ctx);
+        fixedAngleEntityRenderFunctions.forEach(renderFunction => renderFunction());
         
         // Clean up distant chunks
         const keepChunkKeys = new Set(visibleChunks.map(chunk => chunk.key));
@@ -447,7 +450,7 @@ export class World {
     }
 
     // Render chunk entities (with option to exclude fixed angle entities)
-    renderChunkEntities(ctx, chunk, player) {
+    renderChunkEntities(ctx, chunk) {
         if (!chunk.entities || !Array.isArray(chunk.entities)) return;
         
         // Sort entities for correct render order (matching core/world.js logic):
@@ -492,8 +495,7 @@ export class World {
         };
         
         basicEntities.forEach(entityRenderFunction);
-        player.render(ctx);
-        fixedAngleEntities.forEach(entity => entityRenderFunction(entity));
+        return () => fixedAngleEntities.forEach(entity => entityRenderFunction(entity));
     }
 
     // Synchronous biome background rendering (for immediate display)
