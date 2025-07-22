@@ -430,7 +430,7 @@ export class World {
         // Now render entities (excluding fixed angle entities)
         const fixedAngleEntityRenderFunctions = visibleChunks.map(chunkInfo => {
             const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
-            return this.renderChunkEntities(ctx, chunk);
+            return this.renderChunkEntities(ctx, chunk, player);
         });
 
         player.render(ctx);
@@ -450,7 +450,7 @@ export class World {
     }
 
     // Render chunk entities (with option to exclude fixed angle entities)
-    renderChunkEntities(ctx, chunk) {
+    renderChunkEntities(ctx, chunk, player) {
         if (!chunk.entities || !Array.isArray(chunk.entities)) return;
         
         // Sort entities for correct render order (matching core/world.js logic):
@@ -464,8 +464,9 @@ export class World {
             (e.fixedScreenAngle === null || e.fixedScreenAngle === undefined)
         );
         
-        // Sort fixed angle entities by Y position (descending - higher Y renders first)
-        fixedAngleEntities.sort((a, b) => b.y - a.y);
+        // Sort fixed angle entities by screen Y position for proper depth ordering
+        // This works correctly regardless of camera angle
+        const sortedFixedAngleEntities = this.sortFixedAngleEntitiesByScreenDepth(fixedAngleEntities, player);
 
         const entityRenderFunction = (entity) => {
             if (entity.type === 'letterTile') {
@@ -495,7 +496,30 @@ export class World {
         };
         
         basicEntities.forEach(entityRenderFunction);
-        return () => fixedAngleEntities.forEach(entity => entityRenderFunction(entity));
+        return () => sortedFixedAngleEntities.forEach(entity => entityRenderFunction(entity));
+    }
+
+    // Sort fixed angle entities by screen depth for proper rendering order
+    sortFixedAngleEntitiesByScreenDepth(fixedAngleEntities, player) {
+        if (!fixedAngleEntities.length || !window.game?.camera) {
+            return fixedAngleEntities;
+        }
+
+        const camera = window.game.camera;
+        
+        // Convert world coordinates to screen coordinates for each entity
+        const entitiesWithScreenCoords = fixedAngleEntities.map(entity => {
+            const screenPos = camera.worldToScreen(entity.x, entity.y, window.game?.player?.angle || 0);
+            return {
+                entity: entity,
+                screenY: screenPos.y
+            };
+        });
+
+        entitiesWithScreenCoords.sort((a, b) => a.screenY - b.screenY);
+
+        // Return entities in render order: below the fold first, then above the fold
+        return entitiesWithScreenCoords.map(item => item.entity);
     }
 
     // Synchronous biome background rendering (for immediate display)

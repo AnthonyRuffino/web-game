@@ -4,7 +4,7 @@
 export class PersistenceSystem {
     constructor() {
         this.config = {
-            saveInterval: 5000, // Save every 5 seconds
+            saveInterval: 6000*10, // Save every 60 seconds
             storageKey: 'electronGameState',
             autoSave: true
         };

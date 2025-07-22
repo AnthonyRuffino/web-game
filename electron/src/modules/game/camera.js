@@ -130,20 +130,12 @@ export class Camera {
         // Translate to camera-relative coordinates
         const x = worldX - this.x;
         const y = worldY - this.y;
-        
-        if (this.mode === 'player-perspective') {
-            // Apply player rotation
-            const cos = Math.cos(-playerAngle);
-            const sin = Math.sin(-playerAngle);
+        const angle = this.mode === 'player-perspective' ? playerAngle : this.rotation; 
+
+        const cos = Math.cos(-angle);
+            const sin = Math.sin(-angle);
             screenX = (x * cos - y * sin) * this.zoom + this.width / 2;
             screenY = (x * sin + y * cos) * this.zoom + this.height / 2;
-        } else {
-            // Apply camera rotation
-            const cos = Math.cos(-this.rotation);
-            const sin = Math.sin(-this.rotation);
-            screenX = (x * cos + y * sin) * this.zoom + this.width / 2;
-            screenY = (-x * sin + y * cos) * this.zoom + this.height / 2;
-        }
         
         return { x: screenX, y: screenY };
     }
