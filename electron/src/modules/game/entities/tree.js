@@ -13,6 +13,8 @@ export const TreeEntity = {
         trunkHeight: 60, // trunk visual height
         trunkColor: '#5C4033',
         foliageColor: '#1B5E20',
+        foliageBorderColor: '#769e79',
+        foliageBorderWidth: 2,
         foliageRadius: 24, // foliage visual radius
         opacity: 1.0,
         // Fixed-angle and offset support

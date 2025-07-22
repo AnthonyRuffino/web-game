@@ -232,7 +232,7 @@ export class AssetManager {
 
             // Tier 3: Procedural generation
             console.log(`[AssetManager] Generating image: ${cacheKey}`);
-            const generatedImage = await this.generateImage(type, imageName, config, entityClass);
+            const generatedImage = await this.generateImage(type, imageName, config);
             if (generatedImage) {
                 console.log(`[AssetManager] Generated image data URL for: ${cacheKey}`);
                 // Cache the generated image
@@ -287,7 +287,7 @@ export class AssetManager {
     }
 
     // Generate image based on type and name
-    async generateImage(type, imageName, config = {}, entityClass = null) {
+    async generateImage(type, imageName, config = {}) {
         try {
             let svgData = null;
 
@@ -297,7 +297,7 @@ export class AssetManager {
                     svgData = this.generateBackgroundSVG(imageName, config);
                     break;
                 case 'entity':
-                    svgData = this.generateEntitySVG(imageName, config, entityClass);
+                    svgData = this.generateEntitySVG(imageName, config);
                     break;
                 default:
                     console.warn(`[AssetManager] Unknown image type: ${type}`);
@@ -329,7 +329,7 @@ export class AssetManager {
     }
 
     // Generate entity SVG
-    generateEntitySVG(entityName, config, entityClass) {
+    generateEntitySVG(entityName, config) {
         switch (entityName) {
             case 'grass':
                 return this.generateGrassSVG(config);
@@ -412,14 +412,34 @@ export class AssetManager {
         const trunkHeight = height - trunkY;
         const trunkColor = config.trunkColor || '#5C4033';
         const foliageColor = config.foliageColor || '#1B5E20';
+        const foliageBorderColor = config.foliageBorderColor || '#1B5E20';
+        const foliageBorderWidth = config.foliageBorderWidth || 2;
         const opacity = config.opacity || 1.0;
 
         
 
         const svg = `
             <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-                <rect x="${trunkX}" y="${trunkY}" width="${trunkWidth}" height="${trunkHeight}" fill="${trunkColor}" opacity="${opacity}"/>
-                <ellipse cx="${foliageRadius}" cy="${foliageRadius}" rx="${foliageRadius}" ry="${foliageRadius}" fill="${foliageColor}" opacity="${opacity}"/>
+                <rect 
+                    x="${trunkX}" 
+                    y="${trunkY}" 
+                    width="${trunkWidth}" 
+                    height="${trunkHeight}" 
+                    fill="${trunkColor}" 
+                    opacity="${opacity}"
+                    transform="rotate(${config.fixedScreenAngle || 0}, ${foliageRadius}, ${foliageRadius})"
+                />
+                <ellipse 
+                    cx="${foliageRadius}" 
+                    cy="${foliageRadius}" 
+                    rx="${foliageRadius}" 
+                    ry="${foliageRadius}" 
+                    fill="${foliageColor}" 
+                    opacity="${opacity}"
+                    stroke="${foliageBorderColor}"
+                    stroke-width="${foliageBorderWidth}"
+                    transform="rotate(${config.fixedScreenAngle || 0}, ${foliageRadius}, ${foliageRadius})"
+                />
             </svg>
         `;
         
