@@ -51,8 +51,8 @@ export class EntityRenderer {
         if (cachedImage && cachedImage.image && cachedImage.image.complete) {
             // Draw cached image
             const img = cachedImage.image;
-            const width = config.size || img.width || 32;
-            const height = config.size || img.height || 32;
+            const width = img.width;
+            const height = img.height;
             
             // Apply draw offset if specified
             const offsetX = config.drawOffsetX || 0;

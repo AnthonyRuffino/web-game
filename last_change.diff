@@ -1,0 +1,549 @@
+diff --git a/electron/src/modules/game/assets.js b/electron/src/modules/game/assets.js
+index 10b7732..c2b89e3 100644
+--- a/electron/src/modules/game/assets.js
++++ b/electron/src/modules/game/assets.js
+@@ -114,7 +114,7 @@ export class AssetManager {
+ 
+     // Get entity type config from memory cache
+     getEntityTypeConfig(entityType) {
+-        return this.entityTypeConfigs.get(entityType);
++        return this.entityTypeConfigs.get(`entity:${entityType}`);
+     }
+ 
+     // Update entity type config in memory and localStorage
+@@ -139,31 +139,31 @@ export class AssetManager {
+             // Entity images - use entity class cache keys
+             { 
+                 type: 'entity', 
+-                name: 'grass', 
++                imageName: GrassEntity.type, 
+                 entityClass: GrassEntity,
+-                config: { size: 32, bladeColor: '#81C784', bladeWidth: 1.5, clusterCount: 3, bladeCount: 5, bladeLength: 10, bladeAngleVariation: 30, opacity: 1.0 } 
++                config: GrassEntity.defaultConfig
+             },
+             { 
+                 type: 'entity', 
+-                name: 'tree', 
++                imageName: TreeEntity.type, 
+                 entityClass: TreeEntity,
+-                config: { size: 24, imageHeight: 72, trunkWidth: 12, trunkHeight: 45, trunkColor: '#5C4033', foliageColor: '#1B5E20', foliageRadius: 18, opacity: 1.0, fixedScreenAngle: 0, drawOffsetY: -42 } 
++                config: TreeEntity.defaultConfig
+             },
+             { 
+                 type: 'entity', 
+-                name: 'rock', 
++                imageName: RockEntity.type, 
+                 entityClass: RockEntity,
+-                config: { size: 20, baseColor: '#757575', strokeColor: '#424242', textureColor: '#424242', opacity: 1.0, textureSpots: 3, strokeWidth: 2 } 
++                config: RockEntity.defaultConfig
+             },
+             
+             // Biome images - using the same cache keys as entityRenderer
+-            { type: 'background', name: 'plains', config: { size: 640, tileSize: 32, chunkSize: 64, seed: 12345 } },
+-            { type: 'background', name: 'desert', config: { size: 640, tileSize: 32, chunkSize: 64, seed: 12345 } }
++            { type: 'background', imageName: 'plains', config: { size: 640, tileSize: 32, chunkSize: 64, seed: 12345 } },
++            { type: 'background', imageName: 'desert', config: { size: 640, tileSize: 32, chunkSize: 64, seed: 12345 } }
+         ];
+ 
+         console.log('[AssetManager] Required images:', requiredImages.map(img => `${img.type}-${img.name}`));
+ 
+-        const promises = requiredImages.map(image => this.ensureImageLoaded(image.type, image.name, image.config, image.entityClass));
++        const promises = requiredImages.map(image => this.ensureImageLoaded(image));
+         
+         try {
+             await Promise.all(promises);
+@@ -175,11 +175,11 @@ export class AssetManager {
+     }
+ 
+     // Ensure an image is loaded (filesystem → localStorage → generation)
+-    async ensureImageLoaded(type, imageName, config = {}, entityClass = null) {
++    async ensureImageLoaded({type, imageName, entityClass = null, config = null}) {
+         // Use entity class cache key for entities, otherwise use background pattern
+         let cacheKey;
+         if (type === 'entity' && entityClass) {
+-            cacheKey = entityClass.getCacheKey(config);
++            cacheKey = entityClass.getImageCacheKey(config);
+         } else if (type === 'background') {
+             cacheKey = `image:background-${imageName}`;
+         } else {
+@@ -270,11 +270,6 @@ export class AssetManager {
+         }
+     }
+ 
+-    // Main image loading function with 3-tier fallback
+-    async loadGameImage(type, imageName, config = {}) {
+-        return this.ensureImageLoaded(type, imageName, config);
+-    }
+-
+     // Load image from filesystem
+     async loadFromFilesystem(imageName) {
+         if (!this.assetDir) return null;
+diff --git a/electron/src/modules/game/entities/grass.js b/electron/src/modules/game/entities/grass.js
+index 0cd330e..1045db5 100644
+--- a/electron/src/modules/game/entities/grass.js
++++ b/electron/src/modules/game/entities/grass.js
+@@ -4,6 +4,7 @@
+ import { EntityRenderer } from '../entityRenderer.js';
+ 
+ export const GrassEntity = {
++    type: 'grass',
+     // Default grass configuration
+     defaultConfig: {
+         isSprite: true,
+@@ -18,37 +19,14 @@ export const GrassEntity = {
+     },
+ 
+     // Generate a unique cache key for grass parameters
+-    getCacheKey(config) {
+-        const params = {
+-            type: 'grass',
+-            size: config.size || '-',
+-            bladeColor: config.bladeColor || '-',
+-            bladeWidth: config.bladeWidth || '-',
+-            clusterCount: config.clusterCount || '-',
+-            bladeCount: config.bladeCount || '-',
+-            bladeLength: config.bladeLength || '-',
+-            bladeAngleVariation: config.bladeAngleVariation || '-',
+-            opacity: config.opacity || '-'
+-        };
+-        return 'grass-' + this.hashConfig(params);
+-    },
+-
+-    // Hash configuration for cache keys
+-    hashConfig(config) {
+-        const str = JSON.stringify(config);
+-        let hash = 0;
+-        for (let i = 0; i < str.length; i++) {
+-            const char = str.charCodeAt(i);
+-            hash = ((hash << 5) - hash) + char;
+-            hash = hash & hash; // Convert to 32-bit integer
+-        }
+-        return Math.abs(hash);
++    getImageCacheKey() {
++        return 'image:entity:grass';
+     },
+ 
+     // Create a grass entity with unified rendering
+     create(config = {}) {
+         const mergedConfig = { ...this.defaultConfig, ...config };
+-        const entity = EntityRenderer.createEntityWithBoilerplate('grass', mergedConfig, EntityRenderer, GrassEntity);
++        const entity = EntityRenderer.createEntityWithBoilerplate('grass', mergedConfig, GrassEntity);
+         
+         // Add optional properties for new rendering system
+         if (config.imageCacheKey) {
+diff --git a/electron/src/modules/game/entities/rock.js b/electron/src/modules/game/entities/rock.js
+index 9791d33..82b126d 100644
+--- a/electron/src/modules/game/entities/rock.js
++++ b/electron/src/modules/game/entities/rock.js
+@@ -4,6 +4,7 @@
+ import { EntityRenderer } from '../entityRenderer.js';
+ 
+ export const RockEntity = {
++    type: 'rock',
+     // Default rock configuration
+     defaultConfig: {
+         size: 20,
+@@ -16,18 +17,8 @@ export const RockEntity = {
+     },
+ 
+     // Generate a unique cache key for rock parameters
+-    getCacheKey(config) {
+-        const params = {
+-            type: 'rock',
+-            size: config.size || '-',
+-            baseColor: config.baseColor || '-',
+-            strokeColor: config.strokeColor || '-',
+-            textureColor: config.textureColor || '-',
+-            opacity: config.opacity || '-',
+-            textureSpots: config.textureSpots || '-',
+-            strokeWidth: config.strokeWidth || '-'
+-        };
+-        return 'rock-' + this.hashConfig(params);
++    getImageCacheKey() {
++        return 'image:entity:rock';
+     },
+ 
+     // Hash configuration for cache keys
+@@ -45,7 +36,7 @@ export const RockEntity = {
+     // Create a rock entity with unified rendering
+     create(config = {}) {
+         const mergedConfig = { ...this.defaultConfig, ...config };
+-        const entity = EntityRenderer.createEntityWithBoilerplate('rock', mergedConfig, EntityRenderer, RockEntity);
++        const entity = EntityRenderer.createEntityWithBoilerplate('rock', mergedConfig, RockEntity);
+         
+         // Add optional properties for new rendering system
+         if (config.imageCacheKey) {
+diff --git a/electron/src/modules/game/entities/tree.js b/electron/src/modules/game/entities/tree.js
+index dd2eee9..1420f66 100644
+--- a/electron/src/modules/game/entities/tree.js
++++ b/electron/src/modules/game/entities/tree.js
+@@ -4,6 +4,7 @@
+ import { EntityRenderer } from '../entityRenderer.js';
+ 
+ export const TreeEntity = {
++    type: 'tree',
+     // Default tree configuration
+     defaultConfig: {
+         size: 32, // base size (hitbox and world placement)
+@@ -21,19 +22,8 @@ export const TreeEntity = {
+     },
+ 
+     // Generate a unique cache key for tree parameters (do NOT include angle/offset)
+-    getCacheKey(config) {
+-        const params = {
+-            type: 'tree',
+-            size: config.size || '-',
+-            imageHeight: config.imageHeight || '-',
+-            trunkWidth: config.trunkWidth || '-',
+-            trunkHeight: config.trunkHeight || '-',
+-            trunkColor: config.trunkColor || '-',
+-            foliageColor: config.foliageColor || '-',
+-            foliageRadius: config.foliageRadius || '-',
+-            opacity: config.opacity || '-'
+-        };
+-        return 'tree-' + this.hashConfig(params);
++    getImageCacheKey() {
++        return 'image:entity:tree';
+     },
+ 
+     // Hash configuration for cache keys
+@@ -52,7 +42,7 @@ export const TreeEntity = {
+     create(config = {}) {
+         // Set default drawOffsetY so the base of the trunk aligns with (x, y)
+         const mergedConfig = { ...this.defaultConfig, ...config };
+-        const entity = EntityRenderer.createEntityWithBoilerplate('tree', mergedConfig, EntityRenderer, TreeEntity);
++        const entity = EntityRenderer.createEntityWithBoilerplate('tree', mergedConfig, TreeEntity);
+         entity.fixedScreenAngle = mergedConfig.fixedScreenAngle;
+         entity.drawOffsetX = mergedConfig.drawOffsetX;
+         entity.drawOffsetY = mergedConfig.drawOffsetY;
+diff --git a/electron/src/modules/game/entityRenderer.js b/electron/src/modules/game/entityRenderer.js
+index 496880c..1629c0a 100644
+--- a/electron/src/modules/game/entityRenderer.js
++++ b/electron/src/modules/game/entityRenderer.js
+@@ -23,7 +23,7 @@ export class EntityRenderer {
+         return `image:entity:${entityType}`;
+     }
+ 
+-    // Render entity with dynamic config (extracted from createEntityWithBoilerplate)
++    // Render entity with dynamic config
+     static renderEntity(ctx, entity) {
+         if (!entity || !entity.type) {
+             console.warn('[EntityRenderer] Entity missing or no type:', entity);
+@@ -33,33 +33,17 @@ export class EntityRenderer {
+         // Get config: entity-specific config OR entity type config OR fallback
+         let config = entity.imageConfig; // Optional entity-specific config
+         if (!config) {
+-            config = EntityRenderer.getEntityTypeConfig(`entity:${entity.type}`); // Entity type config
++            config = EntityRenderer.getEntityTypeConfig(entity.type); // Entity type config
+         }
+         if (!config) {
+             // Hardcoded fallback config
+             config = { size: 32, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 };
+         }
+ 
+-        // Get cache key: entity-specific key OR use the same logic as createEntityWithBoilerplate
++        // Get cache key: entity-specific key OR use default from entity type
+         let cacheKey = entity.imageCacheKey;
+         if (!cacheKey) {
+-            // Use the same cache key generation as the old system
+-            // This requires the entity to have been created with the proper entityModule
+-            if (entity.entityModule && entity.entityModule.getCacheKey) {
+-                cacheKey = entity.entityModule.getCacheKey(entity.config || {});
+-            } else {
+-                // Fallback: try to find a cached image with the entity type pattern
+-                const assetManager = window.game?.assetManager;
+-                if (assetManager) {
+-                    // Look for any cache key that starts with the entity type
+-                    for (const key of assetManager.imageCache.keys()) {
+-                        if (key.startsWith(entity.type + '-')) {
+-                            cacheKey = key;
+-                            break;
+-                        }
+-                    }
+-                }
+-            }
++            cacheKey = entity.entityModule.getImageCacheKey();
+         }
+         
+         const cachedImage = EntityRenderer.getCachedImage(cacheKey);
+@@ -130,73 +114,12 @@ export class EntityRenderer {
+     }
+ 
+     // Create entity with proper boilerplate (matching core system)
+-    static createEntityWithBoilerplate(type, config, entityRenderer, entityModule) {
++    static createEntityWithBoilerplate(type, config, entityModule) {
+         const entity = {
+             type: type,
+             size: config.size || 32,
+             config: config, // Store config for new render method
+             entityModule: entityModule, // Store entityModule for new render method
+-            render: function(ctx) {
+-                // Use cached image if available
+-                const cacheKey = entityModule.getCacheKey(config);
+-                const cachedImage = EntityRenderer.getCachedImage(cacheKey);
+-                
+-                if (cachedImage && cachedImage.image && cachedImage.image.complete) {
+-                    // Draw cached image
+-                    const img = cachedImage.image;
+-                    const width = img.width || this.size;
+-                    const height = img.height || this.size;
+-                    
+-                    // Apply draw offset if specified
+-                    const offsetX = config.drawOffsetX || 0;
+-                    const offsetY = config.drawOffsetY || 0;
+-                    
+-                    // Handle fixed screen angle if specified
+-                    if (config.fixedScreenAngle !== null && config.fixedScreenAngle !== undefined) {
+-                        // Get current camera mode and rotation
+-                        const cameraMode = window.game?.inputManager?.cameraMode || 'fixed-angle';
+-                        const cameraRotation = window.game?.camera?.rotation || 0;
+-                        const playerAngle = window.game?.player?.angle || 0;
+-                        
+-                        let angle = 0;
+-                        if (cameraMode === 'player-perspective') {
+-                            // In player-perspective mode, undo world rotation and apply fixed angle
+-                            angle = playerAngle + (config.fixedScreenAngle * Math.PI / 180);
+-                        } else {
+-                            // In fixed-angle mode, apply camera rotation and fixed angle
+-                            angle = cameraRotation + (config.fixedScreenAngle * Math.PI / 180);
+-                        }
+-                        
+-                        // Apply rotation
+-                        ctx.save();
+-                        ctx.rotate(angle);
+-                    }
+-                    
+-                    ctx.drawImage(
+-                        img,
+-                        -width / 2 + offsetX,
+-                        -height / 2 + offsetY,
+-                        width,
+-                        height
+-                    );
+-                    
+-                    // Restore rotation if applied
+-                    if (config.fixedScreenAngle !== null && config.fixedScreenAngle !== undefined) {
+-                        ctx.restore();
+-                    }
+-                } else {
+-                    // No cached image available - this should not happen with proper caching
+-                    console.error(`[EntityRenderer] No cached image for ${type} with key: ${cacheKey}`);
+-                    
+-                    // Draw error placeholder
+-                    ctx.fillStyle = '#ff0000';
+-                    ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+-                    ctx.fillStyle = '#ffffff';
+-                    ctx.font = '8px Arial';
+-                    ctx.textAlign = 'center';
+-                    ctx.fillText('NO IMG', 0, 0);
+-                }
+-            }
+         };
+         
+         return entity;
+diff --git a/electron/src/modules/game/index.js b/electron/src/modules/game/index.js
+index dbe81d7..f7012a3 100644
+--- a/electron/src/modules/game/index.js
++++ b/electron/src/modules/game/index.js
+@@ -730,10 +730,7 @@ export class Game {
+         
+         // Draw world (chunks, entities, etc.) - world handles its own transforms
+         // Returns fixed angle entities for rendering after player
+-        const fixedAngleEntities = this.world.render(ctx, this.camera.x, this.camera.y, width, height);
+-        
+-        // Draw player (player coordinates are in world space)
+-        this.player.render(ctx);
++        const fixedAngleEntities = this.world.render(ctx, this.camera.x, this.camera.y, width, height, this.player);
+         
+         // Draw fixed angle entities (trees) after player (matching core/world.js logic)
+         if (fixedAngleEntities && Array.isArray(fixedAngleEntities)) {
+diff --git a/electron/src/modules/game/world.js b/electron/src/modules/game/world.js
+index 346d05c..192b483 100644
+--- a/electron/src/modules/game/world.js
++++ b/electron/src/modules/game/world.js
+@@ -170,89 +170,45 @@ export class World {
+ 
+         for (let tileY = startTileY; tileY < endTileY; tileY++) {
+             for (let tileX = startTileX; tileX < endTileX; tileX++) {
+-                // Generate tile based on position and seed
++
+                 const tile = this.generateTile(tileX, tileY);
+                 chunk.tiles.push(tile);
++
++                const worldX = tileX * this.config.tileSize + this.config.tileSize / 2;
++                const worldY = tileY * this.config.tileSize + this.config.tileSize / 2;
+                 
+-                // Generate grass tiles deterministically
+                 if (this.shouldPlaceGrass(tileX, tileY)) {
+-                    const grassX = tileX * this.config.tileSize + this.config.tileSize / 2;
+-                    const grassY = tileY * this.config.tileSize + this.config.tileSize / 2;
+-                    
+-                    // Create grass using GrassEntity class
+-                    const grassEntity = GrassEntity.create({
+-                        size: 32,
+-                        bladeColor: '#81C784',
+-                        bladeWidth: 1.5,
+-                        clusterCount: 3,
+-                        bladeCount: 5,
+-                        bladeLength: 10,
+-                        bladeAngleVariation: 30,
+-                        opacity: 1.0
+-                    });
+-                    
++                    const grassEntity = GrassEntity.create();
+                     // Merge with world-specific properties
+                     chunk.entities.push({
+                         ...grassEntity,
+-                        x: grassX,
+-                        y: grassY,
++                        x: worldX,
++                        y: worldY,
+                         tileX: tileX,
+                         tileY: tileY
+                     });
+                 }
+                 
+-                // Generate trees and rocks deterministically
+                 if (this.shouldPlaceTree(tileX, tileY)) {
+-                    const treeX = tileX * this.config.tileSize + this.config.tileSize / 2;
+-                    const treeY = tileY * this.config.tileSize + this.config.tileSize / 2;
+-                    
+-                    // Create tree using TreeEntity class with proper configuration
+-                    const treeEntity = TreeEntity.create({
+-                        size: 24,
+-                        imageHeight: 72, // 3x size for tall trees
+-                        trunkWidth: 12,
+-                        trunkHeight: 45,
+-                        trunkColor: '#5C4033',
+-                        foliageColor: '#1B5E20',
+-                        foliageRadius: 18,
+-                        opacity: 1.0,
+-                        fixedScreenAngle: 0,
+-                        drawOffsetY: -42 // Render tree higher so player can walk behind
+-                    });
+-                    
++                    const treeEntity = TreeEntity.create();
+                     // Merge with world-specific properties
+                     chunk.entities.push({
+                         ...treeEntity,
+-                        x: treeX,
+-                        y: treeY,
++                        x: worldX,
++                        y: worldY,
+                         tileX: tileX,
+                         tileY: tileY,
+                         collision: true,
+                         collisionRadius: 12, // Tree collision radius at base
+-                        fixedScreenAngle: 0 // Trees render last (matching core/world.js logic)
+                     });
+                 }
+                 
+                 if (this.shouldPlaceRock(tileX, tileY)) {
+-                    const rockX = tileX * this.config.tileSize + this.config.tileSize / 2;
+-                    const rockY = tileY * this.config.tileSize + this.config.tileSize / 2;
+-                    
+-                    // Create rock using RockEntity class
+-                    const rockEntity = RockEntity.create({
+-                        size: 20,
+-                        baseColor: '#757575',
+-                        strokeColor: '#424242',
+-                        textureColor: '#424242',
+-                        opacity: 1.0,
+-                        textureSpots: 3,
+-                        strokeWidth: 2
+-                    });
+-                    
+-                    // Merge with world-specific properties
++                    const rockEntity = RockEntity.create();
+                     chunk.entities.push({
+                         ...rockEntity,
+-                        x: rockX,
+-                        y: rockY,
++                        x: worldX,
++                        y: worldY,
+                         tileX: tileX,
+                         tileY: tileY,
+                         collision: true,
+@@ -453,7 +409,7 @@ export class World {
+     }
+ 
+     // Render the world
+-    render(ctx, cameraX, cameraY, viewportWidth, viewportHeight) {
++    render(ctx, cameraX, cameraY, viewportWidth, viewportHeight, player) {
+         // Get visible chunks
+         const visibleChunks = this.getVisibleChunks(cameraX, cameraY, viewportWidth, viewportHeight);
+         
+@@ -474,12 +430,7 @@ export class World {
+         // Now render entities (excluding fixed angle entities)
+         visibleChunks.forEach(chunkInfo => {
+             const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
+-            this.renderChunkEntities(ctx, chunk, false); // false = exclude fixed angle entities
+-            // Collect fixed angle entities for later rendering
+-            if (chunk.entities && Array.isArray(chunk.entities)) {
+-                const fixedAngleEntities = chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined);
+-                allFixedAngleEntities.push(...fixedAngleEntities);
+-            }
++            this.renderChunkEntities(ctx, chunk, player);
+         });
+         
+         // Clean up distant chunks
+@@ -496,38 +447,33 @@ export class World {
+     }
+ 
+     // Render chunk entities (with option to exclude fixed angle entities)
+-    renderChunkEntities(ctx, chunk, includeFixedAngle = true) {
++    renderChunkEntities(ctx, chunk, player) {
+         if (!chunk.entities || !Array.isArray(chunk.entities)) return;
+         
+         // Sort entities for correct render order (matching core/world.js logic):
+         // 1. Grass entities
+         // 2. Non-fixedScreenAngle entities  
+         // 3. fixedScreenAngle entities (only if includeFixedAngle is true)
+-        const grassEntities = chunk.entities.filter(e => e.type === 'grass');
+-        const fixedAngleEntities = includeFixedAngle ? 
+-            chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined) : [];
+-        const otherEntities = chunk.entities.filter(e => 
+-            e.type !== 'grass' && 
++        const fixedAngleEntities = chunk.entities.filter(e =>
++            e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined);
++
++        const basicEntities = chunk.entities.filter(e => 
+             (e.fixedScreenAngle === null || e.fixedScreenAngle === undefined)
+         );
+         
+         // Sort fixed angle entities by Y position (descending - higher Y renders first)
+         fixedAngleEntities.sort((a, b) => b.y - a.y);
+-        
+-        // Render in order: grass, other entities, fixed angle entities (if included)
+-        const renderOrder = grassEntities.concat(otherEntities, fixedAngleEntities);
+-        
+-        renderOrder.forEach(entity => {
++
++        const entityRenderFunction = (entity) => {
+             if (entity.type === 'letterTile') {
+                 // Handle the starting position marker
+                 if (entity.draw) {
+                     entity.draw(ctx);
+                 }
+-            } else if (entity.render) {
++            } else {
+                 // Handle entities created by EntityRenderer
+                 // Try new rendering system first, fallback to old system
+                 try {
+-                    // Use new EntityRenderer.renderEntity() method
+                     EntityRenderer.renderEntity(ctx, entity);
+                 } catch (error) {
+                     console.warn(`[World] New render method failed for ${entity.type}, using fallback:`, error);
+@@ -543,7 +489,11 @@ export class World {
+                     ctx.restore();
+                 }
+             }
+-        });
++        };
++        
++        basicEntities.forEach(entityRenderFunction);
++        player.render(ctx);
++        fixedAngleEntities.forEach(entity => entityRenderFunction(entity));
+     }
+ 
+     // Synchronous biome background rendering (for immediate display)

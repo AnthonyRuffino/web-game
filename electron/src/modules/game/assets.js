@@ -400,27 +400,26 @@ export class AssetManager {
     // Generate tree SVG
     generateTreeSVG(config) {
         const size = config.size || 32;
-        const width = size;
+        const foliageRadius = config.foliageRadius || 24;
+        const width = (foliageRadius*2);
         const height = config.imageHeight || 96;
         const trunkWidth = config.trunkWidth || 12;
-        const trunkHeight = config.trunkHeight || 60;
-        const trunkColor = config.trunkColor || '#5C4033';
-        const foliageColor = config.foliageColor || '#1B5E20';
-        const foliageRadius = config.foliageRadius || 24;
-        const opacity = config.opacity || 1.0;
 
         // Trunk: from bottom center up
-        const trunkX = width / 2 - trunkWidth / 2;
-        const trunkY = height - size * 0.1;
+        const trunkX = (width / 2) - (trunkWidth / 2);
+        const trunkY = (foliageRadius * 2) - 1;
 
-        // Foliage: centered near the top
-        const foliageCenterX = width / 2;
-        const foliageCenterY = height * 0.18;
+        const trunkHeight = height - trunkY;
+        const trunkColor = config.trunkColor || '#5C4033';
+        const foliageColor = config.foliageColor || '#1B5E20';
+        const opacity = config.opacity || 1.0;
+
+        
 
         const svg = `
             <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-                <rect x="${trunkX}" y="${trunkY - trunkHeight}" width="${trunkWidth}" height="${trunkHeight}" fill="${trunkColor}" opacity="${opacity}"/>
-                <ellipse cx="${foliageCenterX}" cy="${foliageCenterY}" rx="${foliageRadius}" ry="${foliageRadius * 1.2}" fill="${foliageColor}" opacity="${opacity}"/>
+                <rect x="${trunkX}" y="${trunkY}" width="${trunkWidth}" height="${trunkHeight}" fill="${trunkColor}" opacity="${opacity}"/>
+                <ellipse cx="${foliageRadius}" cy="${foliageRadius}" rx="${foliageRadius}" ry="${foliageRadius}" fill="${foliageColor}" opacity="${opacity}"/>
             </svg>
         `;
         
@@ -544,17 +543,12 @@ export class AssetManager {
     async svgToDataURL(svgData) {
         return new Promise((resolve) => {
             const img = new Image();
-            
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            img.onerror = () => {
+                console.error('[AssetManager] Error loading SVG image');
+                resolve(null);
+            };
             img.onload = () => {
-                // Create a cache object with metadata like entityRenderer
-                const cacheObj = {
-                    image: img,
-                    size: img.width || 640,
-                    fixedScreenAngle: null,
-                    drawOffsetX: 0,
-                    drawOffsetY: 0
-                };
-                
                 // Convert to data URL for localStorage
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
@@ -571,12 +565,9 @@ export class AssetManager {
                 }
             };
             
-            img.onerror = () => {
-                console.error('[AssetManager] Error loading SVG image');
-                resolve(null);
-            };
             
-            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            
+            
         });
     }
 
