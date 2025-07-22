@@ -4,6 +4,7 @@
 import { EntityRenderer } from '../entityRenderer.js';
 
 export const GrassEntity = {
+    type: 'grass',
     // Default grass configuration
     defaultConfig: {
         isSprite: true,
@@ -18,37 +19,14 @@ export const GrassEntity = {
     },
 
     // Generate a unique cache key for grass parameters
-    getCacheKey(config) {
-        const params = {
-            type: 'grass',
-            size: config.size || '-',
-            bladeColor: config.bladeColor || '-',
-            bladeWidth: config.bladeWidth || '-',
-            clusterCount: config.clusterCount || '-',
-            bladeCount: config.bladeCount || '-',
-            bladeLength: config.bladeLength || '-',
-            bladeAngleVariation: config.bladeAngleVariation || '-',
-            opacity: config.opacity || '-'
-        };
-        return 'grass-' + this.hashConfig(params);
-    },
-
-    // Hash configuration for cache keys
-    hashConfig(config) {
-        const str = JSON.stringify(config);
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
-        }
-        return Math.abs(hash);
+    getImageCacheKey() {
+        return 'image:entity:grass';
     },
 
     // Create a grass entity with unified rendering
     create(config = {}) {
         const mergedConfig = { ...this.defaultConfig, ...config };
-        const entity = EntityRenderer.createEntityWithBoilerplate('grass', mergedConfig, EntityRenderer, GrassEntity);
+        const entity = EntityRenderer.createEntityWithBoilerplate('grass', mergedConfig, GrassEntity);
         
         // Add optional properties for new rendering system
         if (config.imageCacheKey) {

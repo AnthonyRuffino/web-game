@@ -4,6 +4,7 @@
 import { EntityRenderer } from '../entityRenderer.js';
 
 export const TreeEntity = {
+    type: 'tree',
     // Default tree configuration
     defaultConfig: {
         size: 32, // base size (hitbox and world placement)
@@ -21,19 +22,8 @@ export const TreeEntity = {
     },
 
     // Generate a unique cache key for tree parameters (do NOT include angle/offset)
-    getCacheKey(config) {
-        const params = {
-            type: 'tree',
-            size: config.size || '-',
-            imageHeight: config.imageHeight || '-',
-            trunkWidth: config.trunkWidth || '-',
-            trunkHeight: config.trunkHeight || '-',
-            trunkColor: config.trunkColor || '-',
-            foliageColor: config.foliageColor || '-',
-            foliageRadius: config.foliageRadius || '-',
-            opacity: config.opacity || '-'
-        };
-        return 'tree-' + this.hashConfig(params);
+    getImageCacheKey() {
+        return 'image:entity:tree';
     },
 
     // Hash configuration for cache keys
@@ -52,7 +42,7 @@ export const TreeEntity = {
     create(config = {}) {
         // Set default drawOffsetY so the base of the trunk aligns with (x, y)
         const mergedConfig = { ...this.defaultConfig, ...config };
-        const entity = EntityRenderer.createEntityWithBoilerplate('tree', mergedConfig, EntityRenderer, TreeEntity);
+        const entity = EntityRenderer.createEntityWithBoilerplate('tree', mergedConfig, TreeEntity);
         entity.fixedScreenAngle = mergedConfig.fixedScreenAngle;
         entity.drawOffsetX = mergedConfig.drawOffsetX;
         entity.drawOffsetY = mergedConfig.drawOffsetY;

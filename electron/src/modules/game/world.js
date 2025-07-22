@@ -170,89 +170,45 @@ export class World {
 
         for (let tileY = startTileY; tileY < endTileY; tileY++) {
             for (let tileX = startTileX; tileX < endTileX; tileX++) {
-                // Generate tile based on position and seed
+
                 const tile = this.generateTile(tileX, tileY);
                 chunk.tiles.push(tile);
+
+                const worldX = tileX * this.config.tileSize + this.config.tileSize / 2;
+                const worldY = tileY * this.config.tileSize + this.config.tileSize / 2;
                 
-                // Generate grass tiles deterministically
                 if (this.shouldPlaceGrass(tileX, tileY)) {
-                    const grassX = tileX * this.config.tileSize + this.config.tileSize / 2;
-                    const grassY = tileY * this.config.tileSize + this.config.tileSize / 2;
-                    
-                    // Create grass using GrassEntity class
-                    const grassEntity = GrassEntity.create({
-                        size: 32,
-                        bladeColor: '#81C784',
-                        bladeWidth: 1.5,
-                        clusterCount: 3,
-                        bladeCount: 5,
-                        bladeLength: 10,
-                        bladeAngleVariation: 30,
-                        opacity: 1.0
-                    });
-                    
+                    const grassEntity = GrassEntity.create();
                     // Merge with world-specific properties
                     chunk.entities.push({
                         ...grassEntity,
-                        x: grassX,
-                        y: grassY,
+                        x: worldX,
+                        y: worldY,
                         tileX: tileX,
                         tileY: tileY
                     });
                 }
                 
-                // Generate trees and rocks deterministically
                 if (this.shouldPlaceTree(tileX, tileY)) {
-                    const treeX = tileX * this.config.tileSize + this.config.tileSize / 2;
-                    const treeY = tileY * this.config.tileSize + this.config.tileSize / 2;
-                    
-                    // Create tree using TreeEntity class with proper configuration
-                    const treeEntity = TreeEntity.create({
-                        size: 24,
-                        imageHeight: 72, // 3x size for tall trees
-                        trunkWidth: 12,
-                        trunkHeight: 45,
-                        trunkColor: '#5C4033',
-                        foliageColor: '#1B5E20',
-                        foliageRadius: 18,
-                        opacity: 1.0,
-                        fixedScreenAngle: 0,
-                        drawOffsetY: -42 // Render tree higher so player can walk behind
-                    });
-                    
+                    const treeEntity = TreeEntity.create();
                     // Merge with world-specific properties
                     chunk.entities.push({
                         ...treeEntity,
-                        x: treeX,
-                        y: treeY,
+                        x: worldX,
+                        y: worldY,
                         tileX: tileX,
                         tileY: tileY,
                         collision: true,
                         collisionRadius: 12, // Tree collision radius at base
-                        fixedScreenAngle: 0 // Trees render last (matching core/world.js logic)
                     });
                 }
                 
                 if (this.shouldPlaceRock(tileX, tileY)) {
-                    const rockX = tileX * this.config.tileSize + this.config.tileSize / 2;
-                    const rockY = tileY * this.config.tileSize + this.config.tileSize / 2;
-                    
-                    // Create rock using RockEntity class
-                    const rockEntity = RockEntity.create({
-                        size: 20,
-                        baseColor: '#757575',
-                        strokeColor: '#424242',
-                        textureColor: '#424242',
-                        opacity: 1.0,
-                        textureSpots: 3,
-                        strokeWidth: 2
-                    });
-                    
-                    // Merge with world-specific properties
+                    const rockEntity = RockEntity.create();
                     chunk.entities.push({
                         ...rockEntity,
-                        x: rockX,
-                        y: rockY,
+                        x: worldX,
+                        y: worldY,
                         tileX: tileX,
                         tileY: tileY,
                         collision: true,
@@ -453,7 +409,7 @@ export class World {
     }
 
     // Render the world
-    render(ctx, cameraX, cameraY, viewportWidth, viewportHeight) {
+    render(ctx, cameraX, cameraY, viewportWidth, viewportHeight, player) {
         // Get visible chunks
         const visibleChunks = this.getVisibleChunks(cameraX, cameraY, viewportWidth, viewportHeight);
         
@@ -474,12 +430,7 @@ export class World {
         // Now render entities (excluding fixed angle entities)
         visibleChunks.forEach(chunkInfo => {
             const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
-            this.renderChunkEntities(ctx, chunk, false); // false = exclude fixed angle entities
-            // Collect fixed angle entities for later rendering
-            if (chunk.entities && Array.isArray(chunk.entities)) {
-                const fixedAngleEntities = chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined);
-                allFixedAngleEntities.push(...fixedAngleEntities);
-            }
+            this.renderChunkEntities(ctx, chunk, player);
         });
         
         // Clean up distant chunks
@@ -496,38 +447,33 @@ export class World {
     }
 
     // Render chunk entities (with option to exclude fixed angle entities)
-    renderChunkEntities(ctx, chunk, includeFixedAngle = true) {
+    renderChunkEntities(ctx, chunk, player) {
         if (!chunk.entities || !Array.isArray(chunk.entities)) return;
         
         // Sort entities for correct render order (matching core/world.js logic):
         // 1. Grass entities
         // 2. Non-fixedScreenAngle entities  
         // 3. fixedScreenAngle entities (only if includeFixedAngle is true)
-        const grassEntities = chunk.entities.filter(e => e.type === 'grass');
-        const fixedAngleEntities = includeFixedAngle ? 
-            chunk.entities.filter(e => e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined) : [];
-        const otherEntities = chunk.entities.filter(e => 
-            e.type !== 'grass' && 
+        const fixedAngleEntities = chunk.entities.filter(e =>
+            e.fixedScreenAngle !== null && e.fixedScreenAngle !== undefined);
+
+        const basicEntities = chunk.entities.filter(e => 
             (e.fixedScreenAngle === null || e.fixedScreenAngle === undefined)
         );
         
         // Sort fixed angle entities by Y position (descending - higher Y renders first)
         fixedAngleEntities.sort((a, b) => b.y - a.y);
-        
-        // Render in order: grass, other entities, fixed angle entities (if included)
-        const renderOrder = grassEntities.concat(otherEntities, fixedAngleEntities);
-        
-        renderOrder.forEach(entity => {
+
+        const entityRenderFunction = (entity) => {
             if (entity.type === 'letterTile') {
                 // Handle the starting position marker
                 if (entity.draw) {
                     entity.draw(ctx);
                 }
-            } else if (entity.render) {
+            } else {
                 // Handle entities created by EntityRenderer
                 // Try new rendering system first, fallback to old system
                 try {
-                    // Use new EntityRenderer.renderEntity() method
                     EntityRenderer.renderEntity(ctx, entity);
                 } catch (error) {
                     console.warn(`[World] New render method failed for ${entity.type}, using fallback:`, error);
@@ -543,7 +489,11 @@ export class World {
                     ctx.restore();
                 }
             }
-        });
+        };
+        
+        basicEntities.forEach(entityRenderFunction);
+        player.render(ctx);
+        fixedAngleEntities.forEach(entity => entityRenderFunction(entity));
     }
 
     // Synchronous biome background rendering (for immediate display)

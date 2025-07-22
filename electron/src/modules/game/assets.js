@@ -114,7 +114,7 @@ export class AssetManager {
 
     // Get entity type config from memory cache
     getEntityTypeConfig(entityType) {
-        return this.entityTypeConfigs.get(entityType);
+        return this.entityTypeConfigs.get(`entity:${entityType}`);
     }
 
     // Update entity type config in memory and localStorage
@@ -139,31 +139,31 @@ export class AssetManager {
             // Entity images - use entity class cache keys
             { 
                 type: 'entity', 
-                name: 'grass', 
+                imageName: GrassEntity.type, 
                 entityClass: GrassEntity,
-                config: { size: 32, bladeColor: '#81C784', bladeWidth: 1.5, clusterCount: 3, bladeCount: 5, bladeLength: 10, bladeAngleVariation: 30, opacity: 1.0 } 
+                config: GrassEntity.defaultConfig
             },
             { 
                 type: 'entity', 
-                name: 'tree', 
+                imageName: TreeEntity.type, 
                 entityClass: TreeEntity,
-                config: { size: 24, imageHeight: 72, trunkWidth: 12, trunkHeight: 45, trunkColor: '#5C4033', foliageColor: '#1B5E20', foliageRadius: 18, opacity: 1.0, fixedScreenAngle: 0, drawOffsetY: -42 } 
+                config: TreeEntity.defaultConfig
             },
             { 
                 type: 'entity', 
-                name: 'rock', 
+                imageName: RockEntity.type, 
                 entityClass: RockEntity,
-                config: { size: 20, baseColor: '#757575', strokeColor: '#424242', textureColor: '#424242', opacity: 1.0, textureSpots: 3, strokeWidth: 2 } 
+                config: RockEntity.defaultConfig
             },
             
             // Biome images - using the same cache keys as entityRenderer
-            { type: 'background', name: 'plains', config: { size: 640, tileSize: 32, chunkSize: 64, seed: 12345 } },
-            { type: 'background', name: 'desert', config: { size: 640, tileSize: 32, chunkSize: 64, seed: 12345 } }
+            { type: 'background', imageName: 'plains', config: { size: 640, tileSize: 32, chunkSize: 64, seed: 12345 } },
+            { type: 'background', imageName: 'desert', config: { size: 640, tileSize: 32, chunkSize: 64, seed: 12345 } }
         ];
 
         console.log('[AssetManager] Required images:', requiredImages.map(img => `${img.type}-${img.name}`));
 
-        const promises = requiredImages.map(image => this.ensureImageLoaded(image.type, image.name, image.config, image.entityClass));
+        const promises = requiredImages.map(image => this.ensureImageLoaded(image));
         
         try {
             await Promise.all(promises);
@@ -175,11 +175,11 @@ export class AssetManager {
     }
 
     // Ensure an image is loaded (filesystem → localStorage → generation)
-    async ensureImageLoaded(type, imageName, config = {}, entityClass = null) {
+    async ensureImageLoaded({type, imageName, entityClass = null, config = null}) {
         // Use entity class cache key for entities, otherwise use background pattern
         let cacheKey;
         if (type === 'entity' && entityClass) {
-            cacheKey = entityClass.getCacheKey(config);
+            cacheKey = entityClass.getImageCacheKey(config);
         } else if (type === 'background') {
             cacheKey = `image:background-${imageName}`;
         } else {
@@ -268,11 +268,6 @@ export class AssetManager {
             console.error(`[AssetManager] Error loading image ${cacheKey}:`, error);
             return null;
         }
-    }
-
-    // Main image loading function with 3-tier fallback
-    async loadGameImage(type, imageName, config = {}) {
-        return this.ensureImageLoaded(type, imageName, config);
     }
 
     // Load image from filesystem

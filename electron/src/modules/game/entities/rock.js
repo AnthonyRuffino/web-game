@@ -4,6 +4,7 @@
 import { EntityRenderer } from '../entityRenderer.js';
 
 export const RockEntity = {
+    type: 'rock',
     // Default rock configuration
     defaultConfig: {
         size: 20,
@@ -16,18 +17,8 @@ export const RockEntity = {
     },
 
     // Generate a unique cache key for rock parameters
-    getCacheKey(config) {
-        const params = {
-            type: 'rock',
-            size: config.size || '-',
-            baseColor: config.baseColor || '-',
-            strokeColor: config.strokeColor || '-',
-            textureColor: config.textureColor || '-',
-            opacity: config.opacity || '-',
-            textureSpots: config.textureSpots || '-',
-            strokeWidth: config.strokeWidth || '-'
-        };
-        return 'rock-' + this.hashConfig(params);
+    getImageCacheKey() {
+        return 'image:entity:rock';
     },
 
     // Hash configuration for cache keys
@@ -45,7 +36,7 @@ export const RockEntity = {
     // Create a rock entity with unified rendering
     create(config = {}) {
         const mergedConfig = { ...this.defaultConfig, ...config };
-        const entity = EntityRenderer.createEntityWithBoilerplate('rock', mergedConfig, EntityRenderer, RockEntity);
+        const entity = EntityRenderer.createEntityWithBoilerplate('rock', mergedConfig, RockEntity);
         
         // Add optional properties for new rendering system
         if (config.imageCacheKey) {

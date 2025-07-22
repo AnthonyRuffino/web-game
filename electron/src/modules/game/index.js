@@ -730,10 +730,7 @@ export class Game {
         
         // Draw world (chunks, entities, etc.) - world handles its own transforms
         // Returns fixed angle entities for rendering after player
-        const fixedAngleEntities = this.world.render(ctx, this.camera.x, this.camera.y, width, height);
-        
-        // Draw player (player coordinates are in world space)
-        this.player.render(ctx);
+        const fixedAngleEntities = this.world.render(ctx, this.camera.x, this.camera.y, width, height, this.player);
         
         // Draw fixed angle entities (trees) after player (matching core/world.js logic)
         if (fixedAngleEntities && Array.isArray(fixedAngleEntities)) {
