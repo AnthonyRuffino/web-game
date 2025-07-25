@@ -181,7 +181,7 @@ export class AssetManager {
         if (type === 'entity' && entityClass) {
             cacheKey = entityClass.getImageCacheKey(config);
         } else if (type === 'background') {
-            cacheKey = `image:background-${imageName}`;
+            cacheKey = `image:background:${imageName}`;
         } else {
             cacheKey = `image:${type}-${imageName}`;
         }

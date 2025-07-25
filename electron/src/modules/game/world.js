@@ -529,7 +529,7 @@ export class World {
         // Try to load the biome background image from asset manager
         if (window.game && window.game.assetManager) {
             // Use the same cache key pattern as entityRenderer
-            const cacheKey = `image:background-${biome}`;
+            const cacheKey = `image:background:${biome}`;
             
             const biomeImage = window.game.assetManager.imageCache.get(cacheKey);
             
