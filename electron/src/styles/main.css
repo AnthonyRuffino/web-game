@@ -78,4 +78,58 @@ body {
 /* Hide loading message when game is ready */
 .game-ready #loading-message {
     display: none;
+}
+
+/* Input Bar Styles */
+#electron-input-bar {
+    position: fixed;
+    left: 50%;
+    bottom: 5vh;
+    transform: translateX(-50%);
+    width: min(50vw, 700px);
+    max-width: 50vw;
+    min-width: 200px;
+    height: 5vh;
+    min-height: 40px;
+    padding: 1.5vh 2vh;
+    font-size: max(2vh, 14px);
+    border: 2px solid #888;
+    border-radius: 1vh;
+    background: rgba(30,30,30,0.98);
+    color: #fff;
+    outline: none;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.4);
+    letter-spacing: 0.02em;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+#electron-input-bar:focus {
+    border-color: #4CAF50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+}
+
+#electron-input-bar::placeholder {
+    color: #888;
+    opacity: 1;
+}
+
+/* Responsive adjustments for very small screens */
+@media (max-height: 400px) {
+    #electron-input-bar {
+        height: 40px;
+        padding: 8px 12px;
+        font-size: 14px;
+        bottom: 10px;
+    }
+}
+
+@media (max-width: 400px) {
+    #electron-input-bar {
+        width: calc(100vw - 20px);
+        left: 10px;
+        transform: none;
+    }
 } 

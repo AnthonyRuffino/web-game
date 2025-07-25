@@ -11,6 +11,7 @@ import { CanvasManager } from './canvas.js';
 import { PersistenceSystem } from './persistence.js';
 import { MenuManager } from './menuManager.js';
 import MenuBarElectron from './menuBarElectron.js';
+import { InputBar } from './inputBar.js';
 
 export class Game {
     constructor() {
@@ -29,6 +30,7 @@ export class Game {
         this.persistenceSystem = null;
         this.menuManager = null;
         this.menuBarElectron = null;
+        this.inputBar = null;
         
         this.isRunning = false;
         this.lastTime = 0;
@@ -73,11 +75,13 @@ export class Game {
             this.assetManager = new AssetManager();
             this.persistenceSystem = new PersistenceSystem();
             this.menuManager = new MenuManager();
+            this.inputBar = new InputBar();
             
             // Initialize systems
             this.inputManager.init();
             this.world.init();
             this.persistenceSystem.init(this);
+            this.inputBar.init();
             
             // Load assets
             await this.assetManager.initializeImages();
@@ -467,6 +471,17 @@ export class Game {
                     console.log('  4. The menu should maintain its position/size and scale internally');
                     break;
                     
+                case 'inputbar':
+                case 'chat':
+                    this.inputBar.open();
+                    console.log('[Console] Input bar opened');
+                    break;
+                    
+                case 'clearhistory':
+                    this.inputBar.clearCommandHistory();
+                    console.log('[Console] Input bar history cleared');
+                    break;
+                    
                 case 'help':
                     console.log('[Console] Available commands:');
                     console.log('  cmd("perspective") or cmd("toggle") - Toggle camera mode');
@@ -486,6 +501,8 @@ export class Game {
                     console.log('  cmd("testtabs") - Create tabs menu with buttons');
                     console.log('  cmd("testcallbacks") - Test callback system');
                     console.log('  cmd("testresize") - Test resize and scaling');
+                    console.log('  cmd("inputbar") or cmd("chat") - Open input bar');
+                    console.log('  cmd("clearhistory") - Clear input bar history');
                     console.log('  cmd("help") - Show this help');
                     break;
                     
@@ -609,7 +626,8 @@ export class Game {
         const isBlockingInputElement = (el) => {
             return (
                 (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) ||
-                el.tagName === 'TEXTAREA'
+                el.tagName === 'TEXTAREA' ||
+                (el.id === 'electron-input-bar')
             );
         };
         document.addEventListener('focusin', (e) => {
