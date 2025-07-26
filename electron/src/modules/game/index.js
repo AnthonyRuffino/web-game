@@ -390,6 +390,13 @@ export class Game {
                                     viewportY: 0.2,
                                     viewportWidth: 0.6,
                                     viewportHeight: 0.6,
+                                    closeListeners: [
+                                        {
+                                            "callback-test-menu": 
+                                            () => {
+                                                window.game.menuManager.hideMenu('child-menu');
+                                            }
+                                        }],
                                     content: '<h3>Child Menu</h3><p>This is a child menu opened via onClickMenu callback.</p>',
                                     buttons: [
                                         {
@@ -471,6 +478,73 @@ export class Game {
                     console.log('  4. The menu should maintain its position/size and scale internally');
                     break;
                     
+                case 'testcloseListeners':
+                    // Create parent menu
+                    const parentMenuConfig = {
+                        id: 'parent-menu',
+                        title: 'Parent Menu',
+                        viewportX: 0.1,
+                        viewportY: 0.1,
+                        viewportWidth: 0.4,
+                        viewportHeight: 0.4,
+                        content: '<h3>Parent Menu</h3><p>This is the parent menu. When you close this menu, it will trigger callbacks in child menus.</p>',
+                        buttons: [
+                            {
+                                text: 'Open Child Menu',
+                                icon: '👶',
+                                onClick: (e) => {
+                                    // Create child menu with closeListeners callbacks
+                                    const childMenuConfig = {
+                                        id: 'child-menu',
+                                        title: 'Child Menu',
+                                        viewportX: 0.5,
+                                        viewportY: 0.5,
+                                        viewportWidth: 0.4,
+                                        viewportHeight: 0.4,
+                                        closeListeners: {
+                                            'parent-menu': () => {
+                                                console.log('[Console] Parent menu closed - executing custom callback!');
+                                                alert('Parent menu closed - this is a custom callback!');
+                                                // You can do anything here - close this menu, update UI, etc.
+                                                window.game.menuManager.hideMenu('child-menu');
+                                            }
+                                        },
+                                        content: '<h3>Child Menu</h3><p>This menu has a custom callback that executes when the parent menu closes.</p>',
+                                        buttons: [
+                                            {
+                                                text: 'Close Parent',
+                                                icon: '❌',
+                                                onClick: (e) => {
+                                                    console.log('[Console] Closing parent menu');
+                                                    window.game.menuManager.hideMenu('parent-menu');
+                                                }
+                                            }
+                                        ]
+                                    };
+                                    const childMenuId = window.game.menuManager.createMenu(childMenuConfig);
+                                    window.game.menuManager.showMenu(childMenuId);
+                                    console.log(`[Console] Created child menu: ${childMenuId}`);
+                                }
+                            },
+                            {
+                                text: 'Close This Menu',
+                                icon: '❌',
+                                onClick: (e) => {
+                                    console.log('[Console] Closing parent menu');
+                                    window.game.menuManager.hideMenu('parent-menu');
+                                }
+                            }
+                        ]
+                    };
+                    const parentMenuId = this.menuManager.createMenu(parentMenuConfig);
+                    this.menuManager.showMenu(parentMenuId);
+                    console.log(`[Console] Created parent menu: ${parentMenuId}`);
+                    console.log('[Console] Instructions:');
+                    console.log('  1. Click "Open Child Menu" to create a child menu');
+                    console.log('  2. Close the parent menu - the child will execute its custom callback');
+                    console.log('  3. The callback can do anything - close the child, show alerts, update UI, etc.');
+                    break;
+                    
                 case 'inputbar':
                 case 'chat':
                     this.inputBar.open();
@@ -501,6 +575,7 @@ export class Game {
                     console.log('  cmd("testtabs") - Create tabs menu with buttons');
                     console.log('  cmd("testcallbacks") - Test callback system');
                     console.log('  cmd("testresize") - Test resize and scaling');
+                    console.log('  cmd("testcloseListeners") - Test menu close listeners');
                     console.log('  cmd("inputbar") or cmd("chat") - Open input bar');
                     console.log('  cmd("clearhistory") - Clear input bar history');
                     console.log('  cmd("help") - Show this help');
