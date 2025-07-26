@@ -390,13 +390,12 @@ export class Game {
                                     viewportY: 0.2,
                                     viewportWidth: 0.6,
                                     viewportHeight: 0.6,
-                                    closeListeners: [
-                                        {
-                                            "callback-test-menu": 
-                                            () => {
-                                                window.game.menuManager.hideMenu('child-menu');
-                                            }
-                                        }],
+                                    closeListeners: {
+                                        "callback-test-menu": 
+                                        () => {
+                                            window.game.menuManager.hideMenu('child-menu');
+                                        }
+                                    },
                                     content: '<h3>Child Menu</h3><p>This is a child menu opened via onClickMenu callback.</p>',
                                     buttons: [
                                         {
