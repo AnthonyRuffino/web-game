@@ -363,8 +363,10 @@ export class Game {
                     break;
                     
                 case 'testcallbacks':
+                    const callbackMenuId = 'callback-test-menu';
+                    const childCallbackMenuId = 'child-callback-test-menu';
                     const callbackMenuConfig = {
-                        id: 'callback-test-menu',
+                        id: callbackMenuId,
                         title: 'Callback System Test',
                         viewportX: 0.1,
                         viewportY: 0.1,
@@ -384,16 +386,16 @@ export class Game {
                                 text: 'Open Child Menu',
                                 icon: '📂',
                                 onClickMenu: {
-                                    id: 'child-menu',
+                                    id: childCallbackMenuId,
                                     title: 'Child Menu',
                                     viewportX: 0.2,
                                     viewportY: 0.2,
                                     viewportWidth: 0.6,
                                     viewportHeight: 0.6,
                                     closeListeners: {
-                                        "callback-test-menu": 
+                                        [callbackMenuId]: 
                                         () => {
-                                            window.game.menuManager.hideMenu('child-menu');
+                                            window.game.menuManager.hideMenu(childCallbackMenuId);
                                         }
                                     },
                                     content: '<h3>Child Menu</h3><p>This is a child menu opened via onClickMenu callback.</p>',
@@ -403,7 +405,7 @@ export class Game {
                                             icon: '❌',
                                             onClick: (e) => {
                                                 console.log('[Console] Closing child menu');
-                                                window.game.menuManager.hideMenu('child-menu');
+                                                window.game.menuManager.hideMenu(childCallbackMenuId);
                                             }
                                         }
                                     ]
@@ -411,9 +413,14 @@ export class Game {
                             }
                         ]
                     };
-                    const callbackMenuId = this.menuManager.createMenu(callbackMenuConfig);
-                    this.menuManager.showMenu(callbackMenuId);
-                    console.log(`[Console] Created callback test menu: ${callbackMenuId}`);
+                    if (this.menuManager.showMenu(callbackMenuId)) {
+                        console.log(`[Console] Showed callback test menu: ${callbackMenuId}`);
+                    } else {
+                        const newCallbackMenuId = this.menuManager.createMenu(callbackMenuConfig);
+                        this.menuManager.showMenu(newCallbackMenuId);
+                        console.log(`[Console] Created callback test menu: ${newCallbackMenuId}`);
+                    }
+                    
                     break;
                     
                 case 'testresize':
@@ -479,8 +486,10 @@ export class Game {
                     
                 case 'testcloseListeners':
                     // Create parent menu
+                    const parentMenuId = 'parent-menu';
+                    const childMenuId = 'child-menu';
                     const parentMenuConfig = {
-                        id: 'parent-menu',
+                        id: parentMenuId,
                         title: 'Parent Menu',
                         viewportX: 0.1,
                         viewportY: 0.1,
@@ -494,18 +503,18 @@ export class Game {
                                 onClick: (e) => {
                                     // Create child menu with closeListeners callbacks
                                     const childMenuConfig = {
-                                        id: 'child-menu',
+                                        id: childMenuId,
                                         title: 'Child Menu',
                                         viewportX: 0.5,
                                         viewportY: 0.5,
                                         viewportWidth: 0.4,
                                         viewportHeight: 0.4,
                                         closeListeners: {
-                                            'parent-menu': () => {
+                                            [parentMenuId]: () => {
                                                 console.log('[Console] Parent menu closed - executing custom callback!');
                                                 alert('Parent menu closed - this is a custom callback!');
                                                 // You can do anything here - close this menu, update UI, etc.
-                                                window.game.menuManager.hideMenu('child-menu');
+                                                window.game.menuManager.hideMenu(childMenuId);
                                             }
                                         },
                                         content: '<h3>Child Menu</h3><p>This menu has a custom callback that executes when the parent menu closes.</p>',
@@ -515,14 +524,20 @@ export class Game {
                                                 icon: '❌',
                                                 onClick: (e) => {
                                                     console.log('[Console] Closing parent menu');
-                                                    window.game.menuManager.hideMenu('parent-menu');
+                                                    window.game.menuManager.hideMenu(parentMenuId);
                                                 }
                                             }
                                         ]
                                     };
-                                    const childMenuId = window.game.menuManager.createMenu(childMenuConfig);
-                                    window.game.menuManager.showMenu(childMenuId);
-                                    console.log(`[Console] Created child menu: ${childMenuId}`);
+
+                                    if (this.menuManager.showMenu(childMenuId)) {
+                                        console.log(`[Console] Showed child menu: ${childMenuId}`);
+                                    } else {
+                                        const childMenuId = window.game.menuManager.createMenu(childMenuConfig);
+                                        window.game.menuManager.showMenu(childMenuId);
+                                        console.log(`[Console] Created child menu: ${childMenuId}`);
+                                    }
+                                    
                                 }
                             },
                             {
@@ -535,13 +550,14 @@ export class Game {
                             }
                         ]
                     };
-                    const parentMenuId = this.menuManager.createMenu(parentMenuConfig);
-                    this.menuManager.showMenu(parentMenuId);
-                    console.log(`[Console] Created parent menu: ${parentMenuId}`);
-                    console.log('[Console] Instructions:');
-                    console.log('  1. Click "Open Child Menu" to create a child menu');
-                    console.log('  2. Close the parent menu - the child will execute its custom callback');
-                    console.log('  3. The callback can do anything - close the child, show alerts, update UI, etc.');
+
+                    if (this.menuManager.showMenu(parentMenuId)) {
+                        console.log(`[Console] Showed parent-menu: ${parentMenuId}`);
+                    } else {
+                        const newParentMenuId = this.menuManager.createMenu(parentMenuConfig);
+                        this.menuManager.showMenu(newParentMenuId);
+                        console.log(`[Console] Created parent menu: ${newParentMenuId}`);
+                    }
                     break;
                     
                 case 'inputbar':

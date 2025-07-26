@@ -321,8 +321,13 @@ class Menu {
         button.onclick = (e) => {
             // Handle onClickMenu if provided
             if (buttonConfig.onClickMenu) {
-                const childMenuId = window.game.menuManager.createMenu(buttonConfig.onClickMenu);
-                window.game.menuManager.showMenu(childMenuId);
+                if (buttonConfig.onClickMenu.id && window.game.menuManager.showMenu(buttonConfig.onClickMenu.id)) {
+                    console.log(`[Console] Showed onClickMenu: ${buttonConfig.onClickMenu.id}`);
+                } else {
+                    const newOnClickMenuId = window.game.menuManager.createMenu(buttonConfig.onClickMenu);
+                    window.game.menuManager.showMenu(newOnClickMenuId);
+                    console.log(`[Console] Created onClickMenu: ${newOnClickMenuId}`);
+                }
             }
             
             // Handle regular onClick if provided
@@ -1017,8 +1022,10 @@ export class MenuManager {
             this.bringMenuToFront(menu);
             menu.show();
             console.log(`[MenuManager] Showed menu: ${menuId}`);
+            return true;
         } else {
             console.warn(`[MenuManager] Menu not found: ${menuId}`);
+            return false;   
         }
     }
 
