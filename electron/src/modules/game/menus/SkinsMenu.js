@@ -91,14 +91,29 @@ export class SkinsMenu {
     // Handle image button clicks
     handleImageClick(type, name) {
         console.log(`[SkinsMenu] Clicked ${type}: ${name}`);
-        // TODO: Implement image selection/upload functionality
-        this.showImageOptions(type, name);
+        
+        if (type === 'entity') {
+            // Import and create entity skin configuration menu
+            import('./EntitySkinConfigurationMenu.js').then(module => {
+                const { EntitySkinConfigurationMenu } = module;
+                const entityConfigMenu = new EntitySkinConfigurationMenu(name, this.menuManager);
+                entityConfigMenu.createAndShow(() => {
+                    console.log(`[SkinsMenu] Entity skin configuration menu closed for ${name}`);
+                });
+            }).catch(error => {
+                console.error('[SkinsMenu] Failed to load EntitySkinConfigurationMenu:', error);
+                alert(`Failed to open skin configuration for ${name}`);
+            });
+        } else {
+            // For backgrounds, show placeholder for now
+            this.showImageOptions(type, name);
+        }
     }
 
     // Show image options (placeholder for future functionality)
     showImageOptions(type, name) {
         console.log(`[SkinsMenu] Showing options for ${type}: ${name}`);
-        // TODO: Show upload, reset, or other options
+        // TODO: Show upload, reset, or other options for backgrounds
         alert(`Image options for ${name} (${type}) - Coming soon!`);
     }
 

@@ -12,6 +12,7 @@ import { PersistenceSystem } from './persistence.js';
 import { MenuManager } from './menuManager.js';
 import MenuBarElectron from './menuBarElectron.js';
 import { InputBar } from './inputBar.js';
+import { EntitySkinConfigurationMenu } from './menus/EntitySkinConfigurationMenu.js';
 
 export class Game {
     constructor() {
@@ -771,6 +772,15 @@ export class Game {
                     const entitiesAtCell = chunk.entities.filter(e => e.tileX === tileX && e.tileY === tileY);
                     if (entitiesAtCell.length > 0) {
                         console.log('[Entity Click]', entitiesAtCell);
+                        
+                        // Spawn entity skin configuration menu for the first entity
+                        const entity = entitiesAtCell[0];
+                        if (entity && entity.type) {
+                            const entityConfigMenu = new EntitySkinConfigurationMenu(entity.type, this.menuManager);
+                            entityConfigMenu.createAndShow(() => {
+                                console.log(`[Game] Entity skin configuration menu closed for ${entity.type}`);
+                            });
+                        }
                     }
                 }
             }
