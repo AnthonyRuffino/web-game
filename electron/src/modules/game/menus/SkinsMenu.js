@@ -1,5 +1,9 @@
 // electron/src/modules/game/menus/SkinsMenu.js
 // Dedicated Skins Menu for entity and background customization
+import { EntitySkinConfigurationMenu } from './EntitySkinConfigurationMenu.js';
+import { GrassEntity } from '../entities/grass.js';
+import { TreeEntity } from '../entities/tree.js';
+import { RockEntity } from '../entities/rock.js';
 
 export class SkinsMenu {
     constructor(menuId, menuManager) {
@@ -13,6 +17,7 @@ export class SkinsMenu {
         const assetManager = this.menuManager.assetManager;
         return names.map(name => {
             let imageDataUrl = null;
+            const entityConfigMenu = new EntitySkinConfigurationMenu(name, this.menuManager);
             if (assetManager) {
                 const key = type === 'entity' ? `image:entity:${name}` : `image:background:${name}`;
                 const cached = assetManager.imageCache.get(key);
@@ -29,7 +34,7 @@ export class SkinsMenu {
             return {
                 name: name.charAt(0).toUpperCase() + name.slice(1),
                 imageDataUrl,
-                onClick: () => this.handleImageClick(type, name),
+                onClick: () => this.handleImageClick(type, name, entityConfigMenu),
                 tooltip: `Select ${name}`
             };
         });
@@ -58,7 +63,7 @@ export class SkinsMenu {
                             cols: 3,
                             cellSize: 80,
                             gap: 10,
-                            buttons: this.getImageGridButtons(['tree', 'grass', 'rock'])
+                            buttons: this.getImageGridButtons([TreeEntity.type  , GrassEntity.type, RockEntity.type])
                         }
                     ]
                 },
@@ -89,20 +94,13 @@ export class SkinsMenu {
 
 
     // Handle image button clicks
-    handleImageClick(type, name) {
+    handleImageClick(type, name, entityConfigMenu) {
         console.log(`[SkinsMenu] Clicked ${type}: ${name}`);
-        
+        const menuManager = this.menuManager;
         if (type === 'entity') {
             // Import and create entity skin configuration menu
-            import('./EntitySkinConfigurationMenu.js').then(module => {
-                const { EntitySkinConfigurationMenu } = module;
-                const entityConfigMenu = new EntitySkinConfigurationMenu(name, this.menuManager);
-                entityConfigMenu.createAndShow(() => {
-                    console.log(`[SkinsMenu] Entity skin configuration menu closed for ${name}`);
-                });
-            }).catch(error => {
-                console.error('[SkinsMenu] Failed to load EntitySkinConfigurationMenu:', error);
-                alert(`Failed to open skin configuration for ${name}`);
+            entityConfigMenu.createAndShow(() => {
+                console.log(`[SkinsMenu] Entity skin configuration menu closed for ${name}`);
             });
         } else {
             // For backgrounds, show placeholder for now

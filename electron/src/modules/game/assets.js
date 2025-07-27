@@ -61,9 +61,9 @@ export class AssetManager {
     // Ensure all required entity type configs exist in memory and localStorage
     ensureAllEntityTypeConfigs() {
         const requiredEntityTypes = [
-            { name: 'grass', defaultConfig: { size: 32, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 } },
-            { name: 'tree', defaultConfig: { size: 24, fixedScreenAngle: 0, drawOffsetX: 0, drawOffsetY: -42 } },
-            { name: 'rock', defaultConfig: { size: 20, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 } }
+            GrassEntity,
+            TreeEntity,
+            RockEntity
         ];
 
         const requiredBackgroundTypes = [
@@ -75,7 +75,7 @@ export class AssetManager {
 
         // Ensure entity type configs
         requiredEntityTypes.forEach(entityType => {
-            const configKey = `entity:${entityType.name}`;
+            const configKey = `entity:${entityType.type}`;
             if (!this.entityTypeConfigs.has(configKey)) {
                 this.entityTypeConfigs.set(configKey, entityType.defaultConfig);
                 configsChanged = true;

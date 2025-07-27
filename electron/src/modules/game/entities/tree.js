@@ -62,7 +62,6 @@ export const TreeEntity = {
 
     // Generate SVG for tree entity
     generateTreeSVG(config) {
-        const size = config.size || 32;
         const foliageRadius = config.foliageRadius || 24;
         const width = (foliageRadius*2);
         const height = config.imageHeight || 96;

@@ -76,7 +76,7 @@ class MenuBarElectron {
       bar.appendChild(btn);
       this.menuButtons[menuId] = btn;
       if (menuId == 'skins') {
-        this.menuManager.createMenu(this.skinsMenu.createMenuConfig(menuId, () => this.updateButtonStates()));
+        this.menuManager.createMenu(this.skinsMenu.createMenuConfig(() => this.updateButtonStates()));
       } else if (menuId == 'macro') {
         this.menuManager.createMenu(this.menuManager.createMacroMenuConfig(menuId, () => this.updateButtonStates()));
       } else if (menuId == 'character') {

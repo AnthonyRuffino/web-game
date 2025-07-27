@@ -913,7 +913,7 @@ export class Menu {
                 console.log(`[MenuManager] Auto-destroyed menu: ${this.id}`);
             }
         }
-        this.onCloseParent ? this.onCloseParent() : null;
+        this.onCloseParent?.();
     }
     
     bringToFront() {

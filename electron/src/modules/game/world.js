@@ -408,13 +408,37 @@ export class World {
         };
     }
 
+    renderEntity(entity, ctx){
+        if (entity.type === 'letterTile') {
+            // Handle the starting position marker
+            if (entity.draw) {
+                entity.draw(ctx);
+            }
+        } else {
+            // Handle entities created by EntityRenderer
+            // Try new rendering system first, fallback to old system
+            try {
+                EntityRenderer.renderEntity(ctx, entity);
+            } catch (error) {
+                console.warn(`[World] New render method failed for ${entity.type}, using fallback:`, error);
+                
+                // Fallback to old rendering system
+                ctx.save();
+                
+                // Use renderY if specified, otherwise use entity.y
+                const renderY = entity.renderY !== undefined ? entity.renderY : entity.y;
+                ctx.translate(entity.x, renderY);
+                
+                entity.render(ctx);
+                ctx.restore();
+            }
+        }
+    };
+
     // Render the world
     render(ctx, cameraX, cameraY, viewportWidth, viewportHeight, player) {
         // Get visible chunks
         const visibleChunks = this.getVisibleChunks(cameraX, cameraY, viewportWidth, viewportHeight);
-        
-        // Load chunks and collect all fixed angle entities
-        const allFixedAngleEntities = [];
         
         // Render chunk backgrounds first
         visibleChunks.forEach(chunkInfo => {
@@ -428,20 +452,22 @@ export class World {
         }
         
         // Now render entities (excluding fixed angle entities)
-        const fixedAngleEntityRenderFunctions = visibleChunks.map(chunkInfo => {
+        const fixedAngleEntities = visibleChunks.flatMap(chunkInfo => {
             const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
-            return this.renderChunkEntities(ctx, chunk, player);
+            return this.renderChunkEntities(ctx, chunk, player, this.renderEntity);
         });
 
         player.render(ctx);
-        fixedAngleEntityRenderFunctions.forEach(renderFunction => renderFunction());
+
+        const sortedFixedAngleEntities =this.sortFixedAngleEntitiesByScreenDepth(fixedAngleEntities, player)
+        sortedFixedAngleEntities.forEach(fixedAngleEntity => this.renderEntity(fixedAngleEntity, ctx));
         
         // Clean up distant chunks
         const keepChunkKeys = new Set(visibleChunks.map(chunk => chunk.key));
         this.cleanupChunks(keepChunkKeys);
         
         // Return fixed angle entities for rendering after player
-        return allFixedAngleEntities;
+        return sortedFixedAngleEntities;
     }
 
     // Render chunk background only
@@ -450,7 +476,7 @@ export class World {
     }
 
     // Render chunk entities (with option to exclude fixed angle entities)
-    renderChunkEntities(ctx, chunk, player) {
+    renderChunkEntities(ctx, chunk, player, entityRenderFunction) {
         if (!chunk.entities || !Array.isArray(chunk.entities)) return;
         
         // Sort entities for correct render order (matching core/world.js logic):
@@ -464,39 +490,8 @@ export class World {
             (e.fixedScreenAngle === null || e.fixedScreenAngle === undefined)
         );
         
-        // Sort fixed angle entities by screen Y position for proper depth ordering
-        // This works correctly regardless of camera angle
-        const sortedFixedAngleEntities = this.sortFixedAngleEntitiesByScreenDepth(fixedAngleEntities, player);
-
-        const entityRenderFunction = (entity) => {
-            if (entity.type === 'letterTile') {
-                // Handle the starting position marker
-                if (entity.draw) {
-                    entity.draw(ctx);
-                }
-            } else {
-                // Handle entities created by EntityRenderer
-                // Try new rendering system first, fallback to old system
-                try {
-                    EntityRenderer.renderEntity(ctx, entity);
-                } catch (error) {
-                    console.warn(`[World] New render method failed for ${entity.type}, using fallback:`, error);
-                    
-                    // Fallback to old rendering system
-                    ctx.save();
-                    
-                    // Use renderY if specified, otherwise use entity.y
-                    const renderY = entity.renderY !== undefined ? entity.renderY : entity.y;
-                    ctx.translate(entity.x, renderY);
-                    
-                    entity.render(ctx);
-                    ctx.restore();
-                }
-            }
-        };
-        
-        basicEntities.forEach(entityRenderFunction);
-        return () => sortedFixedAngleEntities.forEach(entity => entityRenderFunction(entity));
+        basicEntities.forEach(entity => entityRenderFunction(entity, ctx));
+        return fixedAngleEntities;
     }
 
     // Sort fixed angle entities by screen depth for proper rendering order

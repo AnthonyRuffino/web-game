@@ -25,6 +25,16 @@ export class EntitySkinConfigurationMenu {
                 <h3>${entityName.charAt(0).toUpperCase() + entityName.slice(1)} Skin Configuration</h3>
                 <p>Upload a new image to replace the current ${entityName} skin.</p>
                 
+                <div id="current-config-container" style="margin: 20px 0; padding: 15px; background: #333; border-radius: 8px;">
+                    <h4>Current Configuration</h4>
+                    <div id="config-info" style="font-family: monospace; font-size: 12px; color: #aaa;">
+                        <div>Size: <span id="config-size">Loading...</span></div>
+                        <div>Fixed Screen Angle: <span id="config-angle">Loading...</span></div>
+                        <div>Draw Offset X: <span id="config-offset-x">Loading...</span></div>
+                        <div>Draw Offset Y: <span id="config-offset-y">Loading...</span></div>
+                    </div>
+                </div>
+                
                 <div id="current-image-container" style="margin: 20px 0;">
                     <h4>Current Image</h4>
                     <div id="current-image-preview" style="
@@ -44,6 +54,9 @@ export class EntitySkinConfigurationMenu {
                 
                 <div id="upload-section" style="margin: 20px 0;">
                     <h4>Upload New Image</h4>
+                    <p style="color: #aaa; font-size: 12px; margin-bottom: 10px;">
+                        Images will be automatically resized to ${entityName} size and use current positioning settings.
+                    </p>
                     <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
                     <button id="upload-button" style="
                         background: #4ECDC4; 
@@ -102,15 +115,20 @@ export class EntitySkinConfigurationMenu {
 
     // Create and show the entity skin configuration menu
     createAndShow(onCloseParent) {
-        const config = this.createMenuConfig(onCloseParent);
-        this.menuId = this.menuManager.createMenu(config);
-        this.menu = this.menuManager.getMenu(this.menuId);
+        if (this.menuManager.showMenu(this.menuId)) {
+            console.log(`[EntitySkinConfigurationMenu] showed existing menu: ${this.menuId}`);
+        } else {
+            const config = this.createMenuConfig(onCloseParent);
+            this.menuId = this.menuManager.createMenu(config);
+            this.menu = this.menuManager.getMenu(this.menuId);
+            
+            // Set up the menu functionality after it's created
+            this.setupMenuFunctionality();
+            
+            this.menuManager.showMenu(this.menuId);
+            console.log(`[EntitySkinConfigurationMenu] Created and showed menu: ${this.menuId}`);
+        }
         
-        // Set up the menu functionality after it's created
-        this.setupMenuFunctionality();
-        
-        this.menuManager.showMenu(this.menuId);
-        console.log(`[EntitySkinConfigurationMenu] Created and showed menu: ${this.menuId}`);
         return this.menuId;
     }
 
@@ -130,6 +148,9 @@ export class EntitySkinConfigurationMenu {
 
         // Load current image
         this.loadCurrentImage(currentImagePreview);
+
+        // Load and display current config
+        this.loadCurrentConfig();
 
         // Set up upload button
         uploadButton.onclick = () => fileInput.click();
@@ -174,26 +195,77 @@ export class EntitySkinConfigurationMenu {
         }
     }
 
+    // Get the current entity type config
+    getEntityTypeConfig() {
+        const assetManager = this.menuManager.assetManager;
+        if (!assetManager) return null;
+        
+        const configKey = `entity:${this.entityName}`;
+        return assetManager.entityTypeConfigs.get(configKey) || null;
+    }
+
+    // Load and display current config values
+    loadCurrentConfig() {
+        const menuElement = this.menu.element;
+        if (!menuElement) return;
+
+        const config = this.getEntityTypeConfig();
+        if (!config) {
+            console.warn(`[EntitySkinConfigurationMenu] No config found for entity: ${this.entityName}`);
+            return;
+        }
+
+        // Update config display elements
+        const sizeElement = menuElement.querySelector('#config-size');
+        const angleElement = menuElement.querySelector('#config-angle');
+        const offsetXElement = menuElement.querySelector('#config-offset-x');
+        const offsetYElement = menuElement.querySelector('#config-offset-y');
+
+        if (sizeElement) sizeElement.textContent = config.size || '32';
+        if (angleElement) angleElement.textContent = config.fixedScreenAngle !== null ? config.fixedScreenAngle : 'null';
+        if (offsetXElement) offsetXElement.textContent = config.drawOffsetX || '0';
+        if (offsetYElement) offsetYElement.textContent = config.drawOffsetY || '0';
+    }
+
     // Handle file upload
     handleFileUpload(file, previewContainer, container) {
         const reader = new FileReader();
         reader.onload = (event) => {
             const img = new Image();
             img.onload = () => {
+                const config = this.getEntityTypeConfig();
+                console.log(`[EntitySkinConfigurationMenu] Image loaded: ${img.width}x${img.height}`, config.imageHeight);
+                // Get the current entity type config for proper sizing
+                const targetHeight = config ? (config.imageHeight || config.size || 20) : 20;
+                const widthToHeightRatio = img.width/img.height;
+                const targetWidth = targetHeight*widthToHeightRatio;
+                
+                // Create canvas to resize the image to the target size
+                const canvas = document.createElement('canvas');
+                canvas.width = targetHeight;
+                canvas.height = targetWidth;
+                const ctx = canvas.getContext('2d');
+                
+                // Draw the uploaded image resized to the target size
+                ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+                
+                // Get the resized data URL
+                const resizedDataUrl = canvas.toDataURL('image/png');
+                
                 // Clear the preview container
                 previewContainer.innerHTML = '';
                 
-                // Create and add the preview image
+                // Create and add the preview image (show at 128px for preview)
                 const previewImg = document.createElement('img');
-                previewImg.src = event.target.result;
+                previewImg.src = resizedDataUrl;
                 previewImg.style.width = '100%';
                 previewImg.style.height = '100%';
                 previewImg.style.objectFit = 'contain';
                 previewImg.style.borderRadius = '6px';
                 previewContainer.appendChild(previewImg);
                 
-                // Store the data URL for later use
-                this.pendingImageDataUrl = event.target.result;
+                // Store the resized data URL for later use
+                this.pendingImageDataUrl = resizedDataUrl;
                 
                 // Show the new image container
                 container.style.display = 'block';
@@ -249,16 +321,23 @@ export class EntitySkinConfigurationMenu {
 
         const key = `image:entity:${this.entityName}`;
         
+        // Get the current entity type config for proper metadata
+        const config = this.getEntityTypeConfig();
+        const size = config ? config.size : 32;
+        const fixedScreenAngle = config ? config.fixedScreenAngle : 0;
+        const drawOffsetX = config ? config.drawOffsetX : 0;
+        const drawOffsetY = config ? config.drawOffsetY : 0;
+        
         // Create image object and add to cache
         const img = new Image();
         img.onload = () => {
-            // Add to asset manager cache
+            // Add to asset manager cache with proper config values
             assetManager.imageCache.set(key, {
                 image: img,
-                size: img.width,
-                fixedScreenAngle: 0,
-                drawOffsetX: 0,
-                drawOffsetY: 0
+                size: size,
+                fixedScreenAngle: fixedScreenAngle,
+                drawOffsetX: drawOffsetX,
+                drawOffsetY: drawOffsetY
             });
 
             // Save to localStorage
