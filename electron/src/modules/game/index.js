@@ -74,7 +74,7 @@ export class Game {
             this.worldEnhancements = new WorldEnhancements();
             this.assetManager = new AssetManager();
             this.persistenceSystem = new PersistenceSystem();
-            this.menuManager = new MenuManager();
+            this.menuManager = new MenuManager(this.assetManager);
             this.inputBar = new InputBar();
             
             // Initialize systems

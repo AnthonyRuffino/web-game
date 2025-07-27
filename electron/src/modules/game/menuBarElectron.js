@@ -1,5 +1,7 @@
 // electron/src/modules/game/menuBarElectron.js
 
+import { SkinsMenu } from './menus/SkinsMenu.js';
+
 // Menu bar config (viewport-relative, dark theme)
 const MENU_BAR_CONFIG = {
   height: '36px',
@@ -35,7 +37,12 @@ class MenuBarElectron {
     this.menuManager = menuManager;
     this.element = null;
     this.menuButtons = {};
-    this.menuIds = ['skins', 'macro', 'character'];
+    // Initialize dedicated menu classes
+    this.skinsMenu = new SkinsMenu('skins', menuManager);
+    this.menuIds = [this.skinsMenu.menuId, 'macro', 'character'];
+    
+    
+    
     this.init();
   }
 
@@ -69,7 +76,7 @@ class MenuBarElectron {
       bar.appendChild(btn);
       this.menuButtons[menuId] = btn;
       if (menuId == 'skins') {
-        this.menuManager.createMenu(this.menuManager.createSkinsMenuConfig(menuId, () => this.updateButtonStates()));
+        this.menuManager.createMenu(this.skinsMenu.createMenuConfig(menuId, () => this.updateButtonStates()));
       } else if (menuId == 'macro') {
         this.menuManager.createMenu(this.menuManager.createMacroMenuConfig(menuId, () => this.updateButtonStates()));
       } else if (menuId == 'character') {
