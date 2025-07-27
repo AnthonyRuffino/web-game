@@ -58,5 +58,52 @@ export const TreeEntity = {
         }
         
         return entity;
+    },
+
+    // Generate SVG for tree entity
+    generateTreeSVG(config) {
+        const size = config.size || 32;
+        const foliageRadius = config.foliageRadius || 24;
+        const width = (foliageRadius*2);
+        const height = config.imageHeight || 96;
+        const trunkWidth = config.trunkWidth || 12;
+
+        // Trunk: from bottom center up
+        const trunkX = (width / 2) - (trunkWidth / 2);
+        const trunkY = (foliageRadius * 2) - 1;
+
+        const trunkHeight = height - trunkY;
+        const trunkColor = config.trunkColor || '#5C4033';
+        const foliageColor = config.foliageColor || '#1B5E20';
+        const foliageBorderColor = config.foliageBorderColor || '#1B5E20';
+        const foliageBorderWidth = config.foliageBorderWidth || 2;
+        const opacity = config.opacity || 1.0;
+
+        const svg = `
+            <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+                <rect 
+                    x="${trunkX}" 
+                    y="${trunkY}" 
+                    width="${trunkWidth}" 
+                    height="${trunkHeight}" 
+                    fill="${trunkColor}" 
+                    opacity="${opacity}"
+                    transform="rotate(${config.fixedScreenAngle || 0}, ${foliageRadius}, ${foliageRadius})"
+                />
+                <ellipse 
+                    cx="${foliageRadius}" 
+                    cy="${foliageRadius}" 
+                    rx="${foliageRadius}" 
+                    ry="${foliageRadius}" 
+                    fill="${foliageColor}" 
+                    opacity="${opacity}"
+                    stroke="${foliageBorderColor}"
+                    stroke-width="${foliageBorderWidth}"
+                    transform="rotate(${config.fixedScreenAngle || 0}, ${foliageRadius}, ${foliageRadius})"
+                />
+            </svg>
+        `;
+        
+        return svg;
     }
 }; 

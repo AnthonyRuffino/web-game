@@ -47,5 +47,48 @@ export const RockEntity = {
         }
         
         return entity;
+    },
+
+    // Generate SVG for rock entity
+    generateRockSVG(config) {
+        const size = config.size || 20;
+        const baseColor = config.baseColor || '#757575';
+        const strokeColor = config.strokeColor || '#424242';
+        const textureColor = config.textureColor || '#424242';
+        const opacity = config.opacity || 1.0;
+        const textureSpots = config.textureSpots || 3;
+        const strokeWidth = config.strokeWidth || 2;
+
+        const center = size / 2;
+        const radius = (size / 2) - strokeWidth;
+
+        // Generate texture spots with deterministic positions
+        let textureElements = '';
+        for (let i = 0; i < textureSpots; i++) {
+            const angle = (i * 137.5) * (Math.PI / 180);
+            const distance = radius * (0.3 + (i * 0.2) % 0.4);
+            const spotX = center + Math.cos(angle) * distance;
+            const spotY = center + Math.sin(angle) * distance;
+            const spotSize = radius * (0.1 + (i * 0.05) % 0.1);
+            
+            textureElements += `<circle cx="${spotX.toFixed(1)}" cy="${spotY.toFixed(1)}" r="${spotSize.toFixed(1)}" fill="${textureColor}"/>`;
+        }
+
+        const svg = `
+            <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+                <circle 
+                    cx="${center}" 
+                    cy="${center}" 
+                    r="${radius}" 
+                    fill="${baseColor}" 
+                    opacity="${opacity}"
+                    stroke="${strokeColor}"
+                    stroke-width="${strokeWidth}"
+                />
+                ${textureElements}
+            </svg>
+        `;
+        
+        return svg;
     }
 }; 

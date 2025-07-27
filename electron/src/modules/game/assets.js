@@ -332,11 +332,11 @@ export class AssetManager {
     generateEntitySVG(entityName, config) {
         switch (entityName) {
             case 'grass':
-                return this.generateGrassSVG(config);
+                return GrassEntity.generateGrassSVG(config);
             case 'tree':
-                return this.generateTreeSVG(config);
+                return TreeEntity.generateTreeSVG(config);
             case 'rock':
-                return this.generateRockSVG(config);
+                return RockEntity.generateRockSVG(config);
             default:
                 console.warn(`[AssetManager] Unknown entity: ${entityName}`);
                 return null;
@@ -344,142 +344,7 @@ export class AssetManager {
     }
 
     // Generate grass SVG
-    generateGrassSVG(config) {
-        const size = config.size || 32;
-        const bladeColor = config.bladeColor || '#81C784';
-        const bladeWidth = config.bladeWidth || 1.5;
-        const clusterCount = config.clusterCount || 3;
-        const bladeCount = config.bladeCount || 5;
-        const bladeLength = config.bladeLength || 10;
-        const bladeAngleVariation = config.bladeAngleVariation || 30;
-        const opacity = config.opacity || 1.0;
 
-        const center = size / 2;
-        const clusterRadius = size * 0.3;
-
-        // Generate grass clusters with deterministic positions
-        let grassElements = '';
-        
-        for (let cluster = 0; cluster < clusterCount; cluster++) {
-            // Calculate cluster center using deterministic positioning
-            const angle = (cluster * 120) * (Math.PI / 180);
-            const distance = clusterRadius * (0.3 + (cluster * 0.2) % 0.4);
-            const clusterX = center + Math.cos(angle) * distance;
-            const clusterY = center + Math.sin(angle) * distance;
-            
-            // Generate blades for this cluster
-            const clusterBladeCount = bladeCount + (cluster % 2);
-            const baseAngle = (cluster * 137.5) * (Math.PI / 180);
-            
-            for (let blade = 0; blade < clusterBladeCount; blade++) {
-                // Vary the angle slightly for each blade
-                const angleVariation = ((cluster * 100 + blade * 50) % (bladeAngleVariation * 2) - bladeAngleVariation) * (Math.PI / 180);
-                const bladeAngle = baseAngle + angleVariation;
-                
-                // Vary the length slightly
-                const length = bladeLength + (cluster * 200 + blade * 30) % 6;
-                
-                // Calculate blade end point
-                const endX = clusterX + Math.cos(bladeAngle) * length;
-                const endY = clusterY + Math.sin(bladeAngle) * length;
-                
-                // Create grass blade as a line
-                grassElements += `<line x1="${clusterX.toFixed(1)}" y1="${clusterY.toFixed(1)}" x2="${endX.toFixed(1)}" y2="${endY.toFixed(1)}" stroke="${bladeColor}" stroke-width="${bladeWidth}" opacity="${opacity}"/>`;
-            }
-        }
-
-        const svg = `
-            <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-                ${grassElements}
-            </svg>
-        `;
-
-        return svg;
-    }
-
-    // Generate tree SVG
-    generateTreeSVG(config) {
-        const size = config.size || 32;
-        const foliageRadius = config.foliageRadius || 24;
-        const width = (foliageRadius*2);
-        const height = config.imageHeight || 96;
-        const trunkWidth = config.trunkWidth || 12;
-
-        // Trunk: from bottom center up
-        const trunkX = (width / 2) - (trunkWidth / 2);
-        const trunkY = (foliageRadius * 2) - 1;
-
-        const trunkHeight = height - trunkY;
-        const trunkColor = config.trunkColor || '#5C4033';
-        const foliageColor = config.foliageColor || '#1B5E20';
-        const foliageBorderColor = config.foliageBorderColor || '#1B5E20';
-        const foliageBorderWidth = config.foliageBorderWidth || 2;
-        const opacity = config.opacity || 1.0;
-
-        
-
-        const svg = `
-            <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-                <rect 
-                    x="${trunkX}" 
-                    y="${trunkY}" 
-                    width="${trunkWidth}" 
-                    height="${trunkHeight}" 
-                    fill="${trunkColor}" 
-                    opacity="${opacity}"
-                    transform="rotate(${config.fixedScreenAngle || 0}, ${foliageRadius}, ${foliageRadius})"
-                />
-                <ellipse 
-                    cx="${foliageRadius}" 
-                    cy="${foliageRadius}" 
-                    rx="${foliageRadius}" 
-                    ry="${foliageRadius}" 
-                    fill="${foliageColor}" 
-                    opacity="${opacity}"
-                    stroke="${foliageBorderColor}"
-                    stroke-width="${foliageBorderWidth}"
-                    transform="rotate(${config.fixedScreenAngle || 0}, ${foliageRadius}, ${foliageRadius})"
-                />
-            </svg>
-        `;
-        
-        return svg;
-    }
-
-    // Generate rock SVG
-    generateRockSVG(config) {
-        const size = config.size || 20;
-        const baseColor = config.baseColor || '#757575';
-        const strokeColor = config.strokeColor || '#424242';
-        const textureColor = config.textureColor || '#424242';
-        const opacity = config.opacity || 1.0;
-        const textureSpots = config.textureSpots || 3;
-        const strokeWidth = config.strokeWidth || 2;
-
-        const center = size / 2;
-        const radius = (size / 2) - strokeWidth;
-
-        // Generate texture spots with deterministic positions
-        let textureElements = '';
-        for (let i = 0; i < textureSpots; i++) {
-            const angle = (i * 137.5) * (Math.PI / 180);
-            const distance = radius * (0.3 + (i * 0.2) % 0.4);
-            const spotX = center + Math.cos(angle) * distance;
-            const spotY = center + Math.sin(angle) * distance;
-            const spotSize = radius * (0.1 + (i * 0.05) % 0.1);
-            
-            textureElements += `<circle cx="${spotX.toFixed(1)}" cy="${spotY.toFixed(1)}" r="${spotSize.toFixed(1)}" fill="${textureColor}"/>`;
-        }
-
-        const svg = `
-            <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="${center}" cy="${center}" r="${radius}" fill="${baseColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}" opacity="${opacity}"/>
-                ${textureElements}
-            </svg>
-        `;
-
-        return svg;
-    }
 
     // Generate plains biome SVG
     generatePlainsSVG(config) {
