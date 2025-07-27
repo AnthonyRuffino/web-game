@@ -571,6 +571,66 @@ export class Game {
                     console.log('[Console] Input bar history cleared');
                     break;
                     
+                case 'menupersist':
+                case 'menusave':
+                    const saveResult = this.menuManager.saveMenuConfigurations();
+                    if (saveResult) {
+                        console.log('[Console] Menu configurations saved to localStorage');
+                    } else {
+                        console.log('[Console] Failed to save menu configurations');
+                    }
+                    break;
+                    
+                case 'menuload':
+                    const configInfo = this.menuManager.getMenuConfigurationInfo();
+                    console.log('[Console] Menu configuration info:', configInfo);
+                    if (configInfo.hasData) {
+                        console.log(`[Console] Found ${configInfo.totalMenus} saved menu configurations:`, configInfo.menuIds);
+                    } else {
+                        console.log('[Console] No saved menu configurations found');
+                    }
+                    break;
+                    
+                case 'menuclear':
+                    const clearResult = this.menuManager.clearMenuConfigurations();
+                    if (clearResult) {
+                        console.log('[Console] All menu configurations cleared from localStorage');
+                    } else {
+                        console.log('[Console] Failed to clear menu configurations');
+                    }
+                    break;
+                    
+                case 'menufix':
+                    // Clear invalid configurations and reset all menus to default
+                    this.menuManager.clearMenuConfigurations();
+                    console.log('[Console] Cleared all menu configurations due to invalid data');
+                    
+                    // Reset all existing menus to default
+                    for (const [menuId, menu] of this.menuManager.menus) {
+                        menu.userModifications = {
+                            position: { x: null, y: null },
+                            size: { width: null, height: null },
+                            hasBeenModified: false
+                        };
+                        console.log(`[Console] Reset menu ${menuId} to default configuration`);
+                    }
+                    break;
+                    
+                case 'menureset':
+                    const targetMenuId = args[0];
+                    if (!targetMenuId) {
+                        console.log('[Console] Usage: cmd("menureset", <menuId>) - Reset specific menu to default');
+                        console.log('[Console] Available menus:', Array.from(this.menuManager.menus.keys()));
+                        break;
+                    }
+                    const resetResult = this.menuManager.resetMenuConfiguration(targetMenuId);
+                    if (resetResult) {
+                        console.log(`[Console] Reset configuration for menu: ${targetMenuId}`);
+                    } else {
+                        console.log(`[Console] Failed to reset configuration for menu: ${targetMenuId}`);
+                    }
+                    break;
+                    
                 case 'help':
                     console.log('[Console] Available commands:');
                     console.log('  cmd("perspective") or cmd("toggle") - Toggle camera mode');
@@ -593,6 +653,11 @@ export class Game {
                     console.log('  cmd("testcloseListeners") - Test menu close listeners');
                     console.log('  cmd("inputbar") or cmd("chat") - Open input bar');
                     console.log('  cmd("clearhistory") - Clear input bar history');
+                    console.log('  cmd("menupersist") or cmd("menusave") - Save menu configurations to localStorage');
+                    console.log('  cmd("menuload") - Show saved menu configuration info');
+                    console.log('  cmd("menuclear") - Clear all saved menu configurations');
+                    console.log('  cmd("menureset", <menuId>) - Reset specific menu to default');
+                    console.log('  cmd("menufix") - Clear invalid configurations and reset all menus');
                     console.log('  cmd("help") - Show this help');
                     break;
                     

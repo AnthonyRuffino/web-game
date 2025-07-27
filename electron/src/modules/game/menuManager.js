@@ -658,15 +658,28 @@ class Menu {
         this.resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 if (entry.target === this.element) {
-                    // Update user modifications with new size
-                    const rect = this.element.getBoundingClientRect();
-                    const viewportWidth = window.innerWidth;
-                    const viewportHeight = window.innerHeight;
-                    this.userModifications.size.width = rect.width / viewportWidth;
-                    this.userModifications.size.height = rect.height / viewportHeight;
-                    this.userModifications.position.x = rect.left / viewportWidth;
-                    this.userModifications.position.y = rect.top / viewportHeight;
-                    this.userModifications.hasBeenModified = true;
+                    // Only update user modifications if menu is visible
+                    if (this.visible && this.element.style.display !== 'none') {
+                        const rect = this.element.getBoundingClientRect();
+                        const viewportWidth = window.innerWidth;
+                        const viewportHeight = window.innerHeight;
+                        
+                        // Validate that we have valid dimensions (not zero)
+                        if (rect.width > 0 && rect.height > 0) {
+                            this.userModifications.size.width = rect.width / viewportWidth;
+                            this.userModifications.size.height = rect.height / viewportHeight;
+                            this.userModifications.position.x = rect.left / viewportWidth;
+                            this.userModifications.position.y = rect.top / viewportHeight;
+                            this.userModifications.hasBeenModified = true;
+                            
+                            console.log(`[MenuManager] Updated user modifications for menu: ${this.id}`, this.userModifications);
+                            
+                            // Save to localStorage immediately
+                            if (window.game && window.game.menuManager) {
+                                window.game.menuManager.saveMenuConfigurations();
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -675,18 +688,33 @@ class Menu {
     }
     
     updateUserModifications() {
+        // Only update if menu is visible and has valid dimensions
+        if (!this.visible || this.element.style.display === 'none') {
+            return;
+        }
+        
         const rect = this.element.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         
-        // Calculate relative position and size
-        this.userModifications.position.x = rect.left / viewportWidth;
-        this.userModifications.position.y = rect.top / viewportHeight;
-        this.userModifications.size.width = rect.width / viewportWidth;
-        this.userModifications.size.height = rect.height / viewportHeight;
-        this.userModifications.hasBeenModified = true;
-        
-        console.log(`[MenuManager] Updated user modifications for menu: ${this.id}`, this.userModifications);
+        // Validate that we have valid dimensions (not zero)
+        if (rect.width > 0 && rect.height > 0) {
+            // Calculate relative position and size
+            this.userModifications.position.x = rect.left / viewportWidth;
+            this.userModifications.position.y = rect.top / viewportHeight;
+            this.userModifications.size.width = rect.width / viewportWidth;
+            this.userModifications.size.height = rect.height / viewportHeight;
+            this.userModifications.hasBeenModified = true;
+            
+            console.log(`[MenuManager] Updated user modifications for menu: ${this.id}`, this.userModifications);
+            
+            // Save to localStorage immediately
+            if (window.game && window.game.menuManager) {
+                window.game.menuManager.saveMenuConfigurations();
+            }
+        } else {
+            console.warn(`[MenuManager] Skipping user modifications for menu ${this.id} - invalid dimensions: ${rect.width}x${rect.height}`);
+        }
     }
     
     updateInternalScaling() {
@@ -851,6 +879,12 @@ class Menu {
         this.visible = true;
         this.element.style.display = 'block';
         
+        // Apply saved user modifications if they exist
+        if (this.userModifications.hasBeenModified) {
+            this.updateViewportPositionAndSize();
+            console.log(`[MenuManager] Applied saved position/size to menu: ${this.id}`, this.userModifications);
+        }
+        
         // Create blocking overlay if needed
         if (this.isBlocking) {
             this.createBlockingOverlay();
@@ -991,9 +1025,85 @@ export class MenuManager {
         this.eventBus = new EventTarget();
         this.menuEventListeners = new Map(); // menuId -> [listeners]
         
+        // Menu persistence
+        this.menuStorageKey = 'electronMenuConfigurations';
+        this.savedConfigurations = this.loadMenuConfigurations();
+        
         this.setupEscapeKeyHandler();
         this.setupWindowResizeHandler();
         console.log('[MenuManager] Menu system initialized');
+        console.log('[MenuManager] Loaded saved configurations:', this.savedConfigurations);
+    }
+
+    // Save menu configurations to localStorage
+    saveMenuConfigurations() {
+        try {
+            const menuConfigs = {};
+            
+            // Collect configurations from all menus
+            for (const [menuId, menu] of this.menus) {
+                if (menu.userModifications.hasBeenModified) {
+                    // Validate that we have valid dimensions (not zero)
+                    const size = menu.userModifications.size;
+                    const position = menu.userModifications.position;
+                    
+                    if (size.width > 0 && size.height > 0) {
+                        menuConfigs[menuId] = {
+                            position: { ...position },
+                            size: { ...size },
+                            hasBeenModified: true
+                        };
+                    } else {
+                        console.warn(`[MenuManager] Skipping save for menu ${menuId} - invalid dimensions: ${size.width}x${size.height}`);
+                    }
+                }
+            }
+            
+            // Update in-memory saved configurations
+            this.savedConfigurations = menuConfigs;
+            
+            localStorage.setItem(this.menuStorageKey, JSON.stringify(menuConfigs));
+            console.log('[MenuManager] Menu configurations saved to localStorage');
+            return true;
+        } catch (error) {
+            console.error('[MenuManager] Failed to save menu configurations:', error);
+            return false;
+        }
+    }
+
+    // Load menu configurations from localStorage
+    loadMenuConfigurations() {
+        try {
+            const savedConfigs = localStorage.getItem(this.menuStorageKey);
+            if (!savedConfigs) {
+                console.log('[MenuManager] No saved menu configurations found');
+                return {};
+            }
+            
+            const menuConfigs = JSON.parse(savedConfigs);
+            console.log('[MenuManager] Loaded menu configurations from localStorage:', menuConfigs);
+            return menuConfigs;
+        } catch (error) {
+            console.error('[MenuManager] Failed to load menu configurations:', error);
+            return {};
+        }
+    }
+
+    // Apply saved configurations to existing menus
+    applySavedConfigurations() {
+        const savedConfigs = this.loadMenuConfigurations();
+        
+        for (const [menuId, savedConfig] of Object.entries(savedConfigs)) {
+            const menu = this.menus.get(menuId);
+            if (menu && savedConfig.hasBeenModified) {
+                menu.userModifications = {
+                    position: { ...savedConfig.position },
+                    size: { ...savedConfig.size },
+                    hasBeenModified: true
+                };
+                console.log(`[MenuManager] Applied saved configuration to menu: ${menuId}`);
+            }
+        }
     }
 
     createMenu(config) {
@@ -1004,6 +1114,18 @@ export class MenuManager {
             throw new Error(`Menu with id '${config.id}' already exists`);
         }
         const menu = new Menu(config);
+        
+        // Apply saved configuration if it exists (using pre-loaded configs)
+        const savedConfig = this.savedConfigurations[config.id];
+        if (savedConfig && savedConfig.hasBeenModified) {
+            menu.userModifications = {
+                position: { ...savedConfig.position },
+                size: { ...savedConfig.size },
+                hasBeenModified: true
+            };
+            console.log(`[MenuManager] Applied saved configuration to new menu: ${config.id}`, savedConfig);
+        }
+        
         this.menus.set(menu.id, menu);
         
         // Setup event listeners for this menu if it has closeListeners
@@ -1382,5 +1504,65 @@ export class MenuManager {
         this.menuEventListeners.forEach((listeners, menuId) => {
             this.cleanupMenuListeners(menuId);
         });
+    }
+
+    // --- Menu Persistence Utility Methods ---
+    
+    // Clear all saved menu configurations
+    clearMenuConfigurations() {
+        try {
+            localStorage.removeItem(this.menuStorageKey);
+            this.savedConfigurations = {};
+            console.log('[MenuManager] Cleared all saved menu configurations');
+            return true;
+        } catch (error) {
+            console.error('[MenuManager] Failed to clear menu configurations:', error);
+            return false;
+        }
+    }
+
+    // Get information about saved menu configurations
+    getMenuConfigurationInfo() {
+        try {
+            const menuCount = Object.keys(this.savedConfigurations).length;
+            const menuIds = Object.keys(this.savedConfigurations);
+            
+            return {
+                totalMenus: menuCount,
+                menuIds: menuIds,
+                storageKey: this.menuStorageKey,
+                hasData: menuCount > 0
+            };
+        } catch (error) {
+            console.error('[MenuManager] Failed to get menu configuration info:', error);
+            return { totalMenus: 0, menuIds: [], storageKey: this.menuStorageKey, hasData: false };
+        }
+    }
+
+    // Reset a specific menu to its default configuration
+    resetMenuConfiguration(menuId) {
+        try {
+            if (this.savedConfigurations[menuId]) {
+                delete this.savedConfigurations[menuId];
+                localStorage.setItem(this.menuStorageKey, JSON.stringify(this.savedConfigurations));
+                
+                // Also reset the menu in memory if it exists
+                const menu = this.menus.get(menuId);
+                if (menu) {
+                    menu.userModifications = {
+                        position: { x: null, y: null },
+                        size: { width: null, height: null },
+                        hasBeenModified: false
+                    };
+                }
+                
+                console.log(`[MenuManager] Reset configuration for menu: ${menuId}`);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error(`[MenuManager] Failed to reset configuration for menu ${menuId}:`, error);
+            return false;
+        }
     }
 } 
