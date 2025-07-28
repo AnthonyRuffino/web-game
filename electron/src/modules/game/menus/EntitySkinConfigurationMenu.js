@@ -1,5 +1,8 @@
 // electron/src/modules/game/menus/EntitySkinConfigurationMenu.js
 // Entity-specific skin configuration menu
+import { GrassEntity } from '../entities/grass.js';
+import { TreeEntity } from '../entities/tree.js';
+import { RockEntity } from '../entities/rock.js';
 
 export class EntitySkinConfigurationMenu {
     constructor(entityName, menuManager) {
@@ -26,12 +29,42 @@ export class EntitySkinConfigurationMenu {
                 <p>Upload a new image to replace the current ${entityName} skin.</p>
                 
                 <div id="current-config-container" style="margin: 20px 0; padding: 15px; background: #333; border-radius: 8px;">
-                    <h4>Current Configuration</h4>
-                    <div id="config-info" style="font-family: monospace; font-size: 12px; color: #aaa;">
-                        <div>Size: <span id="config-size">Loading...</span></div>
-                        <div>Fixed Screen Angle: <span id="config-angle">Loading...</span></div>
-                        <div>Draw Offset X: <span id="config-offset-x">Loading...</span></div>
-                        <div>Draw Offset Y: <span id="config-offset-y">Loading...</span></div>
+                    <h4>Entity Configuration (JSON)</h4>
+                    <p style="color: #aaa; font-size: 12px; margin-bottom: 10px;">
+                        Edit the configuration below and click "Save Config" to apply changes.
+                    </p>
+                    <textarea id="config-json-editor" style="
+                        width: 100%;
+                        height: 120px;
+                        background: #222;
+                        color: #fff;
+                        border: 1px solid #555;
+                        border-radius: 4px;
+                        font-family: monospace;
+                        font-size: 12px;
+                        padding: 8px;
+                        resize: vertical;
+                    " placeholder="Loading configuration..."></textarea>
+                    <div style="margin-top: 10px;">
+                        <button id="save-config-button" style="
+                            background: #4ECDC4; 
+                            color: #222; 
+                            border: none; 
+                            border-radius: 5px; 
+                            padding: 8px 16px; 
+                            font-weight: bold; 
+                            cursor: pointer;
+                            margin-right: 10px;
+                        ">Save Config</button>
+                        <button id="reset-config-button" style="
+                            background: #FF6B6B; 
+                            color: #fff; 
+                            border: none; 
+                            border-radius: 5px; 
+                            padding: 8px 16px; 
+                            font-weight: bold; 
+                            cursor: pointer;
+                        ">Reset Config</button>
                     </div>
                 </div>
                 
@@ -145,6 +178,9 @@ export class EntitySkinConfigurationMenu {
         const newImageContainer = menuElement.querySelector('#new-image-container');
         const newImagePreview = menuElement.querySelector('#new-image-preview');
         const fileInput = menuElement.querySelector('#image-upload-input');
+        const configEditor = menuElement.querySelector('#config-json-editor');
+        const saveConfigButton = menuElement.querySelector('#save-config-button');
+        const resetConfigButton = menuElement.querySelector('#reset-config-button');
 
         // Load current image
         this.loadCurrentImage(currentImagePreview);
@@ -168,6 +204,12 @@ export class EntitySkinConfigurationMenu {
 
         // Set up apply button
         applyButton.onclick = () => this.applyNewImage();
+
+        // Set up config save button
+        saveConfigButton.onclick = () => this.saveConfig();
+
+        // Set up config reset button
+        resetConfigButton.onclick = () => this.resetConfig();
     }
 
     // Load the current image for the entity
@@ -215,16 +257,109 @@ export class EntitySkinConfigurationMenu {
             return;
         }
 
-        // Update config display elements
-        const sizeElement = menuElement.querySelector('#config-size');
-        const angleElement = menuElement.querySelector('#config-angle');
-        const offsetXElement = menuElement.querySelector('#config-offset-x');
-        const offsetYElement = menuElement.querySelector('#config-offset-y');
+        // Update JSON editor with formatted config
+        const configEditor = menuElement.querySelector('#config-json-editor');
+        if (configEditor) {
+            configEditor.value = JSON.stringify(config, null, 2);
+        }
+    }
 
-        if (sizeElement) sizeElement.textContent = config.size || '32';
-        if (angleElement) angleElement.textContent = config.fixedScreenAngle !== null ? config.fixedScreenAngle : 'null';
-        if (offsetXElement) offsetXElement.textContent = config.drawOffsetX || '0';
-        if (offsetYElement) offsetYElement.textContent = config.drawOffsetY || '0';
+    // Save the edited config
+    saveConfig() {
+        const menuElement = this.menu.element;
+        if (!menuElement) return;
+
+        const configEditor = menuElement.querySelector('#config-json-editor');
+        if (!configEditor) return;
+
+        try {
+            // Parse the JSON from the editor
+            const newConfig = JSON.parse(configEditor.value);
+            
+            // Validate the config has required fields
+            if (typeof newConfig.size !== 'number') {
+                alert('Config must include a "size" field (number)');
+                return;
+            }
+
+            const assetManager = this.menuManager.assetManager;
+            if (!assetManager) {
+                alert('Asset manager not available');
+                return;
+            }
+
+            // Update the in-memory config
+            const configKey = `entity:${this.entityName}`;
+            assetManager.entityTypeConfigs.set(configKey, newConfig);
+
+            // Save to localStorage
+            try {
+                const savedConfigs = localStorage.getItem('entity-type-configs');
+                const configs = savedConfigs ? JSON.parse(savedConfigs) : {};
+                configs[configKey] = newConfig;
+                localStorage.setItem('entity-type-configs', JSON.stringify(configs));
+                console.log(`[EntitySkinConfigurationMenu] Saved config for ${this.entityName}:`, newConfig);
+            } catch (e) {
+                console.warn('Failed to save config to localStorage:', e);
+            }
+
+            alert(`Configuration saved for ${this.entityName}`);
+        } catch (e) {
+            alert(`Invalid JSON: ${e.message}`);
+        }
+    }
+
+    // Reset the config to default
+    resetConfig() {
+        const assetManager = this.menuManager.assetManager;
+        if (!assetManager) {
+            alert('Asset manager not available');
+            return;
+        }
+
+        // Get the default config from the entity class
+        let defaultConfig = null;
+        switch (this.entityName) {
+            case 'tree':
+                defaultConfig = { ...TreeEntity.defaultConfig };
+                break;
+            case 'grass':
+                defaultConfig = { ...window.GrassEntity.defaultConfig };
+                break;
+            case 'rock':
+                defaultConfig = { ...window.RockEntity.defaultConfig };
+                break;
+        }
+
+        if (!defaultConfig) {
+            // Fallback default config
+            defaultConfig = {
+                size: 32,
+                fixedScreenAngle: null,
+                drawOffsetX: 0,
+                drawOffsetY: 0
+            };
+        }
+
+        // Update the in-memory config
+        const configKey = `entity:${this.entityName}`;
+        assetManager.entityTypeConfigs.set(configKey, defaultConfig);
+
+        // Save to localStorage
+        try {
+            const savedConfigs = localStorage.getItem('entity-type-configs');
+            const configs = savedConfigs ? JSON.parse(savedConfigs) : {};
+            configs[configKey] = defaultConfig;
+            localStorage.setItem('entity-type-configs', JSON.stringify(configs));
+            console.log(`[EntitySkinConfigurationMenu] Reset config for ${this.entityName}:`, defaultConfig);
+        } catch (e) {
+            console.warn('Failed to save reset config to localStorage:', e);
+        }
+
+        // Reload the config display
+        this.loadCurrentConfig();
+
+        alert(`Configuration reset to default for ${this.entityName}`);
     }
 
     // Handle file upload
