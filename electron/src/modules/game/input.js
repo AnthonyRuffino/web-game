@@ -129,8 +129,62 @@ export class InputManager {
     }
 
     handleWheel(event) {
+        // Check if the mouse is over a UI element that should handle scrolling
+        const target = event.target;
+        const isOverUI = this.isOverUIElement(target);
+        
+        if (isOverUI) {
+            // Let the UI element handle the scroll event
+            console.log('[InputManager] Wheel event over UI element, allowing scroll:', target.tagName, target.id || target.className);
+            return;
+        }
+        
+        // Only process zoom when over the game canvas or other game elements
+        console.log('[InputManager] Wheel event over game area, processing zoom');
         event.preventDefault();
         this.mouseWheelDelta = event.deltaY;
+    }
+
+    // Check if the target element is a UI element that should handle scrolling
+    isOverUIElement(target) {
+        if (!target) return false;
+        
+        // Check if the target or any of its parents is a UI element
+        let element = target;
+        while (element) {
+            // Check for menu containers
+            if (element.classList && element.classList.contains('menu-container')) {
+                return true;
+            }
+            
+            // Check for menu bar and input bar
+            if (element.id === 'menu-bar' || element.id === 'electron-input-bar') {
+                return true;
+            }
+            
+            // Check for specific UI elements that should handle scrolling
+            if (element.tagName === 'TEXTAREA' || 
+                element.tagName === 'INPUT' || 
+                element.tagName === 'SELECT' ||
+                element.scrollHeight > element.clientHeight) {
+                return true;
+            }
+            
+            // Check for elements with overflow scroll
+            const style = window.getComputedStyle(element);
+            if (style.overflow === 'scroll' || style.overflow === 'auto') {
+                return true;
+            }
+            
+            // Check for any element that's not the game canvas
+            if (element.id === 'gameCanvas') {
+                return false; // This is the game canvas, allow zoom
+            }
+            
+            element = element.parentElement;
+        }
+        
+        return false;
     }
 
     isKeyPressed(key) {
