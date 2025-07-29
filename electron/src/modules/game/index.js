@@ -1028,8 +1028,8 @@ export class Game {
         }
         
         if (this.assetsElement && this.assetManager) {
-            const availableImages = this.assetManager.getAvailableImages();
-            this.assetsElement.textContent = `Assets: ${availableImages.memory.length} cached`;
+            const cachedImages = this.assetManager.getCachedImageKeys();
+            this.assetsElement.textContent = `Assets: ${cachedImages.memory.length} cached`;
         }
     }
 

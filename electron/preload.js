@@ -17,6 +17,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('window-resized', callback);
   },
   
+  // Image filesystem operations
+  saveImage: (filename, imageDataURL) => ipcRenderer.invoke('save-image', filename, imageDataURL),
+  loadImage: (filename) => ipcRenderer.invoke('load-image', filename),
+  removeImage: (filename) => ipcRenderer.invoke('remove-image', filename),
+  
   // Remove event listeners
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);

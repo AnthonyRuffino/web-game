@@ -8,11 +8,9 @@ import { RockEntity } from './entities/rock.js';
 export class AssetManager {
     constructor() {
         // Asset directory in user's home folder
-        this.assetDir = null;
         this.imageCache = new Map(); // In-memory cache for loaded images
         this.entityTypeConfigs = new Map(); // In-memory cache for entity type configs
         this.loadingImages = new Set(); // Track images currently being loaded
-        this.initAssetDir();
         this.initImageConfigs(); // Initialize entity type configs at startup
         
         // Setup lazy loading for missing images
@@ -63,24 +61,6 @@ export class AssetManager {
         }
     }
 
-    async initAssetDir() {
-        try {
-            // Check if we're in an Electron environment
-            if (typeof window !== 'undefined' && window.electronAPI) {
-                // We're in Electron renderer process
-                console.log('[AssetManager] Running in Electron environment');
-                this.assetDir = null; // For now, just use localStorage
-            } else {
-                // We're in a browser environment
-                console.log('[AssetManager] Running in browser environment');
-                this.assetDir = null;
-            }
-        } catch (error) {
-            console.warn('[AssetManager] Could not initialize filesystem access:', error);
-            // Fallback to localStorage only
-            this.assetDir = null;
-        }
-    }
 
     // Initialize centralized entity type configurations
     initImageConfigs() {
@@ -211,8 +191,8 @@ export class AssetManager {
                     // Update in-memory cache
                     this.imageCache.set(cacheKey, cacheObj);
                     
-                    // Save to localStorage
-                    localStorage.setItem(cacheKey, imageDataURL);
+                    // Save to filesystem
+                    this.saveToFilesystem(cacheKey, imageDataURL);
                     
                     console.log(`[AssetManager] Successfully updated image: ${cacheKey}, size: ${img.width}x${img.height}`);
                     resolve(cacheObj);
@@ -293,19 +273,10 @@ export class AssetManager {
 
         try {
             // Tier 1: Check filesystem
-            console.log(`[AssetManager] Checking filesystem for: ${imageName}`);
-            const fsImage = await this.loadFromFilesystem(imageName);
+            console.log(`[AssetManager] Checking filesystem for: ${cacheKey}`);
+            const fsImage = await this.loadFromFilesystem(cacheKey);
             if (fsImage) {
-                console.log(`[AssetManager] Loaded from filesystem: ${imageName}`);
-                this.imageCache.set(cacheKey, fsImage);
-                return fsImage;
-            }
-
-            // Tier 2: Check localStorage
-            console.log(`[AssetManager] Checking localStorage for: ${cacheKey}`);
-            const cachedImage = localStorage.getItem(cacheKey);
-            if (cachedImage) {
-                console.log(`[AssetManager] Found in localStorage: ${cacheKey}`);
+                console.log(`[AssetManager] Loaded from filesystem: ${cacheKey}`);
                 // Convert data URL back to image object
                 const img = new Image();
                 await new Promise((resolve, reject) => {
@@ -318,22 +289,22 @@ export class AssetManager {
                             drawOffsetY: config.drawOffsetY || 0
                         };
                         this.imageCache.set(cacheKey, cacheObj);
-                        console.log(`[AssetManager] Cached image object from localStorage: ${cacheKey}, size: ${img.width}x${img.height}`);
+                        console.log(`[AssetManager] Cached image object from filesystem: ${cacheKey}, size: ${img.width}x${img.height}`);
                         resolve(cacheObj);
                     };
                     img.onerror = reject;
-                    img.src = cachedImage;
+                    img.src = fsImage;
                 });
                 return this.imageCache.get(cacheKey);
             }
 
-            // Tier 3: Procedural generation
+            // Tier 2: Procedural generation
             console.log(`[AssetManager] Generating image: ${cacheKey}`);
             const generatedImage = await this.generateImage(type, imageName, config);
             if (generatedImage) {
                 console.log(`[AssetManager] Generated image data URL for: ${cacheKey}`);
-                // Cache the generated image
-                console.log(`[AssetManager] Saved to localStorage: ${cacheKey}`);
+                // save the generated image to the filesystem
+                this.saveToFilesystem(cacheKey, generatedImage);
                 
                 // Convert data URL to image object and cache it
                 const img = new Image();
@@ -367,16 +338,28 @@ export class AssetManager {
     }
 
     // Load image from filesystem
-    async loadFromFilesystem(imageName) {
-        if (!this.assetDir) return null;
+    async loadFromFilesystem(cacheKey) {
 
         try {
-            // For now, skip filesystem loading in browser context
-            // This can be enhanced later for Electron filesystem access
-            console.log(`[AssetManager] Filesystem access not available for ${imageName}`);
-            return null;
+            // Convert cache key to filename (remove 'image:' prefix and replace ':' with '_')
+            const filename = cacheKey.replace('image:', '').replace(/:/g, '_');
+            
+            // Use Electron API to load file
+            if (window.electronAPI && window.electronAPI.loadImage) {
+                const imageData = await window.electronAPI.loadImage(filename);
+                if (imageData) {
+                    console.log(`[AssetManager] Loaded from filesystem: ${filename}`);
+                    return imageData;
+                } else {
+                    console.log(`[AssetManager] File not found in filesystem: ${filename}`);
+                    return null;
+                }
+            } else {
+                console.log(`[AssetManager] Electron API not available for filesystem access`);
+                return null;
+            }
         } catch (error) {
-            console.warn(`[AssetManager] Filesystem read error for ${imageName}:`, error);
+            console.warn(`[AssetManager] Filesystem read error for ${cacheKey}:`, error);
         }
         
         return null;
@@ -530,7 +513,7 @@ export class AssetManager {
                 resolve(null);
             };
             img.onload = () => {
-                // Convert to data URL for localStorage
+                // Convert to data URL
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
                 canvas.height = img.height;
@@ -553,36 +536,60 @@ export class AssetManager {
     }
 
     // Save image to filesystem (for user-edited assets)
-    async saveToFilesystem(imageName, dataURL) {
-        if (!this.assetDir) {
-            console.warn('[AssetManager] Filesystem not available');
-            return false;
-        }
+    async saveToFilesystem(cacheKey, dataURL) {
 
         try {
-            const fs = require('fs');
-            const path = require('path');
-            const imagePath = path.join(this.assetDir, `${imageName}.png`);
+            // Convert cache key to filename (remove 'image:' prefix and replace ':' with '_')
+            const filename = cacheKey.replace('image:', '').replace(/:/g, '_');
             
-            // Convert data URL to buffer
-            const base64Data = dataURL.replace(/^data:image\/png;base64,/, '');
-            const buffer = Buffer.from(base64Data, 'base64');
-            
-            fs.writeFileSync(imagePath, buffer);
-            console.log(`[AssetManager] Saved to filesystem: ${imagePath}`);
-            
-            // Update in-memory cache
-            const cacheKey = `image:${imageName}`;
-            this.imageCache.set(cacheKey, dataURL);
-            
-            return true;
+            // Use Electron API to save file
+            if (window.electronAPI && window.electronAPI.saveImage) {
+                const success = await window.electronAPI.saveImage(filename, dataURL);
+                if (success) {
+                    console.log(`[AssetManager] Saved to filesystem: ${filename}`);
+                    return true;
+                } else {
+                    console.error(`[AssetManager] Failed to save to filesystem: ${filename}`);
+                    return false;
+                }
+            } else {
+                console.warn('[AssetManager] Electron API not available for filesystem access');
+                return false;
+            }
         } catch (error) {
             console.error(`[AssetManager] Error saving to filesystem:`, error);
             return false;
         }
     }
 
-    // Clear localStorage cache
+    // Remove image from filesystem
+    async removeFromFilesystem(cacheKey) {
+
+        try {
+            // Convert cache key to filename (remove 'image:' prefix and replace ':' with '_')
+            const filename = cacheKey.replace('image:', '').replace(/:/g, '_');
+            
+            // Use Electron API to remove file
+            if (window.electronAPI && window.electronAPI.removeImage) {
+                const success = await window.electronAPI.removeImage(filename);
+                if (success) {
+                    console.log(`[AssetManager] Removed from filesystem: ${filename}`);
+                    return true;
+                } else {
+                    console.error(`[AssetManager] Failed to remove from filesystem: ${filename}`);
+                    return false;
+                }
+            } else {
+                console.warn('[AssetManager] Electron API not available for filesystem access');
+                return false;
+            }
+        } catch (error) {
+            console.error(`[AssetManager] Error removing from filesystem:`, error);
+            return false;
+        }
+    }
+
+    // Clear cache
     clearCache() {
         const keysToRemove = this.imageCache.keys().length;
         this.imageCache.clear();
@@ -591,39 +598,18 @@ export class AssetManager {
 
     resetImage(imageKey) {
         this.imageCache.delete(imageKey);
-        localStorage.removeItem(imageKey);
+        
+        // Also remove from filesystem
+        this.removeFromFilesystem(imageKey);
+        
         console.log(`[AssetManager] Cleared cached image: ${imageKey}`);
     }
 
     // Get list of available images
-    getAvailableImages() {
+    getCachedImageKeys() {
         const images = {
-            filesystem: [],
-            localStorage: [],
             memory: Array.from(this.imageCache.keys())
         };
-
-        // Check filesystem
-        if (this.assetDir) {
-            try {
-                const fs = require('fs');
-                const files = fs.readdirSync(this.assetDir);
-                images.filesystem = files.filter(file => file.endsWith('.png'))
-                    .map(file => file.replace('.png', ''));
-            } catch (error) {
-                console.warn('[AssetManager] Error reading filesystem:', error);
-            }
-        }
-
-        // Check localStorage
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('image:')) {
-                const imageName = key.replace('image:', '');
-                images.localStorage.push(imageName);
-            }
-        }
-
         return images;
     }
 } 

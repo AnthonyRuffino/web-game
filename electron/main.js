@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 // Keep a global reference of the window object
 let mainWindow;
@@ -95,5 +96,74 @@ ipcMain.handle('maximize-window', () => {
     } else {
       mainWindow.maximize();
     }
+  }
+}); 
+
+// Image filesystem handlers
+ipcMain.handle('save-image', async (event, filename, imageDataURL) => {
+  try {
+    // Create assets directory in user data if it doesn't exist
+    const assetsDir = path.join(app.getPath('userData'), 'assets');
+    if (!fs.existsSync(assetsDir)) {
+      fs.mkdirSync(assetsDir, { recursive: true });
+    }
+    
+    // Convert data URL to buffer
+    const base64Data = imageDataURL.replace(/^data:image\/png;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    // Save file with .png extension
+    const filePath = path.join(assetsDir, `${filename}.png`);
+    fs.writeFileSync(filePath, buffer);
+    
+    console.log(`[Main] Saved image to filesystem: ${filePath}`);
+    return true;
+  } catch (error) {
+    console.error(`[Main] Error saving image ${filename}:`, error);
+    return false;
+  }
+});
+
+ipcMain.handle('load-image', async (event, filename) => {
+  try {
+    // Look for image in assets directory
+    const assetsDir = path.join(app.getPath('userData'), 'assets');
+    const filePath = path.join(assetsDir, `${filename}.png`);
+    
+    if (fs.existsSync(filePath)) {
+      // Read file and convert to data URL
+      const buffer = fs.readFileSync(filePath);
+      const base64Data = buffer.toString('base64');
+      const dataURL = `data:image/png;base64,${base64Data}`;
+      
+      console.log(`[Main] Loaded image from filesystem: ${filePath}`);
+      return dataURL;
+    } else {
+      console.log(`[Main] Image file not found: ${filePath}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`[Main] Error loading image ${filename}:`, error);
+    return null;
+  }
+});
+
+ipcMain.handle('remove-image', async (event, filename) => {
+  try {
+    // Remove image from assets directory
+    const assetsDir = path.join(app.getPath('userData'), 'assets');
+    const filePath = path.join(assetsDir, `${filename}.png`);
+    
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`[Main] Removed image from filesystem: ${filePath}`);
+      return true;
+    } else {
+      console.log(`[Main] Image file not found for removal: ${filePath}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`[Main] Error removing image ${filename}:`, error);
+    return false;
   }
 }); 
