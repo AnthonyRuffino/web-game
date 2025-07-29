@@ -196,7 +196,14 @@ export class EntitySkinConfigurationMenu {
             const file = event.target.files[0];
             if (file) {
                 this.handleFileUpload(file, newImagePreview, newImageContainer);
+                // Clear the input value so the same file can be selected again
+                event.target.value = '';
             }
+        };
+        
+        // Also clear on click to ensure onchange fires even for same file
+        fileInput.onclick = (event) => {
+            event.target.value = '';
         };
 
         // Set up reset button
@@ -361,6 +368,7 @@ export class EntitySkinConfigurationMenu {
 
     // Handle file upload
     handleFileUpload(file, previewContainer, container) {
+        console.log(`[EntitySkinConfigurationMenu] handleFileUpload`);
         const reader = new FileReader();
         reader.onload = (event) => {
             const img = new Image();
@@ -434,6 +442,14 @@ export class EntitySkinConfigurationMenu {
         // Hide the new image container
         const newImageContainer = this.menu.element.querySelector('#new-image-container');
         newImageContainer.style.display = 'none';
+
+        // Emit a custom event for skin updates - delay 100ms to wait for the image to be generated on-the-fly
+        setTimeout(() => {
+            const skinUpdateEvent = new CustomEvent('skinUpdated', {
+                detail: { entityName: this.entityName, type: 'entity' }
+            });
+            document.dispatchEvent(skinUpdateEvent);
+        }, 100);
     }
 
     // Apply the new image
@@ -460,6 +476,7 @@ export class EntitySkinConfigurationMenu {
         
         // Create image object and add to cache
         const img = new Image();
+        img.src = this.pendingImageDataUrl;
         img.onload = () => {
             // Add to asset manager cache with proper config values
             assetManager.imageCache.set(key, {
@@ -495,7 +512,6 @@ export class EntitySkinConfigurationMenu {
             });
             document.dispatchEvent(skinUpdateEvent);
         };
-        img.src = this.pendingImageDataUrl;
     }
 
     // Show the menu (if it exists)

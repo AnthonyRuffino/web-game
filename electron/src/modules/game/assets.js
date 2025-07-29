@@ -11,8 +11,56 @@ export class AssetManager {
         this.assetDir = null;
         this.imageCache = new Map(); // In-memory cache for loaded images
         this.entityTypeConfigs = new Map(); // In-memory cache for entity type configs
+        this.loadingImages = new Set(); // Track images currently being loaded
         this.initAssetDir();
         this.initImageConfigs(); // Initialize entity type configs at startup
+        
+        // Setup lazy loading for missing images
+        this.setupMissingImageListener();
+    }
+
+    // Setup listener for missing image events
+    setupMissingImageListener() {
+        document.addEventListener('imageMissing', (event) => {
+            this.handleMissingImageEvent(event.detail);
+        });
+        console.log('[AssetManager] Missing image event listener setup complete');
+    }
+
+    // Handle missing image events for lazy loading
+    async handleMissingImageEvent(detail) {
+        
+        
+        const { type, imageName, entityClass, config, cacheKey } = detail;
+        
+        // Check if we're already loading this image
+        if (this.loadingImages.has(cacheKey)) {
+            return;
+        }
+        console.log('[AssetManager] Handling missing image event:', detail);
+        // Mark as loading
+        this.loadingImages.add(cacheKey);
+        
+        try {
+            // Load the missing image
+            const imageData = await this.ensureImageLoaded({
+                type: type,
+                imageName: imageName,
+                entityClass: entityClass,
+                config: config
+            });
+            
+            if (imageData) {
+                console.log(`[AssetManager] Successfully loaded missing image: ${cacheKey}`);
+            } else {
+                console.error(`[AssetManager] Failed to load missing image: ${cacheKey}`);
+            }
+        } catch (error) {
+            console.error(`[AssetManager] Error loading missing image ${cacheKey}:`, error);
+        } finally {
+            // Remove from loading set
+            this.loadingImages.delete(cacheKey);
+        }
     }
 
     async initAssetDir() {

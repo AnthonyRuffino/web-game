@@ -38,7 +38,7 @@ class MenuBarElectron {
     this.element = null;
     this.menuButtons = {};
     // Initialize dedicated menu classes
-    this.skinsMenu = new SkinsMenu('skins', menuManager);
+    this.skinsMenu = new SkinsMenu('skins', menuManager, () => this.updateButtonStates());
     this.menuIds = [this.skinsMenu.menuId, 'macro', 'character'];
     
     
@@ -76,7 +76,7 @@ class MenuBarElectron {
       bar.appendChild(btn);
       this.menuButtons[menuId] = btn;
       if (menuId == 'skins') {
-        this.menuManager.createMenu(this.skinsMenu.createMenuConfig(() => this.updateButtonStates()));
+        this.menuManager.createMenu(this.skinsMenu.config);
       } else if (menuId == 'macro') {
         this.menuManager.createMenu(this.menuManager.createMacroMenuConfig(menuId, () => this.updateButtonStates()));
       } else if (menuId == 'character') {

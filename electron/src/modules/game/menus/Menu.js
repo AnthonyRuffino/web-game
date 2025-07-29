@@ -16,7 +16,6 @@ export class Menu {
         this.isBlocking = config.isBlocking || false;
         this.overlay = null;
         this.tabs = [];
-        this.closeListeners = [];
         this.onCloseParent = config.onCloseParent;
         
         // Track user modifications for viewport resize preservation
@@ -941,6 +940,7 @@ export class Menu {
         if (this.element && this.element.parentNode) {
             this.element.parentNode.removeChild(this.element);
         }
+        this.onCloseParent?.();
     }
     
     createBlockingOverlay() {

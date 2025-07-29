@@ -135,7 +135,6 @@ export class InputManager {
         
         if (isOverUI) {
             // Let the UI element handle the scroll event
-            console.log('[InputManager] Wheel event over UI element, allowing scroll:', target.tagName, target.id || target.className);
             return;
         }
         

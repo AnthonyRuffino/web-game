@@ -97,7 +97,20 @@ export class EntityRenderer {
                 );
             }
         } else {
-            // No cached image available - draw error placeholder
+            // No cached image available - emit missing image event for lazy loading
+            const missingImageEvent = new CustomEvent('imageMissing', {
+                detail: {
+                    type: 'entity',
+                    imageName: entity.type,
+                    entityClass: entity.entityModule,
+                    config: config,
+                    cacheKey: cacheKey,
+                    timestamp: Date.now()
+                }
+            });
+            document.dispatchEvent(missingImageEvent);
+            
+            // Draw error placeholder while loading
             const size = config.size || 32;
             ctx.save();
             ctx.fillStyle = '#ff0000';

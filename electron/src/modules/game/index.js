@@ -13,6 +13,7 @@ import { MenuManager } from './menuManager.js';
 import MenuBarElectron from './menuBarElectron.js';
 import { InputBar } from './inputBar.js';
 import { EntitySkinConfigurationMenu } from './menus/EntitySkinConfigurationMenu.js';
+import { EntityRenderer } from './entityRenderer.js';
 
 export class Game {
     constructor() {

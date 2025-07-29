@@ -6,12 +6,13 @@ import { TreeEntity } from '../entities/tree.js';
 import { RockEntity } from '../entities/rock.js';
 
 export class SkinsMenu {
-    constructor(menuId, menuManager) {
+    constructor(menuId, menuManager, onParentClose) {
         this.menuManager = menuManager;
         this.menuId = menuId;
         
         // Listen for skin updates
         this.setupSkinUpdateListener();
+        this.config = this.createMenuConfig(onParentClose);
     }
 
     // Setup listener for skin updates
@@ -134,21 +135,16 @@ export class SkinsMenu {
     // Refresh the skins menu to update images
     refreshMenu() {
         console.log(`[SkinsMenu] Refreshing menu: ${this.menuId}`);
-        
-        // Create a new menu config with current settings
-        const config = this.createMenuConfig(() => {
-            console.log(`[SkinsMenu] Refreshed menu closed`);
-        });
 
-        const oldMenu = this.menuManager.getMenu(config.id);
+        const oldMenu = this.menuManager.getMenu(this.config.id);
         const oldMenuVisible = oldMenu.visible;
         const oldMenuZIndex = oldMenu.zIndex;
         
         // Recreate the menu with override
-        this.menuManager.createMenu(config, true);
+        this.menuManager.createMenu(this.config, true);
         
         if(oldMenuVisible) {
-            const newMenu = this.menuManager.getMenu(config.id);
+            const newMenu = this.menuManager.getMenu(this.config.id);
             newMenu.zIndex = oldMenuZIndex;
             // Show the new menu if the old one was visible
             this.menuManager.showMenu(this.menuId, false);

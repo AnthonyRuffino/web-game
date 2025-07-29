@@ -127,7 +127,7 @@ export class MenuManager {
         this.menus.set(menu.id, menu);
         
         // Setup event listeners for this menu if it has closeListeners
-        if (config.closeListeners && (Array.isArray(config.closeListeners) ? config.closeListeners.length > 0 : Object.keys(config.closeListeners).length > 0)) {
+        if (config.closeListeners) {
             this.setupMenuCloseListeners(menu.id, config.closeListeners);
         }
         
@@ -359,63 +359,36 @@ export class MenuManager {
     }
     
     setupMenuCloseListeners(menuId, closeListeners) {
-        // closeListeners can be either an array of menu IDs or an object with menu IDs as keys and callbacks as values
-        if (Array.isArray(closeListeners)) {
-            // Simple array of menu IDs - just log when they close
-            closeListeners.forEach(targetMenuId => {
-                const listener = (event) => {
-                    const closedMenuId = event.detail.menuId;
-                    console.log(`[MenuManager][DEBUG] Listener for ${menuId}: received menuClosed event for ${closedMenuId} (target: ${targetMenuId})`);
-                    if (closedMenuId === targetMenuId) {
-                        console.log(`[MenuManager][DEBUG] Menu ${menuId} received close event from ${targetMenuId}`);
+        // closeListeners is an object with menu IDs as keys and callbacks as values
+        Object.entries(closeListeners).forEach(([targetMenuId, callback]) => {
+            const listener = (event) => {
+                const closedMenuId = event.detail.menuId;
+                console.log(`[MenuManager][DEBUG] Listener for ${menuId}: received menuClosed event for ${closedMenuId} (target: ${targetMenuId})`);
+                if (closedMenuId === targetMenuId) {
+                    console.log(`[MenuManager][DEBUG] About to call closeListener callback for ${menuId} due to ${closedMenuId}`);
+                    try {
+                        callback();
+                        console.log(`[MenuManager][DEBUG] closeListener callback for ${menuId} executed successfully.`);
+                    } catch (error) {
+                        console.error(`[MenuManager][DEBUG] Error in closeListener callback for ${menuId}:`, error);
                     }
-                };
-                
-                this.eventBus.addEventListener('menuClosed', listener);
-                
-                // Track listener for cleanup
-                if (!this.menuEventListeners.has(menuId)) {
-                    this.menuEventListeners.set(menuId, []);
                 }
-                this.menuEventListeners.get(menuId).push({
-                    eventName: 'menuClosed',
-                    listener: listener,
-                    targetMenuId: targetMenuId
-                });
-                console.log(`[MenuManager][DEBUG] Registered array closeListener for ${menuId} on ${targetMenuId}`);
+            };
+            
+            this.eventBus.addEventListener('menuClosed', listener);
+            
+            // Track listener for cleanup
+            if (!this.menuEventListeners.has(menuId)) {
+                this.menuEventListeners.set(menuId, []);
+            }
+            this.menuEventListeners.get(menuId).push({
+                eventName: 'menuClosed',
+                listener: listener,
+                targetMenuId: targetMenuId,
+                callback: callback
             });
-        } else if (typeof closeListeners === 'object') {
-            // Object with menu IDs as keys and callbacks as values
-            Object.entries(closeListeners).forEach(([targetMenuId, callback]) => {
-                const listener = (event) => {
-                    const closedMenuId = event.detail.menuId;
-                    console.log(`[MenuManager][DEBUG] Listener for ${menuId}: received menuClosed event for ${closedMenuId} (target: ${targetMenuId})`);
-                    if (closedMenuId === targetMenuId) {
-                        console.log(`[MenuManager][DEBUG] About to call closeListener callback for ${menuId} due to ${closedMenuId}`);
-                        try {
-                            callback();
-                            console.log(`[MenuManager][DEBUG] closeListener callback for ${menuId} executed successfully.`);
-                        } catch (error) {
-                            console.error(`[MenuManager][DEBUG] Error in closeListener callback for ${menuId}:`, error);
-                        }
-                    }
-                };
-                
-                this.eventBus.addEventListener('menuClosed', listener);
-                
-                // Track listener for cleanup
-                if (!this.menuEventListeners.has(menuId)) {
-                    this.menuEventListeners.set(menuId, []);
-                }
-                this.menuEventListeners.get(menuId).push({
-                    eventName: 'menuClosed',
-                    listener: listener,
-                    targetMenuId: targetMenuId,
-                    callback: callback
-                });
-                console.log(`[MenuManager][DEBUG] Registered object closeListener for ${menuId} on ${targetMenuId}`);
-            });
-        }
+            console.log(`[MenuManager][DEBUG] Registered object closeListener for ${menuId} on ${targetMenuId}`);
+        });
         
         console.log(`[MenuManager] Setup close listeners for menu ${menuId}`);
     }
