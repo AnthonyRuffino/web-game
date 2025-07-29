@@ -424,10 +424,7 @@ export class EntitySkinConfigurationMenu {
         const key = this.entityType.getImageCacheKey();
         
         // Remove from asset manager cache
-        assetManager.imageCache.delete(key);
-        
-        // Remove from localStorage
-        localStorage.removeItem(key);
+        assetManager.resetImage(key);
         
         // Reload the current image
         const currentImagePreview = this.menu.element.querySelector('#current-image-preview');

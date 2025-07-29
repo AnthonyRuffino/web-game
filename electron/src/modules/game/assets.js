@@ -589,14 +589,10 @@ export class AssetManager {
         console.log(`[AssetManager] Cleared ${keysToRemove} cached images`);
     }
 
-    // Clear specific cached images
-    clearCachedImages(imageKeys) {
-        imageKeys.forEach(key => {
-            const cacheKey = `image:${key}`;
-            this.imageCache.delete(cacheKey);
-            localStorage.removeItem(cacheKey);
-            console.log(`[AssetManager] Cleared cached image: ${cacheKey}`);
-        });
+    resetImage(imageKey) {
+        this.imageCache.delete(imageKey);
+        localStorage.removeItem(imageKey);
+        console.log(`[AssetManager] Cleared cached image: ${imageKey}`);
     }
 
     // Get list of available images
