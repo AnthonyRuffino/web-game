@@ -9,35 +9,51 @@ export class SkinsMenu {
     constructor(menuId, menuManager) {
         this.menuManager = menuManager;
         this.menuId = menuId;
+        
+        // Listen for skin updates
+        this.setupSkinUpdateListener();
+    }
+
+    // Setup listener for skin updates
+    setupSkinUpdateListener() {
+        document.addEventListener('skinUpdated', (event) => {
+            console.log('[SkinsMenu] Skin update detected:', event.detail);
+            // Refresh the menu if it's currently visible
+            this.refreshMenu();
+        });
     }
 
     // Override the getImageGridButtons method to use the menuManager's assetManager
     getImageGridButtons(names, type = 'entity') {
-        // Use assetManager from menuManager if available, else just placeholder
-        const assetManager = this.menuManager.assetManager;
         return names.map(name => {
-            let imageDataUrl = null;
             const entityConfigMenu = new EntitySkinConfigurationMenu(name, this.menuManager);
-            if (assetManager) {
-                const key = type === 'entity' ? `image:entity:${name}` : `image:background:${name}`;
-                const cached = assetManager.imageCache.get(key);
-                if (cached && cached.image) {
-                    // Draw to canvas and get data URL
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 64;
-                    canvas.height = 64;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(cached.image, 0, 0, 64, 64);
-                    imageDataUrl = canvas.toDataURL();
-                }
-            }
             return {
                 name: name.charAt(0).toUpperCase() + name.slice(1),
-                imageDataUrl,
+                getImageDataUrl: () => this.getImageDataUrlForButton(name, type),
                 onClick: () => this.handleImageClick(type, name, entityConfigMenu),
                 tooltip: `Select ${name}`
             };
         });
+    }
+
+    getImageDataUrlForButton(name, type = 'entity') {
+        const assetManager = this.menuManager.assetManager;
+        if(assetManager) {
+            const key = type === 'entity' ? `image:entity:${name}` : `image:background:${name}`;
+            const cached = assetManager.imageCache.get(key);
+            let imageDataUrl = null;
+            if (cached && cached.image) {
+                // Draw to canvas and get data URL
+                const canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(cached.image, 0, 0, 64, 64);
+                imageDataUrl = canvas.toDataURL();
+            }
+            return imageDataUrl;
+        }
+        return null;
     }
 
 
@@ -113,6 +129,32 @@ export class SkinsMenu {
         console.log(`[SkinsMenu] Showing options for ${type}: ${name}`);
         // TODO: Show upload, reset, or other options for backgrounds
         alert(`Image options for ${name} (${type}) - Coming soon!`);
+    }
+
+    // Refresh the skins menu to update images
+    refreshMenu() {
+        console.log(`[SkinsMenu] Refreshing menu: ${this.menuId}`);
+        
+        // Create a new menu config with current settings
+        const config = this.createMenuConfig(() => {
+            console.log(`[SkinsMenu] Refreshed menu closed`);
+        });
+
+        const oldMenu = this.menuManager.getMenu(config.id);
+        const oldMenuVisible = oldMenu.visible;
+        const oldMenuZIndex = oldMenu.zIndex;
+        
+        // Recreate the menu with override
+        this.menuManager.createMenu(config, true);
+        
+        if(oldMenuVisible) {
+            const newMenu = this.menuManager.getMenu(config.id);
+            newMenu.zIndex = oldMenuZIndex;
+            // Show the new menu if the old one was visible
+            this.menuManager.showMenu(this.menuId, false);
+        }
+        
+        console.log(`[SkinsMenu] Menu refreshed successfully`);
     }
 
 

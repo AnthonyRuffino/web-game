@@ -502,9 +502,10 @@ export class Menu {
             
             if (button) {
                 // Filled cell with button data
-                if (button.imageDataUrl) {
+                const imageDataUrl = button.getImageDataUrl ? button.getImageDataUrl() : button.imageDataUrl;
+                if (imageDataUrl) {
                     const img = document.createElement('img');
-                    img.src = button.imageDataUrl;
+                    img.src = imageDataUrl;
                     img.alt = button.name || 'Button';
                     const imgSize = cellSize * 0.5;
                     const imgBorderRadius = Math.max(6, viewportScale * 6);
@@ -895,8 +896,6 @@ export class Menu {
         if (this.isBlocking) {
             this.createBlockingOverlay();
         }
-        
-        this.bringToFront();
     }
     
     hide() {

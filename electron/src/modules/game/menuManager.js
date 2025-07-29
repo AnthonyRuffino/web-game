@@ -94,12 +94,22 @@ export class MenuManager {
         }
     }
 
-    createMenu(config) {
+    createMenu(config, override = false) {
         if (!config.id) {
             throw new Error('Menu config must include an id property');
         }
-        if (this.menus.has(config.id)) {
+        
+        // Check if menu already exists
+        if (this.menus.has(config.id) && !override) {
             throw new Error(`Menu with id '${config.id}' already exists`);
+        }
+
+        // If override is true and menu exists, destroy the old one
+        if (this.menus.has(config.id) && override) {
+            console.log(`[MenuManager] Overriding existing menu: ${config.id}`);
+            const existingMenu = this.menus.get(config.id);
+            existingMenu.destroy();
+            this.menus.delete(config.id);
         }
         const menu = new Menu(config);
         
@@ -125,11 +135,13 @@ export class MenuManager {
         return menu.id;
     }
 
-    showMenu(menuId) {
+    showMenu(menuId, bringMenuToFront = true) {
         let menu = this.menus.get(menuId);
         if (menu) {
-            // Bump z-index for this menu
-            this.bringMenuToFront(menu);
+            if (bringMenuToFront) {
+                // Bump z-index for this menu
+                this.bringMenuToFront(menu);
+            }
             menu.show();
             console.log(`[MenuManager] Showed menu: ${menuId}`);
             return true;

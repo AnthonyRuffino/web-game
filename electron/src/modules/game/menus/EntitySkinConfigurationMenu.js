@@ -303,7 +303,6 @@ export class EntitySkinConfigurationMenu {
                 console.warn('Failed to save config to localStorage:', e);
             }
 
-            alert(`Configuration saved for ${this.entityName}`);
         } catch (e) {
             alert(`Invalid JSON: ${e.message}`);
         }
@@ -358,8 +357,6 @@ export class EntitySkinConfigurationMenu {
 
         // Reload the config display
         this.loadCurrentConfig();
-
-        alert(`Configuration reset to default for ${this.entityName}`);
     }
 
     // Handle file upload
@@ -437,8 +434,6 @@ export class EntitySkinConfigurationMenu {
         // Hide the new image container
         const newImageContainer = this.menu.element.querySelector('#new-image-container');
         newImageContainer.style.display = 'none';
-
-        alert(`${this.entityName} image reset to default`);
     }
 
     // Apply the new image
@@ -493,7 +488,12 @@ export class EntitySkinConfigurationMenu {
             // Clear the pending image
             this.pendingImageDataUrl = null;
 
-            alert(`${this.entityName} image updated successfully`);
+
+            // Emit a custom event for skin updates
+            const skinUpdateEvent = new CustomEvent('skinUpdated', {
+                detail: { entityName: this.entityName, type: 'entity' }
+            });
+            document.dispatchEvent(skinUpdateEvent);
         };
         img.src = this.pendingImageDataUrl;
     }
