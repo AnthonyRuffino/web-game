@@ -25,22 +25,24 @@ export class SkinsMenu {
     }
 
     // Override the getImageGridButtons method to use the menuManager's assetManager
-    getImageGridButtons(names, type = 'entity') {
-        return names.map(name => {
-            const entityConfigMenu = new EntitySkinConfigurationMenu(name, this.menuManager);
+    getImageGridButtons(entityTypes, type = 'entity') {
+        return entityTypes.map(entityType => {
+            const name = entityType.type;
+            const entityConfigMenu = new EntitySkinConfigurationMenu(entityType, this.menuManager);
             return {
                 name: name.charAt(0).toUpperCase() + name.slice(1),
-                getImageDataUrl: () => this.getImageDataUrlForButton(name, type),
+                getImageDataUrl: () => this.getImageDataUrlForButton(entityType, type),
                 onClick: () => this.handleImageClick(type, name, entityConfigMenu),
                 tooltip: `Select ${name}`
             };
         });
     }
 
-    getImageDataUrlForButton(name, type = 'entity') {
+    getImageDataUrlForButton(entityType, type = 'entity') {
+        const name = entityType.type;
         const assetManager = this.menuManager.assetManager;
         if(assetManager) {
-            const key = type === 'entity' ? `image:entity:${name}` : `image:background:${name}`;
+            const key = type === 'entity' ? entityType.getImageCacheKey() : `image:background:${name}`;
             const cached = assetManager.imageCache.get(key);
             let imageDataUrl = null;
             if (cached && cached.image) {
@@ -80,7 +82,7 @@ export class SkinsMenu {
                             cols: 3,
                             cellSize: 80,
                             gap: 10,
-                            buttons: this.getImageGridButtons([TreeEntity.type  , GrassEntity.type, RockEntity.type])
+                            buttons: this.getImageGridButtons([TreeEntity  , GrassEntity, RockEntity])
                         }
                     ]
                 },
@@ -94,7 +96,7 @@ export class SkinsMenu {
                             cols: 2,
                             cellSize: 120,
                             gap: 15,
-                            buttons: this.getImageGridButtons(['plains', 'desert'], 'background')
+                            buttons: this.getImageGridButtons([{ type:'plains', name:'Plains'}, {type: 'desert', name:'Desert'}], 'background')
                         }
                     ]
                 }
@@ -113,7 +115,6 @@ export class SkinsMenu {
     // Handle image button clicks
     handleImageClick(type, name, entityConfigMenu) {
         console.log(`[SkinsMenu] Clicked ${type}: ${name}`);
-        const menuManager = this.menuManager;
         if (type === 'entity') {
             // Import and create entity skin configuration menu
             entityConfigMenu.createAndShow(() => {

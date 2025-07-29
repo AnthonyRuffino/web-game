@@ -5,10 +5,11 @@ import { TreeEntity } from '../entities/tree.js';
 import { RockEntity } from '../entities/rock.js';
 
 export class EntitySkinConfigurationMenu {
-    constructor(entityName, menuManager) {
-        this.entityName = entityName;
+    constructor(entityType, menuManager) {
+        this.entityType = entityType;
+        this.entityName = entityType.type;
         this.menuManager = menuManager;
-        this.menuId = `entity-skin-configuration-${entityName}`;
+        this.menuId = `entity-skin-configuration-${this.entityName}`;
     }
 
     // Create the entity skin configuration menu
@@ -227,7 +228,7 @@ export class EntitySkinConfigurationMenu {
             return;
         }
 
-        const key = `image:entity:${this.entityName}`;
+        const key = this.entityType.getImageCacheKey();
         const cached = assetManager.imageCache.get(key);
         
         if (cached && cached.image) {
@@ -249,8 +250,7 @@ export class EntitySkinConfigurationMenu {
         const assetManager = this.menuManager.assetManager;
         if (!assetManager) return null;
         
-        const configKey = `entity:${this.entityName}`;
-        return assetManager.entityTypeConfigs.get(configKey) || null;
+        return assetManager.getEntityTypeConfig(this.entityName) || null;
     }
 
     // Load and display current config values
@@ -296,15 +296,14 @@ export class EntitySkinConfigurationMenu {
             }
 
             // Update the in-memory config
-            const configKey = `entity:${this.entityName}`;
-            assetManager.entityTypeConfigs.set(configKey, newConfig);
+            assetManager.saveEntityTypeConfig(this.entityName, newConfig);
 
             // Save to localStorage
             try {
-                const savedConfigs = localStorage.getItem('entity-type-configs');
+                const savedConfigs = localStorage.getItem('entityTypeConfigs');
                 const configs = savedConfigs ? JSON.parse(savedConfigs) : {};
                 configs[configKey] = newConfig;
-                localStorage.setItem('entity-type-configs', JSON.stringify(configs));
+                localStorage.setItem('entityTypeConfigs', JSON.stringify(configs));
                 console.log(`[EntitySkinConfigurationMenu] Saved config for ${this.entityName}:`, newConfig);
             } catch (e) {
                 console.warn('Failed to save config to localStorage:', e);
@@ -330,10 +329,10 @@ export class EntitySkinConfigurationMenu {
                 defaultConfig = { ...TreeEntity.defaultConfig };
                 break;
             case 'grass':
-                defaultConfig = { ...window.GrassEntity.defaultConfig };
+                defaultConfig = { ...GrassEntity.defaultConfig };
                 break;
             case 'rock':
-                defaultConfig = { ...window.RockEntity.defaultConfig };
+                defaultConfig = { ...RockEntity.defaultConfig };
                 break;
         }
 
@@ -348,15 +347,14 @@ export class EntitySkinConfigurationMenu {
         }
 
         // Update the in-memory config
-        const configKey = `entity:${this.entityName}`;
-        assetManager.entityTypeConfigs.set(configKey, defaultConfig);
+        assetManager.saveEntityTypeConfig(this.entityName, defaultConfig);
 
         // Save to localStorage
         try {
-            const savedConfigs = localStorage.getItem('entity-type-configs');
+            const savedConfigs = localStorage.getItem('entityTypeConfigs');
             const configs = savedConfigs ? JSON.parse(savedConfigs) : {};
             configs[configKey] = defaultConfig;
-            localStorage.setItem('entity-type-configs', JSON.stringify(configs));
+            localStorage.setItem('entityTypeConfigs', JSON.stringify(configs));
             console.log(`[EntitySkinConfigurationMenu] Reset config for ${this.entityName}:`, defaultConfig);
         } catch (e) {
             console.warn('Failed to save reset config to localStorage:', e);
@@ -423,22 +421,18 @@ export class EntitySkinConfigurationMenu {
             return;
         }
 
-        const key = `image:entity:${this.entityName}`;
+        const key = this.entityType.getImageCacheKey();
         
-        // Remove from cache
+        // Remove from asset manager cache
         assetManager.imageCache.delete(key);
         
-        // Remove from localStorage if it exists
-        try {
-            localStorage.removeItem(key);
-        } catch (e) {
-            console.warn('Failed to remove from localStorage:', e);
-        }
-
+        // Remove from localStorage
+        localStorage.removeItem(key);
+        
         // Reload the current image
         const currentImagePreview = this.menu.element.querySelector('#current-image-preview');
         this.loadCurrentImage(currentImagePreview);
-
+        
         // Hide the new image container
         const newImageContainer = this.menu.element.querySelector('#new-image-container');
         newImageContainer.style.display = 'none';
@@ -453,65 +447,46 @@ export class EntitySkinConfigurationMenu {
     }
 
     // Apply the new image
-    applyNewImage() {
+    async applyNewImage() {
         if (!this.pendingImageDataUrl) {
-            alert('No new image selected');
+            alert('No image to apply. Please upload an image first.');
             return;
         }
 
-        const assetManager = this.menuManager.assetManager;
-        if (!assetManager) {
-            alert('Asset manager not available');
-            return;
-        }
+        try {
+            // Use AssetManager's utility method to update the image
+            const success = await this.menuManager.assetManager.updateImage(
+                'entity',
+                this.entityType,
+                this.pendingImageDataUrl
+            );
 
-        const key = `image:entity:${this.entityName}`;
-        
-        // Get the current entity type config for proper metadata
-        const config = this.getEntityTypeConfig();
-        const size = config ? config.size : 32;
-        const fixedScreenAngle = config ? config.fixedScreenAngle : 0;
-        const drawOffsetX = config ? config.drawOffsetX : 0;
-        const drawOffsetY = config ? config.drawOffsetY : 0;
-        
-        // Create image object and add to cache
-        const img = new Image();
-        img.src = this.pendingImageDataUrl;
-        img.onload = () => {
-            // Add to asset manager cache with proper config values
-            assetManager.imageCache.set(key, {
-                image: img,
-                size: size,
-                fixedScreenAngle: fixedScreenAngle,
-                drawOffsetX: drawOffsetX,
-                drawOffsetY: drawOffsetY
-            });
+            if (success) {
+                // Clear the pending image
+                this.pendingImageDataUrl = null;
 
-            // Save to localStorage
-            try {
-                localStorage.setItem(key, this.pendingImageDataUrl);
-            } catch (e) {
-                console.warn('Failed to save to localStorage:', e);
+                // Refresh the skins menu to show updated images
+                if (this.menuManager.getMenu('skins')) {
+                    const skinsMenu = this.menuManager.getMenu('skins');
+                    if (skinsMenu && skinsMenu.refreshMenu) {
+                        skinsMenu.refreshMenu();
+                    }
+                }
+
+                // Emit a custom event for skin updates - delay 100ms to wait for the image to be generated on-the-fly
+                setTimeout(() => {
+                    const skinUpdateEvent = new CustomEvent('skinUpdated', {
+                        detail: { entityName: this.entityName, type: 'entity' }
+                    });
+                    document.dispatchEvent(skinUpdateEvent);
+                }, 100);
+            } else {
+                alert(`Failed to update ${this.entityName} image. Please try again.`);
             }
-
-            // Reload the current image
-            const currentImagePreview = this.menu.element.querySelector('#current-image-preview');
-            this.loadCurrentImage(currentImagePreview);
-
-            // Hide the new image container
-            const newImageContainer = this.menu.element.querySelector('#new-image-container');
-            newImageContainer.style.display = 'none';
-
-            // Clear the pending image
-            this.pendingImageDataUrl = null;
-
-
-            // Emit a custom event for skin updates
-            const skinUpdateEvent = new CustomEvent('skinUpdated', {
-                detail: { entityName: this.entityName, type: 'entity' }
-            });
-            document.dispatchEvent(skinUpdateEvent);
-        };
+        } catch (error) {
+            console.error(`[EntitySkinConfigurationMenu] Error applying new image:`, error);
+            alert(`Error updating ${this.entityName} image: ${error.message}`);
+        }
     }
 
     // Show the menu (if it exists)

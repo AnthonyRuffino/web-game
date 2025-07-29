@@ -72,7 +72,7 @@ static renderEntity(ctx, entity) {
 ### 2. AssetManager Config Management
 
 #### 2.1 Config Storage
-- **localStorage Key**: `"entity-type-configs"`
+- **localStorage Key**: `"entityTypeConfigs"`
 - **Memory Cache**: `AssetManager.entityTypeConfigs` Map
 - **Format**: `{ "entity:tree": { size: 24, fixedScreenAngle: 0, drawOffsetY: -42 } }`
 - **Purpose**: Store default configs for each entity type, loaded at startup

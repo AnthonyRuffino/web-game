@@ -87,7 +87,7 @@ export class AssetManager {
         console.log('[AssetManager] Initializing entity type configurations...');
         
         // Load existing configs from localStorage
-        const savedConfigs = localStorage.getItem('entity-type-configs');
+        const savedConfigs = localStorage.getItem('entityTypeConfigs');
         if (savedConfigs) {
             try {
                 const configs = JSON.parse(savedConfigs);
@@ -153,7 +153,7 @@ export class AssetManager {
     saveAllEntityTypeConfigs() {
         try {
             const configs = Object.fromEntries(this.entityTypeConfigs);
-            localStorage.setItem('entity-type-configs', JSON.stringify(configs));
+            localStorage.setItem('entityTypeConfigs', JSON.stringify(configs));
             console.log('[AssetManager] Entity type configs saved to localStorage');
         } catch (error) {
             console.error('[AssetManager] Error saving entity type configs:', error);
@@ -165,18 +165,67 @@ export class AssetManager {
         return this.entityTypeConfigs.get(`entity:${entityType}`);
     }
 
-    // Update entity type config in memory and localStorage
-    updateEntityTypeConfig(entityType, newConfig) {
-        this.entityTypeConfigs.set(entityType, newConfig);
-        this.saveAllEntityTypeConfigs();
-        console.log(`[AssetManager] Updated config for ${entityType}:`, newConfig);
-    }
-
     // Save specific entity type config to localStorage
     saveEntityTypeConfig(entityType, config) {
-        this.entityTypeConfigs.set(entityType, config);
+        this.entityTypeConfigs.set(`entity:${entityType}`, config);
         this.saveAllEntityTypeConfigs();
         console.log(`[AssetManager] Saved config for ${entityType}:`, config);
+    }
+
+    // Utility method to update an image with new data
+    async updateImage(type, entityType, imageDataURL, config = null) {
+        console.log(`[AssetManager] Updating image: ${type}-${entityType.type}`);
+        
+        try {
+            // Create cache key based on type and name
+            let cacheKey;
+            if (type === 'entity') {
+                cacheKey = entityType.getImageCacheKey();
+            } else if (type === 'background' || type === 'biome') {
+                cacheKey = `image:background:${entityType.type}`;
+            }
+            
+            // Convert data URL to image object
+            const img = new Image();
+            await new Promise((resolve, reject) => {
+                img.onload = () => {
+                    // Get config for this image type
+                    let imageConfig = config;
+                    if (!imageConfig) {
+                        if (type === 'entity') {
+                            imageConfig = this.getEntityTypeConfig(entityType.type);
+                        } else {
+                            imageConfig = { size: 640, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 };
+                        }
+                    }
+                    
+                    // Create cache object with proper metadata
+                    const cacheObj = {
+                        image: img,
+                        size: imageConfig ? (imageConfig.size || img.width) : img.width,
+                        fixedScreenAngle: imageConfig ? (imageConfig.fixedScreenAngle || null) : null,
+                        drawOffsetX: imageConfig ? (imageConfig.drawOffsetX || 0) : 0,
+                        drawOffsetY: imageConfig ? (imageConfig.drawOffsetY || 0) : 0
+                    };
+                    
+                    // Update in-memory cache
+                    this.imageCache.set(cacheKey, cacheObj);
+                    
+                    // Save to localStorage
+                    localStorage.setItem(cacheKey, imageDataURL);
+                    
+                    console.log(`[AssetManager] Successfully updated image: ${cacheKey}, size: ${img.width}x${img.height}`);
+                    resolve(cacheObj);
+                };
+                img.onerror = reject;
+                img.src = imageDataURL;
+            });
+            
+            return true;
+        } catch (error) {
+            console.error(`[AssetManager] Error updating image ${type}-${entityType.type}:`, error);
+            return false;
+        }
     }
 
     // Initialize all required images on startup
@@ -231,7 +280,7 @@ export class AssetManager {
         } else if (type === 'background') {
             cacheKey = `image:background:${imageName}`;
         } else {
-            cacheKey = `image:${type}-${imageName}`;
+            cacheKey = `image:${type}:${imageName}`;
         }
         
         console.log(`[AssetManager] ensureImageLoaded called for: ${cacheKey}`);
@@ -284,7 +333,6 @@ export class AssetManager {
             if (generatedImage) {
                 console.log(`[AssetManager] Generated image data URL for: ${cacheKey}`);
                 // Cache the generated image
-                localStorage.setItem(cacheKey, generatedImage);
                 console.log(`[AssetManager] Saved to localStorage: ${cacheKey}`);
                 
                 // Convert data URL to image object and cache it
@@ -536,17 +584,9 @@ export class AssetManager {
 
     // Clear localStorage cache
     clearCache() {
-        const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('image:')) {
-                keysToRemove.push(key);
-            }
-        }
-        
-        keysToRemove.forEach(key => localStorage.removeItem(key));
+        const keysToRemove = this.imageCache.keys().length;
         this.imageCache.clear();
-        console.log(`[AssetManager] Cleared ${keysToRemove.length} cached images`);
+        console.log(`[AssetManager] Cleared ${keysToRemove} cached images`);
     }
 
     // Clear specific cached images
