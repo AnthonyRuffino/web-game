@@ -5,7 +5,7 @@ Phase 2 integrates the persistence system with the existing World system to trac
 
 ## Prerequisites
 - Phase 1 completed (database infrastructure)
-- Existing World system (see `electron/src/modules/game/world.js`)
+- Existing World system (see `ui/legacy/core/world.js`)
 - Understanding of procedural generation vs. persistence
 
 ## Phase 2 Goals

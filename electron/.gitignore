@@ -105,4 +105,9 @@ release/
 
 # Temporary files
 tmp/
-temp/ 
+temp/
+
+# Database files
+game.db
+test-game.db
+*.db 
