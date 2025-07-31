@@ -29,6 +29,8 @@ export class EntityRenderer {
             console.warn('[EntityRenderer] Entity missing or no type:', entity);
             return;
         }
+        
+        console.log('[EntityRenderer] Rendering entity:', entity.type, 'at', entity.x, entity.y);
 
         // Get config: entity-specific config OR entity type config OR fallback
         let config = entity.imageConfig; // Optional entity-specific config
@@ -43,8 +45,15 @@ export class EntityRenderer {
         // Get cache key: entity-specific key OR use default from entity type
         let cacheKey = entity.imageCacheKey;
         if (!cacheKey) {
-            cacheKey = entity.entityModule.getImageCacheKey();
+            if (entity.entityModule && entity.entityModule.getImageCacheKey) {
+                cacheKey = entity.entityModule.getImageCacheKey();
+            } else {
+                // Fallback for entities without entityModule (like world-generated entities)
+                cacheKey = EntityRenderer.generateEntityCacheKey(entity.type);
+            }
         }
+        
+        console.log('[EntityRenderer] Using cache key:', cacheKey);
         
         const cachedImage = EntityRenderer.getCachedImage(cacheKey);
         

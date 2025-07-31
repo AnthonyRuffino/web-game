@@ -28,7 +28,13 @@ export class RendererPersistentWorld extends World {
         };
         
         // Set world configuration
-        this.setConfig(worldConfig);
+        this.config = {
+            ...this.config,  // Keep existing defaults
+            ...worldConfig   // Override with database values
+        };
+        
+        // Re-initialize world with new config
+        this.init();
         
         this.currentWorldId = worldId;
         this.currentCharacterId = characterId;
@@ -37,16 +43,20 @@ export class RendererPersistentWorld extends World {
     }
 
     // Override loadChunk to integrate with persistence
-    async loadChunk(chunkX, chunkY) {
-        const chunk = await super.loadChunk(chunkX, chunkY);
+    loadChunk(chunkX, chunkY) {
+        const chunk = super.loadChunk(chunkX, chunkY);
         
         // Load persisted changes for this chunk
         if (!this.persistenceManager || !this.currentWorldId) {
-            console.warn('[RendererPersistentWorld] Skipping persistence - manager or world not initialized');
+            console.warn('[RendererPersistentWorld] Skipping persistence - manager or world not initialized. Manager:', !!this.persistenceManager, 'World ID:', this.currentWorldId);
             return chunk;
         }
         
-        const persistedStates = await this.persistenceManager.getChunkCellStates(this.currentWorldId, chunkX, chunkY);
+        // Note: We can't use await here since loadChunk is synchronous
+        // For now, we'll skip persistence and just return the generated chunk
+        // TODO: Implement proper async persistence loading
+        console.log('[RendererPersistentWorld] Skipping persistence loading - loadChunk is synchronous');
+        return chunk;
         
         // Apply persisted changes to chunk
         this.applyPersistedChangesToChunk(chunk, persistedStates);
