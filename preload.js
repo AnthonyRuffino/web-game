@@ -29,7 +29,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbGetCharacters: (worldId) => ipcRenderer.invoke('db-get-characters', worldId),
   dbGetCharacter: (characterId) => ipcRenderer.invoke('db-get-character', characterId),
   dbSaveCharacterPosition: (characterId, x, y) => ipcRenderer.invoke('db-save-character-position', characterId, x, y),
-  dbSaveCharacterState: (characterId, x, y, playerRotation, cameraMode, cameraRotation) => ipcRenderer.invoke('db-save-character-state', characterId, x, y, playerRotation, cameraMode, cameraRotation),
+  dbSaveCharacterState: (characterId, x, y, playerRotation, cameraMode, cameraRotation, cameraZoom) => ipcRenderer.invoke('db-save-character-state', characterId, x, y, playerRotation, cameraMode, cameraRotation, cameraZoom),
   dbGetCellState: (worldId, chunkX, chunkY, cellX, cellY) => ipcRenderer.invoke('db-get-cell-state', worldId, chunkX, chunkY, cellX, cellY),
   dbGetChunkCellStates: (worldId, chunkX, chunkY) => ipcRenderer.invoke('db-get-chunk-cell-states', worldId, chunkX, chunkY),
   dbGetInventoryContents: (characterId) => ipcRenderer.invoke('db-get-inventory-contents', characterId),

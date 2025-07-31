@@ -280,6 +280,7 @@ export class Game {
                         console.log('[Console] Current player rotation:', this.player.angle);
                         console.log('[Console] Current camera mode:', this.inputManager.cameraMode);
                         console.log('[Console] Current camera rotation:', this.camera.rotation);
+                        console.log('[Console] Current camera zoom:', this.camera.zoom);
                         
                         // Force save position
                         await this.savePlayerPosition();
@@ -290,9 +291,12 @@ export class Game {
                         this.player.y += 100;
                         this.player.angle += Math.PI / 4; // 45 degrees
                         this.camera.rotation += Math.PI / 6; // 30 degrees
+                        this.camera.zoom = 1.5; // Change zoom
+                        this.camera.targetZoom = 1.5;
                         console.log('[Console] Moved player to:', this.player.x, this.player.y);
                         console.log('[Console] New player rotation:', this.player.angle);
                         console.log('[Console] New camera rotation:', this.camera.rotation);
+                        console.log('[Console] New camera zoom:', this.camera.zoom);
                         
                         // Save again
                         await this.savePlayerPosition();
@@ -1251,6 +1255,13 @@ export class Game {
                     this.camera.rotation = character.camera_rotation;
                     console.log('[Game] Loaded camera rotation:', character.camera_rotation);
                 }
+                
+                // Load camera zoom
+                if (character.camera_zoom !== null) {
+                    this.camera.zoom = character.camera_zoom;
+                    this.camera.targetZoom = character.camera_zoom;
+                    console.log('[Game] Loaded camera zoom:', character.camera_zoom);
+                }
             }
         } catch (error) {
             console.warn('[Game] Failed to load player position:', error);
@@ -1275,7 +1286,8 @@ export class Game {
                 this.player.y,
                 this.player.angle || 0,
                 this.inputManager.cameraMode || 'fixed-angle',
-                this.camera.rotation || 0
+                this.camera.rotation || 0,
+                this.camera.zoom || 1.0
             );
             this.lastPositionSave = now;
         } catch (error) {

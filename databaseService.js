@@ -72,6 +72,7 @@ class DatabaseService {
                 player_rotation REAL NOT NULL DEFAULT 0,
                 camera_mode TEXT NOT NULL DEFAULT 'fixed-angle',
                 camera_rotation REAL NOT NULL DEFAULT 0,
+                camera_zoom REAL NOT NULL DEFAULT 1.0,
                 last_saved DATETIME DEFAULT CURRENT_TIMESTAMP,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (world_id) REFERENCES worlds (id) ON DELETE CASCADE
@@ -161,6 +162,11 @@ class DatabaseService {
                 console.log('[DatabaseService] Added camera_rotation column');
             }
             
+            if (!columnNames.includes('camera_zoom')) {
+                await this.db.exec('ALTER TABLE characters ADD COLUMN camera_zoom REAL NOT NULL DEFAULT 1.0');
+                console.log('[DatabaseService] Added camera_zoom column');
+            }
+            
             console.log('[DatabaseService] Database migration completed');
         } catch (error) {
             console.error('[DatabaseService] Migration failed:', error);
@@ -235,14 +241,14 @@ class DatabaseService {
         return true;
     }
 
-    async saveCharacterState(characterId, x, y, playerRotation, cameraMode, cameraRotation) {
+    async saveCharacterState(characterId, x, y, playerRotation, cameraMode, cameraRotation, cameraZoom) {
         await this.db.run(`
             UPDATE characters 
-            SET position_x = ?, position_y = ?, player_rotation = ?, camera_mode = ?, camera_rotation = ?, last_saved = CURRENT_TIMESTAMP
+            SET position_x = ?, position_y = ?, player_rotation = ?, camera_mode = ?, camera_rotation = ?, camera_zoom = ?, last_saved = CURRENT_TIMESTAMP
             WHERE id = ?
-        `, [x, y, playerRotation, cameraMode, cameraRotation, characterId]);
+        `, [x, y, playerRotation, cameraMode, cameraRotation, cameraZoom, characterId]);
         
-        console.log(`[DatabaseService] Saved character ${characterId} state: pos(${x}, ${y}), rot(${playerRotation}), camera(${cameraMode}, ${cameraRotation})`);
+        console.log(`[DatabaseService] Saved character ${characterId} state: pos(${x}, ${y}), rot(${playerRotation}), camera(${cameraMode}, ${cameraRotation}, zoom:${cameraZoom})`);
         return true;
     }
 

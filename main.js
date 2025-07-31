@@ -161,9 +161,9 @@ ipcMain.handle('db-save-character-position', async (event, characterId, x, y) =>
   }
 });
 
-ipcMain.handle('db-save-character-state', async (event, characterId, x, y, playerRotation, cameraMode, cameraRotation) => {
+ipcMain.handle('db-save-character-state', async (event, characterId, x, y, playerRotation, cameraMode, cameraRotation, cameraZoom) => {
   try {
-    return await databaseService.saveCharacterState(characterId, x, y, playerRotation, cameraMode, cameraRotation);
+    return await databaseService.saveCharacterState(characterId, x, y, playerRotation, cameraMode, cameraRotation, cameraZoom);
   } catch (error) {
     console.error('[Main] Failed to save character state:', error);
     throw error;
