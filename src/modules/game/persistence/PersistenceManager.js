@@ -1,7 +1,9 @@
-const { DatabaseManager } = require('./database.js');
-const { ChangeTracker } = require('./ChangeTracker.js');
-const { WorldManager } = require('./WorldManager.js');
-const { CellStateManager } = require('./CellStateManager.js');
+import { DatabaseManager } from './database.js';
+import { ChangeTracker } from './ChangeTracker.js';
+import { WorldManager } from './WorldManager.js';
+import { CellStateManager } from './CellStateManager.js';
+import { InventoryManager } from './InventoryManager.js';
+import { HarvestingManager } from './HarvestingManager.js';
 
 class PersistenceManager {
     constructor() {
@@ -9,6 +11,8 @@ class PersistenceManager {
         this.changeTracker = null;
         this.worldManager = null;
         this.cellStateManager = null;
+        this.inventoryManager = null;
+        this.harvestingManager = null;
         
         // Configuration
         this.batchSize = 100; // Number of changes to batch before saving
@@ -38,6 +42,9 @@ class PersistenceManager {
             
             this.cellStateManager = new CellStateManager(this.database, this.changeTracker);
             await this.cellStateManager.initialize();
+            
+            this.inventoryManager = new InventoryManager(this);
+            this.harvestingManager = new HarvestingManager(this);
             
             this.isInitialized = true;
             console.log('[PersistenceManager] Persistence system initialized successfully');
@@ -310,6 +317,23 @@ class PersistenceManager {
             currentCharacterId: this.currentCharacterId
         };
     }
+
+    // Getter methods for managers
+    getWorldManager() {
+        return this.worldManager;
+    }
+
+    getCellStateManager() {
+        return this.cellStateManager;
+    }
+
+    getInventoryManager() {
+        return this.inventoryManager;
+    }
+
+    getHarvestingManager() {
+        return this.harvestingManager;
+    }
 }
 
-module.exports = { PersistenceManager }; 
+export { PersistenceManager }; 

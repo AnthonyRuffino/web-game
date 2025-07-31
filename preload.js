@@ -22,6 +22,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadImage: (filename) => ipcRenderer.invoke('load-image', filename),
   removeImage: (filename) => ipcRenderer.invoke('remove-image', filename),
   
+  // Database API
+  dbCreateWorld: (worldConfig) => ipcRenderer.invoke('db-create-world', worldConfig),
+  dbGetWorlds: () => ipcRenderer.invoke('db-get-worlds'),
+  dbGetWorld: (worldId) => ipcRenderer.invoke('db-get-world', worldId),
+  dbGetCharacters: (worldId) => ipcRenderer.invoke('db-get-characters', worldId),
+  dbGetCharacter: (characterId) => ipcRenderer.invoke('db-get-character', characterId),
+  dbGetCellState: (worldId, chunkX, chunkY, cellX, cellY) => ipcRenderer.invoke('db-get-cell-state', worldId, chunkX, chunkY, cellX, cellY),
+  dbGetChunkCellStates: (worldId, chunkX, chunkY) => ipcRenderer.invoke('db-get-chunk-cell-states', worldId, chunkX, chunkY),
+  dbGetInventoryContents: (characterId) => ipcRenderer.invoke('db-get-inventory-contents', characterId),
+  dbGetItemInSlot: (characterId, slotIndex) => ipcRenderer.invoke('db-get-item-in-slot', characterId, slotIndex),
+  
   // Remove event listeners
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);

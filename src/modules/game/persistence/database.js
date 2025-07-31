@@ -1,6 +1,6 @@
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
-const path = require('path');
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import path from 'path';
 
 class DatabaseManager {
     constructor() {
@@ -14,7 +14,7 @@ class DatabaseManager {
             if (!userDataPath) {
                 // Try to get from Electron app if available
                 try {
-                    const { app } = require('electron');
+                    const { app } = await import('electron');
                     userDataPath = app.getPath('userData');
                 } catch (e) {
                     // Fallback to current directory if Electron not available (e.g., in tests)
@@ -199,4 +199,4 @@ class DatabaseManager {
     }
 }
 
-module.exports = { DatabaseManager }; 
+export { DatabaseManager }; 

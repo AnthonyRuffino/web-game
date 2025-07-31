@@ -503,13 +503,15 @@ export class World {
         const camera = window.game.camera;
         
         // Convert world coordinates to screen coordinates for each entity
-        const entitiesWithScreenCoords = fixedAngleEntities.map(entity => {
-            const screenPos = camera.worldToScreen(entity.x, entity.y, window.game?.player?.angle || 0);
-            return {
-                entity: entity,
-                screenY: screenPos.y
-            };
-        });
+        const entitiesWithScreenCoords = fixedAngleEntities
+            .filter(entity => entity && typeof entity.x === 'number' && typeof entity.y === 'number')
+            .map(entity => {
+                const screenPos = camera.worldToScreen(entity.x, entity.y, window.game?.player?.angle || 0);
+                return {
+                    entity: entity,
+                    screenY: screenPos.y
+                };
+            });
 
         entitiesWithScreenCoords.sort((a, b) => a.screenY - b.screenY);
 

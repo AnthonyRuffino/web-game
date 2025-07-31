@@ -131,4 +131,4 @@ class ChangeTracker {
     }
 }
 
-module.exports = { ChangeTracker }; 
+export { ChangeTracker }; 

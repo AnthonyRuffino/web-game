@@ -4,11 +4,11 @@ import { Player } from './core/character.js';
 import { CollisionSystem } from './core/collision.js';
 import { InteractionSystem } from './ui/interactions.js';
 import { DotsSystem } from './rendering/dots.js';
-import { World } from './core/world.js';
+import { RendererPersistentWorld } from './persistence/RendererPersistentWorld.js';
 import { AssetManager } from './assets.js';
 import { WorldEnhancements } from './core/world-enhancements.js';
 import { CanvasManager } from './rendering/canvas.js';
-import { PersistenceSystem } from './persistence/persistence.js';
+import { RendererPersistenceManager } from './persistence/RendererPersistenceManager.js';
 import { MenuManager } from './ui/menuManager.js';
 import MenuBarElectron from './ui/menuBarElectron.js';
 import { InputBar } from './ui/inputBar.js';
@@ -29,7 +29,7 @@ export class Game {
         this.interactionSystem = null;
         this.worldEnhancements = null;
         this.assetManager = null;
-        this.persistenceSystem = null;
+        this.persistenceManager = null;
         this.menuManager = null;
         this.menuBarElectron = null;
         this.inputBar = null;
@@ -70,20 +70,22 @@ export class Game {
             this.camera = new Camera(this.canvas.width, this.canvas.height);
             this.player = new Player(0, 0);
             this.dotsSystem = new DotsSystem();
-            this.world = new World();
+            this.world = new RendererPersistentWorld(this.persistenceManager);
+        console.log('[Game] Created RendererPersistentWorld with persistence manager:', !!this.persistenceManager);
             this.collisionSystem = new CollisionSystem();
             this.interactionSystem = new InteractionSystem();
             this.worldEnhancements = new WorldEnhancements();
             this.assetManager = new AssetManager();
-            this.persistenceSystem = new PersistenceSystem();
+            this.persistenceManager = new RendererPersistenceManager();
             this.menuManager = new MenuManager(this.assetManager);
             this.inputBar = new InputBar();
             
             // Initialize systems
             this.inputManager.init();
-            this.world.init();
-            this.persistenceSystem.init(this);
-            this.inputBar.init();
+            await this.initializeWorld();
+                    await this.persistenceManager.initialize();
+        await this.initializeWorld();
+        this.inputBar.init();
             
             // Load assets
             await this.assetManager.initializeImages();
@@ -107,7 +109,11 @@ export class Game {
             this.menuBarElectron = new MenuBarElectron(this.menuManager);
             
             // Start the game
-            this.start();
+            if (this.world && this.world.config) {
+                this.start();
+            } else {
+                console.error('[Game] World not properly initialized, cannot start game loop');
+            }
             
             console.log('[Game] Game initialized successfully');
         } catch (error) {
@@ -150,7 +156,7 @@ export class Game {
 
     setupConsoleCommands() {
         // Make console commands available globally
-        window.cmd = (command, ...args) => {
+        window.cmd = async (command, ...args) => {
             switch (command) {
                 case 'perspective':
                 case 'toggle':
@@ -170,26 +176,61 @@ export class Game {
                     break;
                     
                 case 'save':
-                    const saveSuccess = this.persistenceSystem.manualSave();
+                    const saveSuccess = await this.persistenceManager.savePendingChanges();
                     console.log(`[Console] Manual save ${saveSuccess ? 'completed' : 'failed'}`);
                     break;
                     
                 case 'load':
-                    const loadSuccess = this.persistenceSystem.manualLoad();
-                    console.log(`[Console] Manual load ${loadSuccess ? 'completed' : 'failed'}`);
+                    console.log('[Console] Load functionality will be implemented in Phase 2');
                     break;
                     
                 case 'clear':
-                    const clearSuccess = this.persistenceSystem.clearSavedState();
-                    console.log(`[Console] Save data ${clearSuccess ? 'cleared' : 'failed to clear'}`);
+                    console.log('[Console] Clear functionality will be implemented in Phase 2');
                     break;
                     
                 case 'saveinfo':
-                    const saveInfo = this.persistenceSystem.getSaveInfo();
-                    if (saveInfo) {
-                        console.log('[Console] Save info:', saveInfo);
-                    } else {
-                        console.log('[Console] No save data found');
+                    console.log('[Console] Save info functionality will be implemented in Phase 2');
+                    break;
+                    
+                case 'testpersistence':
+                    try {
+                        console.log('[Console] Testing persistence system...');
+                        console.log('[Console] Persistence manager:', !!this.persistenceManager);
+                        console.log('[Console] Current world ID:', this.world?.currentWorldId);
+                        console.log('[Console] Current character ID:', this.world?.currentCharacterId);
+                        
+                        const worlds = await this.persistenceManager.getWorlds();
+                        console.log('[Console] Worlds found:', worlds.length);
+                        if (worlds.length > 0) {
+                            const characters = await this.persistenceManager.getCharacters(worlds[0].id);
+                            console.log('[Console] Characters in first world:', characters.length);
+                        }
+                        console.log('[Console] Persistence test completed');
+                    } catch (error) {
+                        console.error('[Console] Persistence test failed:', error);
+                    }
+                    break;
+                    
+                case 'testinventory':
+                    try {
+                        console.log('[Console] Testing inventory system...');
+                        
+                        // Get inventory contents
+                        const contents = await this.persistenceManager.getInventoryContents(this.world.currentCharacterId);
+                        console.log('[Console] Inventory contents:', contents);
+                        console.log('[Console] Inventory test completed');
+                    } catch (error) {
+                        console.error('[Console] Inventory test failed:', error);
+                    }
+                    break;
+                    
+                case 'testharvesting':
+                    try {
+                        console.log('[Console] Testing harvesting system...');
+                        console.log('[Console] Harvesting system will be implemented in Phase 3');
+                        console.log('[Console] Harvesting test completed');
+                    } catch (error) {
+                        console.error('[Console] Harvesting test failed:', error);
                     }
                     break;
                     
@@ -874,7 +915,7 @@ export class Game {
         this.collisionSystem.update(deltaTime, this.world, this.player);
         this.interactionSystem.update?.(deltaTime);
         this.worldEnhancements.update?.(deltaTime);
-        this.persistenceSystem.update?.(deltaTime);
+        // this.persistenceManager.update?.(deltaTime); // Will be implemented in Phase 2
         
         // Update debug info
         this.updateDebugInfo();
@@ -1038,6 +1079,49 @@ export class Game {
         if (loadingMessage) {
             loadingMessage.textContent = `Error: ${message}`;
             loadingMessage.style.color = '#ff0000';
+        }
+    }
+
+    async initializeWorld() {
+        try {
+            // Check if we have existing worlds
+            const worlds = await this.persistenceManager.getWorlds();
+            
+            if (worlds.length === 0) {
+                // Create new world
+                const worldConfig = {
+                    name: "My World",
+                    seed: 12345,
+                    chunkCount: 64,
+                    chunkSize: 64,
+                    tileSize: 32
+                };
+                
+                const { worldId, characterId } = await this.persistenceManager.createWorld(worldConfig);
+                await this.world.initializeWithPersistence(worldId, characterId);
+                
+                // Set current character in persistence manager
+                this.persistenceManager.setCurrentCharacter(characterId);
+                
+                console.log('[Game] Created new world with ID:', worldId);
+            } else {
+                // Load first world and character
+                const worldId = worlds[0].id;
+                const characters = await this.persistenceManager.getCharacters(worldId);
+                const characterId = characters[0].id;
+                
+                await this.world.initializeWithPersistence(worldId, characterId);
+                
+                // Set current character in persistence manager
+                this.persistenceManager.setCurrentCharacter(characterId);
+                
+                console.log('[Game] Loaded existing world with ID:', worldId);
+            }
+        } catch (error) {
+            console.error('[Game] Failed to initialize world:', error);
+            // Fallback to regular world initialization
+            console.log('[Game] Falling back to regular world initialization');
+            this.world.init();
         }
     }
 }

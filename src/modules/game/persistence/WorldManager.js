@@ -295,4 +295,4 @@ class WorldManager {
     }
 }
 
-module.exports = { WorldManager }; 
+export { WorldManager }; 

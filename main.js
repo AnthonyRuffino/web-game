@@ -1,11 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { DatabaseService } = require('./databaseService.js');
 
 // Keep a global reference of the window object
 let mainWindow;
+let databaseService;
 
-function createWindow() {
+async function createWindow() {
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -23,6 +25,11 @@ function createWindow() {
     show: false // Don't show until ready
   });
 
+  // Initialize database service
+  databaseService = new DatabaseService();
+  await databaseService.initialize();
+  await databaseService.initializeEntityTypes();
+  
   // Load the index.html file
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
 
@@ -98,6 +105,88 @@ ipcMain.handle('maximize-window', () => {
     }
   }
 }); 
+
+// Database handlers
+ipcMain.handle('db-create-world', async (event, worldConfig) => {
+  try {
+    return await databaseService.createWorld(worldConfig);
+  } catch (error) {
+    console.error('[Main] Failed to create world:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-get-worlds', async () => {
+  try {
+    return await databaseService.getWorlds();
+  } catch (error) {
+    console.error('[Main] Failed to get worlds:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-get-world', async (event, worldId) => {
+  try {
+    return await databaseService.getWorld(worldId);
+  } catch (error) {
+    console.error('[Main] Failed to get world:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-get-characters', async (event, worldId) => {
+  try {
+    return await databaseService.getCharacters(worldId);
+  } catch (error) {
+    console.error('[Main] Failed to get characters:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-get-character', async (event, characterId) => {
+  try {
+    return await databaseService.getCharacter(characterId);
+  } catch (error) {
+    console.error('[Main] Failed to get character:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-get-cell-state', async (event, worldId, chunkX, chunkY, cellX, cellY) => {
+  try {
+    return await databaseService.getCellState(worldId, chunkX, chunkY, cellX, cellY);
+  } catch (error) {
+    console.error('[Main] Failed to get cell state:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-get-chunk-cell-states', async (event, worldId, chunkX, chunkY) => {
+  try {
+    return await databaseService.getChunkCellStates(worldId, chunkX, chunkY);
+  } catch (error) {
+    console.error('[Main] Failed to get chunk cell states:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-get-inventory-contents', async (event, characterId) => {
+  try {
+    return await databaseService.getInventoryContents(characterId);
+  } catch (error) {
+    console.error('[Main] Failed to get inventory contents:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-get-item-in-slot', async (event, characterId, slotIndex) => {
+  try {
+    return await databaseService.getItemInSlot(characterId, slotIndex);
+  } catch (error) {
+    console.error('[Main] Failed to get item in slot:', error);
+    throw error;
+  }
+});
 
 // Image filesystem handlers
 ipcMain.handle('save-image', async (event, filename, imageDataURL) => {

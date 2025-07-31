@@ -328,4 +328,4 @@ class CellStateManager {
     }
 }
 
-module.exports = { CellStateManager }; 
+export { CellStateManager }; 
