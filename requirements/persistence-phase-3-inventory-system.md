@@ -1,7 +1,7 @@
 # Persistence System - Phase 3: Inventory System
 
 ## Overview
-Phase 3 implements the inventory system and entity harvesting mechanics. This phase focuses on creating a persistent inventory system, implementing entity harvesting (tree chopping, rock mining), and connecting the world changes to inventory updates.
+Phase 3 implements the inventory system and entity harvesting mechanics. This phase focuses on creating a persistent inventory system, implementing entity harvesting (tree chopping, rock mining), connecting the world changes to inventory updates, and implementing player position persistence.
 
 ## Prerequisites
 - Phase 1 completed (database infrastructure)
@@ -14,6 +14,7 @@ Phase 3 implements the inventory system and entity harvesting mechanics. This ph
 - [ ] Implement inventory UI integration
 - [ ] Add entity placement from inventory
 - [ ] Implement harvest metadata tracking
+- [ ] Implement player position persistence
 
 ## Implementation Steps
 
@@ -602,7 +603,80 @@ export class InputManager {
 }
 ```
 
-### Step 3.5: UI Integration
+### Step 3.5: Player Position Persistence
+
+#### 3.5.1 Implement Player Position Saving
+**File**: `electron/src/modules/game/index.js` (add position saving)
+
+```javascript
+export class Game {
+    constructor() {
+        // ... existing constructor code ...
+        this.lastPositionSave = 0;
+        this.positionSaveInterval = 5000; // Save position every 5 seconds
+    }
+
+    async initializeGame() {
+        // ... existing initialization code ...
+        
+        // Load player position from database
+        await this.loadPlayerPosition();
+        
+        // ... rest of initialization ...
+    }
+
+    async loadPlayerPosition() {
+        if (!this.world || !this.world.currentCharacterId) {
+            return;
+        }
+
+        try {
+            const character = await this.persistenceManager.getWorldManager().loadCharacter(this.world.currentCharacterId);
+            if (character && character.position_x !== null && character.position_y !== null) {
+                this.player.x = character.position_x;
+                this.player.y = character.position_y;
+                console.log('[Game] Loaded player position:', this.player.x, this.player.y);
+            }
+        } catch (error) {
+            console.warn('[Game] Failed to load player position:', error);
+        }
+    }
+
+    async savePlayerPosition() {
+        if (!this.world || !this.world.currentCharacterId || !this.player) {
+            return;
+        }
+
+        const now = Date.now();
+        if (now - this.lastPositionSave < this.positionSaveInterval) {
+            return; // Don't save too frequently
+        }
+
+        try {
+            await this.persistenceManager.getWorldManager().saveCharacterPosition(
+                this.world.currentCharacterId,
+                this.player.x,
+                this.player.y
+            );
+            this.lastPositionSave = now;
+        } catch (error) {
+            console.error('[Game] Failed to save player position:', error);
+        }
+    }
+
+    // Add to game loop
+    update() {
+        // ... existing update code ...
+        
+        // Save player position periodically
+        this.savePlayerPosition();
+        
+        // ... rest of update code ...
+    }
+}
+```
+
+### Step 3.6: UI Integration
 
 #### 3.5.1 Create Inventory UI Component
 **File**: `electron/src/modules/game/ui/InventoryUI.js`
@@ -825,6 +899,7 @@ export class Game {
 - [ ] Inventory UI is functional and responsive
 - [ ] All changes persist across game sessions
 - [ ] No performance issues during harvesting/placement
+- [ ] Player position is saved and loaded correctly
 
 ## Next Phase
 Phase 4 will focus on advanced features like entity modification, image config persistence, and performance optimizations. 

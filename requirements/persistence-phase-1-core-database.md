@@ -9,11 +9,11 @@ Phase 1 establishes the foundational database infrastructure and basic persisten
 - Basic understanding of the persistence system design (see `persistence-system-design.md`)
 
 ## Phase 1 Goals
-- [ ] Implement database schema and initialization
-- [ ] Create core persistence manager class
-- [ ] Implement basic world state tracking
-- [ ] Set up transaction batching system
-- [ ] Add database connection management
+- [x] Implement database schema and initialization
+- [x] Create core persistence manager class
+- [x] Implement basic world state tracking
+- [x] Set up transaction batching system
+- [x] Add database connection management
 
 ## Implementation Steps
 
@@ -440,12 +440,12 @@ getAppPath: () => ipcRenderer.invoke('get-app-path'),
 4. Monitor console for auto-save messages
 
 ## Success Criteria
-- [ ] Database file created successfully in user data directory
-- [ ] All tables and indexes created without errors
-- [ ] Default entity types inserted correctly
-- [ ] Auto-save system working (console messages every 30 seconds)
-- [ ] No errors in console during normal gameplay
-- [ ] Database can be opened and inspected with SQLite browser
+- [x] Database file created successfully in user data directory
+- [x] All tables and indexes created without errors
+- [x] Default entity types inserted correctly
+- [x] Auto-save system working (console messages every 30 seconds)
+- [x] No errors in console during normal gameplay
+- [x] Database can be opened and inspected with SQLite browser
 
 ## Next Phase
 Phase 2 will focus on implementing world state tracking and integrating with the existing World system. 
