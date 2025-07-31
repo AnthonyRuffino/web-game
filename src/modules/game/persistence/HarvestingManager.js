@@ -3,10 +3,40 @@ export class HarvestingManager {
         this.persistenceManager = persistenceManager;
         this.inventoryManager = persistenceManager.getInventoryManager();
         this.world = null; // Will be set by game
+        this.tools = new Map(); // Track player's tools
+        this.skills = new Map(); // Track player's skills
     }
 
     setWorld(world) {
         this.world = world;
+    }
+
+    // Add tool to player's inventory
+    addTool(toolType) {
+        this.tools.set(toolType, true);
+        console.log(`[HarvestingManager] Added tool: ${toolType}`);
+    }
+
+    // Remove tool from player's inventory
+    removeTool(toolType) {
+        this.tools.delete(toolType);
+        console.log(`[HarvestingManager] Removed tool: ${toolType}`);
+    }
+
+    // Check if player has a specific tool
+    hasTool(toolType) {
+        return this.tools.has(toolType);
+    }
+
+    // Add skill level
+    addSkill(skillType, level) {
+        this.skills.set(skillType, level);
+        console.log(`[HarvestingManager] Added skill: ${skillType} level ${level}`);
+    }
+
+    // Get skill level
+    getSkillLevel(skillType) {
+        return this.skills.get(skillType) || 0;
     }
 
     // Define harvesting rules
@@ -14,27 +44,51 @@ export class HarvestingManager {
         return {
             tree: {
                 tool: 'axe',
-                yield: [
+                skill: 'woodcutting',
+                baseYield: [
                     { type: 'wood_block', quantity: 2, chance: 1.0 },
                     { type: 'tree_sapling', quantity: 1, chance: 0.1 }
                 ],
+                skillBonus: {
+                    woodcutting: {
+                        1: { quantity: 1, chance: 0.1 },
+                        5: { quantity: 1, chance: 0.2 },
+                        10: { quantity: 1, chance: 0.3 }
+                    }
+                },
                 harvestIntact: false,
-                harvestTime: 2000 // milliseconds
+                harvestTime: 2000
             },
             rock: {
                 tool: 'pickaxe',
-                yield: [
+                skill: 'mining',
+                baseYield: [
                     { type: 'stone', quantity: 1, chance: 1.0 },
-                    { type: 'rock', quantity: 1, chance: 0.3 } // Intact rock
+                    { type: 'rock', quantity: 1, chance: 0.3 }
                 ],
+                skillBonus: {
+                    mining: {
+                        1: { quantity: 1, chance: 0.1 },
+                        5: { quantity: 1, chance: 0.2 },
+                        10: { quantity: 1, chance: 0.3 }
+                    }
+                },
                 harvestIntact: true,
                 harvestTime: 1500
             },
             grass: {
                 tool: null,
-                yield: [
+                skill: 'gathering',
+                baseYield: [
                     { type: 'grass', quantity: 1, chance: 1.0 }
                 ],
+                skillBonus: {
+                    gathering: {
+                        1: { quantity: 1, chance: 0.2 },
+                        5: { quantity: 1, chance: 0.4 },
+                        10: { quantity: 1, chance: 0.6 }
+                    }
+                },
                 harvestIntact: false,
                 harvestTime: 500
             }
@@ -66,19 +120,39 @@ export class HarvestingManager {
         }
 
         // Check tool requirements
-        if (entityRules.tool && tool !== entityRules.tool) {
+        if (entityRules.tool && !this.hasTool(entityRules.tool)) {
             console.warn(`[HarvestingManager] Need ${entityRules.tool} to harvest ${entity.type}`);
             return false;
         }
 
-        // Calculate yields
+        // Get skill level
+        const skillLevel = this.getSkillLevel(entityRules.skill);
+
+        // Calculate yields with skill bonuses
         const yields = [];
-        for (const yieldItem of entityRules.yield) {
+        
+        // Base yields
+        for (const yieldItem of entityRules.baseYield) {
             if (Math.random() < yieldItem.chance) {
                 yields.push({
                     type: yieldItem.type,
                     quantity: yieldItem.quantity
                 });
+            }
+        }
+
+        // Skill bonus yields
+        if (entityRules.skillBonus && entityRules.skillBonus[entityRules.skill]) {
+            const skillBonuses = entityRules.skillBonus[entityRules.skill];
+            for (const [level, bonus] of Object.entries(skillBonuses)) {
+                if (skillLevel >= parseInt(level)) {
+                    if (Math.random() < bonus.chance) {
+                        yields.push({
+                            type: 'wood_block', // Could be configurable
+                            quantity: bonus.quantity
+                        });
+                    }
+                }
             }
         }
 
@@ -96,7 +170,9 @@ export class HarvestingManager {
                     sourcePosition: { x: entity.x, y: entity.y },
                     harvestTime: Date.now(),
                     tool: tool,
-                    playerPosition: playerPosition
+                    playerPosition: playerPosition,
+                    skillLevel: skillLevel,
+                    skillType: entityRules.skill
                 };
 
                 await this.inventoryManager.addItemToInventory(
@@ -116,7 +192,10 @@ export class HarvestingManager {
         
         await this.world.markEntityRemoved(entity, chunkX, chunkY);
 
-        console.log(`[HarvestingManager] Successfully harvested ${entity.type}, got:`, yields);
+        // Gain skill experience
+        this.gainSkillExperience(entityRules.skill, 1);
+
+        console.log(`[HarvestingManager] Successfully harvested ${entity.type} with skill level ${skillLevel}, got:`, yields);
         return true;
     }
 
@@ -165,5 +244,15 @@ export class HarvestingManager {
 
         console.log(`[HarvestingManager] Placed ${item.type} at position:`, worldPosition);
         return true;
+    }
+
+    gainSkillExperience(skillType, amount) {
+        const currentLevel = this.getSkillLevel(skillType);
+        const newLevel = Math.min(10, currentLevel + amount); // Cap at level 10
+        this.addSkill(skillType, newLevel);
+        
+        if (newLevel > currentLevel) {
+            console.log(`[HarvestingManager] ${skillType} skill increased to level ${newLevel}!`);
+        }
     }
 } 

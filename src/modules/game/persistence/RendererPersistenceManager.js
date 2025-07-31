@@ -1,5 +1,6 @@
 import { InventoryManager } from './InventoryManager.js';
 import { HarvestingManager } from './HarvestingManager.js';
+import { EntityModificationManager } from './EntityModificationManager.js';
 
 export class RendererPersistenceManager {
     constructor() {
@@ -10,6 +11,7 @@ export class RendererPersistenceManager {
         // Initialize managers
         this.inventoryManager = new InventoryManager(this);
         this.harvestingManager = new HarvestingManager(this);
+        this.entityModificationManager = new EntityModificationManager(this);
     }
 
     async initialize() {
@@ -101,6 +103,28 @@ export class RendererPersistenceManager {
         }
     }
 
+    async markCellModified(worldId, chunkX, chunkY, cellX, cellY, worldX, worldY) {
+        try {
+            // For now, we'll use a placeholder since we don't have this IPC method yet
+            console.log(`[RendererPersistenceManager] Marking cell modified: (${chunkX},${chunkY}) cell (${cellX},${cellY})`);
+            return true;
+        } catch (error) {
+            console.error('[RendererPersistenceManager] Failed to mark cell modified:', error);
+            throw error;
+        }
+    }
+
+    async addEntityToCell(worldId, chunkX, chunkY, cellX, cellY, entityType, metadata) {
+        try {
+            // For now, we'll use a placeholder since we don't have this IPC method yet
+            console.log(`[RendererPersistenceManager] Adding entity ${entityType} to cell (${chunkX},${chunkY}) cell (${cellX},${cellY})`);
+            return true;
+        } catch (error) {
+            console.error('[RendererPersistenceManager] Failed to add entity to cell:', error);
+            throw error;
+        }
+    }
+
     // Inventory management
     async getInventoryContents(characterId) {
         try {
@@ -168,5 +192,9 @@ export class RendererPersistenceManager {
 
     getHarvestingManager() {
         return this.harvestingManager;
+    }
+
+    getEntityModificationManager() {
+        return this.entityModificationManager;
     }
 } 

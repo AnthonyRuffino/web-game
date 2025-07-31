@@ -88,6 +88,10 @@ export class Game {
             this.harvestingManager = this.persistenceManager.getHarvestingManager();
             this.harvestingManager.setWorld(this.world);
             
+            // Initialize Phase 4 managers
+            this.entityModificationManager = this.persistenceManager.getEntityModificationManager();
+            this.entityModificationManager.setWorld(this.world);
+            
             // Initialize systems
             this.inputManager.init();
             await this.persistenceManager.initialize();
@@ -305,6 +309,86 @@ export class Game {
                         console.log('[Console] Position test completed');
                     } catch (error) {
                         console.error('[Console] Position test failed:', error);
+                    }
+                    break;
+
+                case 'testentitymod':
+                    try {
+                        console.log('[Console] Testing entity modification system...');
+                        
+                        // Find a nearby entity to modify
+                        const nearbyEntities = this.findNearbyEntities(this.player.x, this.player.y, 100);
+                        if (nearbyEntities.length === 0) {
+                            console.log('[Console] No nearby entities found for modification test');
+                            return;
+                        }
+                        
+                        const testEntity = nearbyEntities[0];
+                        console.log('[Console] Found test entity:', testEntity.type, 'at', testEntity.x, testEntity.y);
+                        
+                        // Get current configuration
+                        const currentConfig = await this.entityModificationManager.getEntityConfiguration(testEntity);
+                        console.log('[Console] Current entity config:', currentConfig);
+                        
+                        // Modify entity with new configuration
+                        const newConfig = {
+                            size: currentConfig.size * 1.5,
+                            fixedScreenAngle: currentConfig.fixedScreenAngle + Math.PI / 4,
+                            drawOffsetX: currentConfig.drawOffsetX + 5,
+                            drawOffsetY: currentConfig.drawOffsetY - 5
+                        };
+                        
+                        console.log('[Console] Applying new config:', newConfig);
+                        await this.entityModificationManager.modifyEntityImageConfig(testEntity, newConfig);
+                        console.log('[Console] Entity modification applied successfully');
+                        
+                        // Verify the modification
+                        const updatedConfig = await this.entityModificationManager.getEntityConfiguration(testEntity);
+                        console.log('[Console] Updated entity config:', updatedConfig);
+                        
+                        console.log('[Console] Entity modification test completed');
+                    } catch (error) {
+                        console.error('[Console] Entity modification test failed:', error);
+                    }
+                    break;
+
+                case 'testadvancedharvesting':
+                    try {
+                        console.log('[Console] Testing advanced harvesting system...');
+                        
+                        // Add some tools and skills
+                        this.harvestingManager.addTool('axe');
+                        this.harvestingManager.addTool('pickaxe');
+                        this.harvestingManager.addSkill('woodcutting', 3);
+                        this.harvestingManager.addSkill('mining', 5);
+                        this.harvestingManager.addSkill('gathering', 2);
+                        
+                        console.log('[Console] Added tools and skills');
+                        console.log('[Console] Woodcutting level:', this.harvestingManager.getSkillLevel('woodcutting'));
+                        console.log('[Console] Mining level:', this.harvestingManager.getSkillLevel('mining'));
+                        console.log('[Console] Has axe:', this.harvestingManager.hasTool('axe'));
+                        
+                        // Find nearby entities
+                        const nearbyEntities = this.findNearbyEntities(this.player.x, this.player.y, 100);
+                        if (nearbyEntities.length === 0) {
+                            console.log('[Console] No nearby entities found for advanced harvesting test');
+                            return;
+                        }
+                        
+                        // Test harvesting with different entities
+                        for (const entity of nearbyEntities.slice(0, 3)) {
+                            console.log(`[Console] Testing harvesting ${entity.type}...`);
+                            const success = await this.harvestEntity(entity);
+                            if (success) {
+                                console.log(`[Console] Successfully harvested ${entity.type}`);
+                            } else {
+                                console.log(`[Console] Failed to harvest ${entity.type}`);
+                            }
+                        }
+                        
+                        console.log('[Console] Advanced harvesting test completed');
+                    } catch (error) {
+                        console.error('[Console] Advanced harvesting test failed:', error);
                     }
                     break;
                     

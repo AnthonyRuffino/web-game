@@ -30,13 +30,35 @@ export class EntityRenderer {
             return;
         }
 
-        // Get config: entity-specific config OR entity type config OR fallback
-        let config = entity.imageConfig; // Optional entity-specific config
-        if (!config) {
-            config = EntityRenderer.getEntityTypeConfig(entity.type); // Entity type config
+        // Get config: custom persistence config OR entity-specific config OR entity type config OR fallback
+        let config = null;
+        
+        // First, check for custom persistence configuration
+        if (window.game && window.game.entityModificationManager) {
+            try {
+                // For now, skip async config loading during rendering to avoid blocking
+                // We'll implement this properly in a future update
+                // config = await window.game.entityModificationManager.getEntityConfiguration(entity);
+                // if (config) {
+                //     console.log(`[EntityRenderer] Using custom config for ${entity.type}:`, config);
+                // }
+            } catch (error) {
+                console.warn('[EntityRenderer] Failed to get custom config:', error);
+            }
         }
+        
+        // Fallback to entity-specific config
         if (!config) {
-            // Hardcoded fallback config
+            config = entity.imageConfig;
+        }
+        
+        // Fallback to entity type config
+        if (!config) {
+            config = EntityRenderer.getEntityTypeConfig(entity.type);
+        }
+        
+        // Final fallback
+        if (!config) {
             config = { size: 32, fixedScreenAngle: null, drawOffsetX: 0, drawOffsetY: 0 };
         }
 
@@ -49,6 +71,12 @@ export class EntityRenderer {
                 // Fallback for entities without entityModule (like world-generated entities)
                 cacheKey = EntityRenderer.generateEntityCacheKey(entity.type);
             }
+        }
+        
+        // Check for custom image data first
+        if (config.customImageData) {
+            EntityRenderer.renderCustomImage(ctx, entity, config);
+            return;
         }
         
         const cachedImage = EntityRenderer.getCachedImage(cacheKey);
@@ -153,5 +181,39 @@ export class EntityRenderer {
             hash = hash & hash; // Convert to 32-bit integer
         }
         return Math.abs(hash);
+    }
+
+    // Render custom image from data URL
+    static renderCustomImage(ctx, entity, config) {
+        const img = new Image();
+        img.onload = () => {
+            ctx.save();
+            
+            // Apply transformations
+            ctx.translate(entity.x, entity.y);
+            
+            // Apply custom angle or default
+            const angle = config.fixedScreenAngle !== null ? config.fixedScreenAngle : 0;
+            ctx.rotate(angle);
+            
+            // Apply custom size
+            const size = config.size || 32;
+            
+            // Apply custom offsets
+            const offsetX = config.drawOffsetX || 0;
+            const offsetY = config.drawOffsetY || 0;
+            
+            // Draw image
+            ctx.drawImage(
+                img,
+                -size / 2 + offsetX,
+                -size / 2 + offsetY,
+                size,
+                size
+            );
+            
+            ctx.restore();
+        };
+        img.src = config.customImageData;
     }
 } 
