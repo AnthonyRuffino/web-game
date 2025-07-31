@@ -161,6 +161,15 @@ ipcMain.handle('db-save-character-position', async (event, characterId, x, y) =>
   }
 });
 
+ipcMain.handle('db-save-character-state', async (event, characterId, x, y, playerRotation, cameraMode, cameraRotation) => {
+  try {
+    return await databaseService.saveCharacterState(characterId, x, y, playerRotation, cameraMode, cameraRotation);
+  } catch (error) {
+    console.error('[Main] Failed to save character state:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('db-get-cell-state', async (event, worldId, chunkX, chunkY, cellX, cellY) => {
   try {
     return await databaseService.getCellState(worldId, chunkX, chunkY, cellX, cellY);

@@ -93,9 +93,6 @@ export class Game {
             await this.persistenceManager.initialize();
             await this.initializeWorld();
             
-            // Load player position from database
-            await this.loadPlayerPosition();
-            
             // Load inventory for current character
             if (this.world.currentCharacterId) {
                 this.inventoryManager.setCurrentCharacter(this.world.currentCharacterId);
@@ -109,6 +106,9 @@ export class Game {
             
             // Setup input bindings
             this.setupInputBindings();
+            
+            // Load player position and camera state AFTER input bindings are set up
+            await this.loadPlayerPosition();
             
             // Setup debug info
             this.setupDebugInfo('1.0.0');
@@ -277,19 +277,26 @@ export class Game {
                         console.log('[Console] Testing player position persistence...');
                         
                         console.log('[Console] Current player position:', this.player.x, this.player.y);
+                        console.log('[Console] Current player rotation:', this.player.angle);
+                        console.log('[Console] Current camera mode:', this.inputManager.cameraMode);
+                        console.log('[Console] Current camera rotation:', this.camera.rotation);
                         
                         // Force save position
                         await this.savePlayerPosition();
                         console.log('[Console] Position saved');
                         
-                        // Move player
+                        // Move player and change camera
                         this.player.x += 100;
                         this.player.y += 100;
+                        this.player.angle += Math.PI / 4; // 45 degrees
+                        this.camera.rotation += Math.PI / 6; // 30 degrees
                         console.log('[Console] Moved player to:', this.player.x, this.player.y);
+                        console.log('[Console] New player rotation:', this.player.angle);
+                        console.log('[Console] New camera rotation:', this.camera.rotation);
                         
                         // Save again
                         await this.savePlayerPosition();
-                        console.log('[Console] New position saved');
+                        console.log('[Console] New state saved');
                         
                         console.log('[Console] Position test completed');
                     } catch (error) {
@@ -1225,6 +1232,25 @@ export class Game {
                 this.player.x = character.position_x;
                 this.player.y = character.position_y;
                 console.log('[Game] Loaded player position:', this.player.x, this.player.y);
+                
+                // Load player rotation
+                if (character.player_rotation !== null) {
+                    this.player.angle = character.player_rotation;
+                    console.log('[Game] Loaded player rotation:', this.player.angle);
+                }
+                
+                // Load camera mode and rotation using proper methods
+                if (character.camera_mode) {
+                    // Use the proper camera mode switching instead of direct assignment
+                    this.inputManager.setCameraMode(character.camera_mode);
+                    this.camera.setMode(character.camera_mode);
+                    console.log('[Game] Loaded camera mode:', character.camera_mode);
+                }
+                
+                if (character.camera_rotation !== null) {
+                    this.camera.rotation = character.camera_rotation;
+                    console.log('[Game] Loaded camera rotation:', character.camera_rotation);
+                }
             }
         } catch (error) {
             console.warn('[Game] Failed to load player position:', error);
@@ -1242,10 +1268,14 @@ export class Game {
         }
 
         try {
-            await window.electronAPI.dbSaveCharacterPosition(
+            // Save full character state including camera settings
+            await window.electronAPI.dbSaveCharacterState(
                 this.world.currentCharacterId,
                 this.player.x,
-                this.player.y
+                this.player.y,
+                this.player.angle || 0,
+                this.inputManager.cameraMode || 'fixed-angle',
+                this.camera.rotation || 0
             );
             this.lastPositionSave = now;
         } catch (error) {

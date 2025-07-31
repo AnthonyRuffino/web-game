@@ -23,6 +23,7 @@ class DatabaseService {
 
             await this.createTables();
             await this.createIndexes();
+            await this.migrateDatabase();
             
             console.log('[DatabaseService] Database initialized successfully');
             return true;
@@ -68,6 +69,9 @@ class DatabaseService {
                 experience INTEGER NOT NULL DEFAULT 0,
                 position_x REAL NOT NULL DEFAULT 0,
                 position_y REAL NOT NULL DEFAULT 0,
+                player_rotation REAL NOT NULL DEFAULT 0,
+                camera_mode TEXT NOT NULL DEFAULT 'fixed-angle',
+                camera_rotation REAL NOT NULL DEFAULT 0,
                 last_saved DATETIME DEFAULT CURRENT_TIMESTAMP,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (world_id) REFERENCES worlds (id) ON DELETE CASCADE
@@ -135,6 +139,35 @@ class DatabaseService {
         }
     }
 
+    async migrateDatabase() {
+        try {
+            // Check if new columns exist in characters table
+            const columns = await this.db.all("PRAGMA table_info(characters)");
+            const columnNames = columns.map(col => col.name);
+            
+            // Add new columns if they don't exist
+            if (!columnNames.includes('player_rotation')) {
+                await this.db.exec('ALTER TABLE characters ADD COLUMN player_rotation REAL NOT NULL DEFAULT 0');
+                console.log('[DatabaseService] Added player_rotation column');
+            }
+            
+            if (!columnNames.includes('camera_mode')) {
+                await this.db.exec('ALTER TABLE characters ADD COLUMN camera_mode TEXT NOT NULL DEFAULT "fixed-angle"');
+                console.log('[DatabaseService] Added camera_mode column');
+            }
+            
+            if (!columnNames.includes('camera_rotation')) {
+                await this.db.exec('ALTER TABLE characters ADD COLUMN camera_rotation REAL NOT NULL DEFAULT 0');
+                console.log('[DatabaseService] Added camera_rotation column');
+            }
+            
+            console.log('[DatabaseService] Database migration completed');
+        } catch (error) {
+            console.error('[DatabaseService] Migration failed:', error);
+            // Don't throw - migration failures shouldn't break the app
+        }
+    }
+
     // World management methods
     async createWorld(worldConfig) {
         const result = await this.db.run(`
@@ -199,6 +232,17 @@ class DatabaseService {
         `, [x, y, characterId]);
         
         console.log(`[DatabaseService] Saved character ${characterId} position: (${x}, ${y})`);
+        return true;
+    }
+
+    async saveCharacterState(characterId, x, y, playerRotation, cameraMode, cameraRotation) {
+        await this.db.run(`
+            UPDATE characters 
+            SET position_x = ?, position_y = ?, player_rotation = ?, camera_mode = ?, camera_rotation = ?, last_saved = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `, [x, y, playerRotation, cameraMode, cameraRotation, characterId]);
+        
+        console.log(`[DatabaseService] Saved character ${characterId} state: pos(${x}, ${y}), rot(${playerRotation}), camera(${cameraMode}, ${cameraRotation})`);
         return true;
     }
 
