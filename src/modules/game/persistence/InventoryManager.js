@@ -4,10 +4,46 @@ export class InventoryManager {
         this.database = persistenceManager.database;
         this.currentCharacterId = null;
         this.inventorySlots = 20; // Default inventory size
+        this.inventoryCache = new Map(); // Cache for inventory items
     }
 
     setCurrentCharacter(characterId) {
         this.currentCharacterId = characterId;
+        this.inventoryCache.clear();
+    }
+
+    async loadInventory() {
+        if (!this.currentCharacterId) {
+            throw new Error('No current character set');
+        }
+
+        // Use IPC call instead of direct database access
+        const items = await window.electronAPI.dbGetInventoryContents(this.currentCharacterId);
+
+        // Clear cache and populate with loaded items
+        this.inventoryCache.clear();
+        items.forEach(item => {
+            this.inventoryCache.set(item.slot_index, {
+                id: item.id,
+                slotIndex: item.slot_index,
+                type: item.type_name,
+                quantity: item.quantity,
+                metadata: item.metadata ? JSON.parse(item.metadata) : null,
+                isPlaceable: item.is_placeable,
+                canHarvestIntact: item.can_harvest_intact
+            });
+        });
+
+        console.log('[InventoryManager] Loaded inventory with', items.length, 'items');
+        return this.getInventoryArray();
+    }
+
+    getInventoryArray() {
+        const inventory = new Array(this.inventorySlots).fill(null);
+        for (const [slotIndex, item] of this.inventoryCache) {
+            inventory[slotIndex] = item;
+        }
+        return inventory;
     }
 
     async addItemToInventory(entityType, quantity = 1, metadata = null) {
@@ -15,26 +51,47 @@ export class InventoryManager {
             throw new Error('No current character set');
         }
 
-        // Find an empty slot
-        const emptySlot = await this.findEmptySlot();
+        // Find first empty slot
+        const emptySlot = this.findEmptySlot();
         if (emptySlot === -1) {
             throw new Error('Inventory is full');
         }
 
-        // Get entity type ID
-        const entityTypeId = await this.persistenceManager.getWorldManager().getEntityTypeId(entityType);
+        // Get entity type ID - for now, we'll use a simple mapping
+        // TODO: Add proper entity type ID lookup via IPC
+        const entityTypeIds = {
+            'grass': 1,
+            'tree': 2,
+            'rock': 3,
+            'wood_block': 4,
+            'stone': 5,
+            'tree_sapling': 6
+        };
+
+        const entityTypeId = entityTypeIds[entityType];
         if (!entityTypeId) {
             throw new Error(`Unknown entity type: ${entityType}`);
         }
 
-        // Add to pending changes
-        this.persistenceManager.changeTracker.trackInventoryChange(
+        // Add item directly via IPC
+        await window.electronAPI.dbAddItemToInventory(
             this.currentCharacterId,
             emptySlot,
             entityTypeId,
             quantity,
             metadata ? JSON.stringify(metadata) : null
         );
+
+        // Update cache immediately
+        this.inventoryCache.set(emptySlot, {
+            id: null, // Will be set when persisted
+            slotIndex: emptySlot,
+            type: entityType,
+            quantity: quantity,
+            metadata: metadata,
+            isPlaceable: false, // Will be updated from database
+            canHarvestIntact: false // Will be updated from database
+        });
 
         console.log(`[InventoryManager] Added ${quantity}x ${entityType} to slot ${emptySlot}`);
         return emptySlot;
@@ -45,142 +102,94 @@ export class InventoryManager {
             throw new Error('No current character set');
         }
 
-        // Get current item in slot
-        const currentItem = await this.getItemInSlot(slotIndex);
-        if (!currentItem) {
+        const item = this.inventoryCache.get(slotIndex);
+        if (!item) {
             throw new Error(`No item in slot ${slotIndex}`);
         }
 
-        if (currentItem.quantity < quantity) {
+        if (quantity > item.quantity) {
             throw new Error(`Not enough items in slot ${slotIndex}`);
         }
 
-        // Add to pending changes (will be processed during save)
-        // For now, we'll just mark the slot as modified
-        this.persistenceManager.changeTracker.trackInventoryChange(
-            this.currentCharacterId,
-            slotIndex,
-            currentItem.entityTypeId,
-            currentItem.quantity - quantity,
-            currentItem.metadata
-        );
+        const newQuantity = item.quantity - quantity;
+        
+        if (newQuantity <= 0) {
+            // Remove item completely
+            await window.electronAPI.dbRemoveItemFromInventory(
+                this.currentCharacterId,
+                slotIndex,
+                item.quantity
+            );
+            this.inventoryCache.delete(slotIndex);
+        } else {
+            // Update quantity
+            await window.electronAPI.dbRemoveItemFromInventory(
+                this.currentCharacterId,
+                slotIndex,
+                quantity
+            );
+            item.quantity = newQuantity;
+        }
 
-        console.log(`[InventoryManager] Removed ${quantity}x from slot ${slotIndex}`);
-        return true;
+        console.log(`[InventoryManager] Removed ${quantity}x ${item.type} from slot ${slotIndex}`);
     }
 
-    async getItemInSlot(slotIndex) {
-        if (!this.currentCharacterId) {
-            return null;
-        }
-
-        const item = await this.database.db.get(`
-            SELECT ie.*, et.type_name 
-            FROM inventory_entities ie
-            JOIN entity_types et ON ie.entity_type_id = et.id
-            WHERE ie.character_id = ? AND ie.slot_index = ?
-        `, [this.currentCharacterId, slotIndex]);
-
-        if (!item) {
-            return null;
-        }
-
-        return {
-            slotIndex: item.slot_index,
-            entityType: item.type_name,
-            entityTypeId: item.entity_type_id,
-            quantity: item.quantity,
-            metadata: item.metadata ? JSON.parse(item.metadata) : null
-        };
-    }
-
-    async getInventoryContents() {
-        if (!this.currentCharacterId) {
-            return [];
-        }
-
-        const items = await this.database.db.all(`
-            SELECT ie.*, et.type_name 
-            FROM inventory_entities ie
-            JOIN entity_types et ON ie.entity_type_id = et.id
-            WHERE ie.character_id = ?
-            ORDER BY ie.slot_index
-        `, [this.currentCharacterId]);
-
-        return items.map(item => ({
-            slotIndex: item.slot_index,
-            entityType: item.type_name,
-            entityTypeId: item.entity_type_id,
-            quantity: item.quantity,
-            metadata: item.metadata ? JSON.parse(item.metadata) : null
-        }));
-    }
-
-    async findEmptySlot() {
-        if (!this.currentCharacterId) {
-            return -1;
-        }
-
-        // Find the first empty slot
-        for (let i = 0; i < this.inventorySlots; i++) {
-            const item = await this.getItemInSlot(i);
-            if (!item) {
-                return i;
-            }
-        }
-
-        return -1; // No empty slots
-    }
-
-    async moveItem(fromSlot, toSlot) {
+    async moveItemInInventory(fromSlot, toSlot) {
         if (!this.currentCharacterId) {
             throw new Error('No current character set');
         }
 
-        const fromItem = await this.getItemInSlot(fromSlot);
-        const toItem = await this.getItemInSlot(toSlot);
+        const fromItem = this.inventoryCache.get(fromSlot);
+        const toItem = this.inventoryCache.get(toSlot);
 
         if (!fromItem) {
-            throw new Error(`No item in source slot ${fromSlot}`);
+            throw new Error(`No item in slot ${fromSlot}`);
         }
 
-        // If destination slot is empty, just move the item
-        if (!toItem) {
-            // Remove from source slot
-            await this.removeItemFromInventory(fromSlot, fromItem.quantity);
-            // Add to destination slot
-            await this.addItemToInventory(fromItem.entityType, fromItem.quantity, fromItem.metadata);
-            return true;
+        if (toItem && toItem.type !== fromItem.type) {
+            throw new Error(`Cannot stack different item types`);
         }
 
-        // If destination slot has the same item type, try to stack
-        if (fromItem.entityType === toItem.entityType) {
-            const totalQuantity = fromItem.quantity + toItem.quantity;
-            // For now, assume no stacking limits
-            await this.removeItemFromInventory(fromSlot, fromItem.quantity);
-            await this.removeItemFromInventory(toSlot, toItem.quantity);
-            await this.addItemToInventory(toItem.entityType, totalQuantity, toItem.metadata);
-            return true;
+        // Remove from source slot
+        await this.removeItemFromInventory(fromSlot, fromItem.quantity);
+
+        // Add to destination slot
+        if (toItem) {
+            // Stack with existing item
+            await this.addItemToInventory(fromItem.type, fromItem.quantity, fromItem.metadata);
+        } else {
+            // Move to empty slot
+            this.inventoryCache.set(toSlot, {
+                ...fromItem,
+                slotIndex: toSlot
+            });
+            
+            // Update pending changes
+            this.persistenceManager.changeTracker.trackInventoryChange(
+                this.currentCharacterId,
+                toSlot,
+                fromItem.entityTypeId || 0,
+                fromItem.quantity,
+                fromItem.metadata ? JSON.stringify(fromItem.metadata) : null
+            );
         }
-
-        // Different item types, swap them
-        const fromQuantity = fromItem.quantity;
-        const fromMetadata = fromItem.metadata;
-        
-        await this.removeItemFromInventory(fromSlot, fromQuantity);
-        await this.removeItemFromInventory(toSlot, toItem.quantity);
-        
-        await this.addItemToInventory(toItem.entityType, toItem.quantity, toItem.metadata);
-        await this.addItemToInventory(fromItem.entityType, fromQuantity, fromMetadata);
-
-        return true;
     }
 
-    async getInventorySize() {
-        return this.inventorySlots;
+    findEmptySlot() {
+        for (let i = 0; i < this.inventorySlots; i++) {
+            if (!this.inventoryCache.has(i)) {
+                return i;
+            }
+        }
+        return -1; // No empty slots
     }
 
-    async setInventorySize(size) {
-        this.inventorySlots = size;
+    getItemAtSlot(slotIndex) {
+        return this.inventoryCache.get(slotIndex) || null;
+    }
+
+    async saveInventory() {
+        // This will be called by the persistence manager during batch saves
+        // The actual saving is handled by the change tracker
     }
 } 

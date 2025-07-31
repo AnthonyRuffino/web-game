@@ -9,12 +9,12 @@ Phase 3 implements the inventory system and entity harvesting mechanics. This ph
 - Understanding of entity harvesting mechanics
 
 ## Phase 3 Goals
-- [ ] Implement persistent inventory system
-- [ ] Create entity harvesting mechanics
+- [x] Implement persistent inventory system
+- [x] Create entity harvesting mechanics
 - [ ] Implement inventory UI integration
-- [ ] Add entity placement from inventory
-- [ ] Implement harvest metadata tracking
-- [ ] Implement player position persistence
+- [x] Add entity placement from inventory
+- [x] Implement harvest metadata tracking
+- [x] Implement player position persistence
 
 ## Implementation Steps
 

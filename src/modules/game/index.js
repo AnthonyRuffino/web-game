@@ -30,6 +30,8 @@ export class Game {
         this.worldEnhancements = null;
         this.assetManager = null;
         this.persistenceManager = null;
+        this.inventoryManager = null;
+        this.harvestingManager = null;
         this.menuManager = null;
         this.menuBarElectron = null;
         this.inputBar = null;
@@ -39,6 +41,8 @@ export class Game {
         this.fps = 0;
         this.frameCount = 0;
         this.lastFpsUpdate = 0;
+        this.lastPositionSave = 0;
+        this.positionSaveInterval = 5000; // Save position every 5 seconds
         
         // Debug elements
         this.fpsElement = null;
@@ -79,10 +83,25 @@ export class Game {
             this.menuManager = new MenuManager(this.assetManager);
             this.inputBar = new InputBar();
             
+            // Initialize Phase 3 managers
+            this.inventoryManager = this.persistenceManager.getInventoryManager();
+            this.harvestingManager = this.persistenceManager.getHarvestingManager();
+            this.harvestingManager.setWorld(this.world);
+            
             // Initialize systems
             this.inputManager.init();
             await this.persistenceManager.initialize();
             await this.initializeWorld();
+            
+            // Load player position from database
+            await this.loadPlayerPosition();
+            
+            // Load inventory for current character
+            if (this.world.currentCharacterId) {
+                this.inventoryManager.setCurrentCharacter(this.world.currentCharacterId);
+                await this.inventoryManager.loadInventory();
+            }
+            
             this.inputBar.init();
             
             // Load assets
@@ -208,6 +227,73 @@ export class Game {
                         console.log('[Console] Persistence test completed');
                     } catch (error) {
                         console.error('[Console] Persistence test failed:', error);
+                    }
+                    break;
+
+                case 'testinventory':
+                    try {
+                        console.log('[Console] Testing inventory system...');
+                        
+                        const inventory = this.getInventory();
+                        console.log('[Console] Current inventory:', inventory);
+                        
+                        // Test adding an item
+                        await this.addItemToInventory('wood_block', 5);
+                        console.log('[Console] Added 5 wood blocks to inventory');
+                        
+                        const updatedInventory = this.getInventory();
+                        console.log('[Console] Updated inventory:', updatedInventory);
+                        
+                        console.log('[Console] Inventory test completed');
+                    } catch (error) {
+                        console.error('[Console] Inventory test failed:', error);
+                    }
+                    break;
+
+                case 'testharvesting':
+                    try {
+                        console.log('[Console] Testing harvesting system...');
+                        
+                        // Find a nearby tree to harvest
+                        const nearbyEntities = this.findNearbyEntities(this.player.x, this.player.y, 100);
+                        const harvestableEntity = nearbyEntities.find(e => e.type === 'tree' || e.type === 'rock');
+                        
+                        if (harvestableEntity) {
+                            console.log('[Console] Found harvestable entity:', harvestableEntity.type);
+                            const success = await this.harvestEntity(harvestableEntity);
+                            console.log('[Console] Harvest result:', success);
+                        } else {
+                            console.log('[Console] No harvestable entities nearby');
+                        }
+                        
+                        console.log('[Console] Harvesting test completed');
+                    } catch (error) {
+                        console.error('[Console] Harvesting test failed:', error);
+                    }
+                    break;
+
+                case 'testposition':
+                    try {
+                        console.log('[Console] Testing player position persistence...');
+                        
+                        console.log('[Console] Current player position:', this.player.x, this.player.y);
+                        
+                        // Force save position
+                        await this.savePlayerPosition();
+                        console.log('[Console] Position saved');
+                        
+                        // Move player
+                        this.player.x += 100;
+                        this.player.y += 100;
+                        console.log('[Console] Moved player to:', this.player.x, this.player.y);
+                        
+                        // Save again
+                        await this.savePlayerPosition();
+                        console.log('[Console] New position saved');
+                        
+                        console.log('[Console] Position test completed');
+                    } catch (error) {
+                        console.error('[Console] Position test failed:', error);
                     }
                     break;
                     
@@ -906,6 +992,9 @@ export class Game {
         // Update player with proper input and collision
         this.player.update(deltaTime, this.inputManager, this.collisionSystem);
         
+        // Save player position periodically
+        this.savePlayerPosition();
+        
         // Update camera to follow player
         this.camera.follow(this.player.x, this.player.y);
         
@@ -1122,6 +1211,107 @@ export class Game {
             // Fallback to regular world initialization
             this.world.init();
         }
+    }
+
+    // Player position persistence methods
+    async loadPlayerPosition() {
+        if (!this.world || !this.world.currentCharacterId) {
+            return;
+        }
+
+        try {
+            const character = await this.persistenceManager.getCharacter(this.world.currentCharacterId);
+            if (character && character.position_x !== null && character.position_y !== null) {
+                this.player.x = character.position_x;
+                this.player.y = character.position_y;
+                console.log('[Game] Loaded player position:', this.player.x, this.player.y);
+            }
+        } catch (error) {
+            console.warn('[Game] Failed to load player position:', error);
+        }
+    }
+
+    async savePlayerPosition() {
+        if (!this.world || !this.world.currentCharacterId || !this.player) {
+            return;
+        }
+
+        const now = Date.now();
+        if (now - this.lastPositionSave < this.positionSaveInterval) {
+            return; // Don't save too frequently
+        }
+
+        try {
+            await window.electronAPI.dbSaveCharacterPosition(
+                this.world.currentCharacterId,
+                this.player.x,
+                this.player.y
+            );
+            this.lastPositionSave = now;
+        } catch (error) {
+            console.error('[Game] Failed to save player position:', error);
+        }
+    }
+
+    // Phase 3 methods
+    async harvestEntity(entity, tool = null) {
+        if (!this.player) {
+            console.warn('[Game] No player found for harvesting');
+            return false;
+        }
+
+        const playerPosition = { x: this.player.x, y: this.player.y };
+        return await this.harvestingManager.harvestEntity(entity, playerPosition, tool);
+    }
+
+    async placeEntityFromInventory(slotIndex, worldPosition) {
+        return await this.harvestingManager.placeEntityFromInventory(slotIndex, worldPosition);
+    }
+
+    getInventory() {
+        return this.inventoryManager.getInventoryArray();
+    }
+
+    async addItemToInventory(entityType, quantity = 1, metadata = null) {
+        return await this.inventoryManager.addItemToInventory(entityType, quantity, metadata);
+    }
+
+    async removeItemFromInventory(slotIndex, quantity = 1) {
+        return await this.inventoryManager.removeItemFromInventory(slotIndex, quantity);
+    }
+
+    // Helper method for finding nearby entities
+    findNearbyEntities(playerX, playerY, radius) {
+        const nearbyEntities = [];
+        const playerChunk = this.world.worldToChunk(playerX, playerY);
+        
+        // Check entities in current chunk and adjacent chunks
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const chunkX = playerChunk.x + dx;
+                const chunkY = playerChunk.y + dy;
+                
+                try {
+                    const chunk = this.world.loadChunk(chunkX, chunkY);
+                    if (chunk && chunk.entities) {
+                        chunk.entities.forEach(entity => {
+                            const distance = Math.sqrt(
+                                Math.pow(entity.x - playerX, 2) + 
+                                Math.pow(entity.y - playerY, 2)
+                            );
+                            
+                            if (distance <= radius) {
+                                nearbyEntities.push(entity);
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.warn('[Game] Error loading chunk for entity search:', error);
+                }
+            }
+        }
+
+        return nearbyEntities;
     }
 }
 

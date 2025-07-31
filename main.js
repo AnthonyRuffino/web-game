@@ -152,6 +152,15 @@ ipcMain.handle('db-get-character', async (event, characterId) => {
   }
 });
 
+ipcMain.handle('db-save-character-position', async (event, characterId, x, y) => {
+  try {
+    return await databaseService.saveCharacterPosition(characterId, x, y);
+  } catch (error) {
+    console.error('[Main] Failed to save character position:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('db-get-cell-state', async (event, worldId, chunkX, chunkY, cellX, cellY) => {
   try {
     return await databaseService.getCellState(worldId, chunkX, chunkY, cellX, cellY);
@@ -184,6 +193,25 @@ ipcMain.handle('db-get-item-in-slot', async (event, characterId, slotIndex) => {
     return await databaseService.getItemInSlot(characterId, slotIndex);
   } catch (error) {
     console.error('[Main] Failed to get item in slot:', error);
+    throw error;
+  }
+});
+
+// Inventory operations
+ipcMain.handle('db-add-item-to-inventory', async (event, characterId, slotIndex, entityTypeId, quantity, metadata) => {
+  try {
+    return await databaseService.addItemToInventory(characterId, slotIndex, entityTypeId, quantity, metadata);
+  } catch (error) {
+    console.error('[Main] Failed to add item to inventory:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-remove-item-from-inventory', async (event, characterId, slotIndex, quantity) => {
+  try {
+    return await databaseService.removeItemFromInventory(characterId, slotIndex, quantity);
+  } catch (error) {
+    console.error('[Main] Failed to remove item from inventory:', error);
     throw error;
   }
 });

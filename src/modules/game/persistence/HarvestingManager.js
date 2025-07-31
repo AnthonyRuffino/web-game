@@ -2,141 +2,168 @@ export class HarvestingManager {
     constructor(persistenceManager) {
         this.persistenceManager = persistenceManager;
         this.inventoryManager = persistenceManager.getInventoryManager();
+        this.world = null; // Will be set by game
     }
 
-    async harvestEntity(entity, worldX, worldY) {
-        if (!entity) {
-            throw new Error('No entity provided for harvesting');
+    setWorld(world) {
+        this.world = world;
+    }
+
+    // Define harvesting rules
+    getHarvestingRules() {
+        return {
+            tree: {
+                tool: 'axe',
+                yield: [
+                    { type: 'wood_block', quantity: 2, chance: 1.0 },
+                    { type: 'tree_sapling', quantity: 1, chance: 0.1 }
+                ],
+                harvestIntact: false,
+                harvestTime: 2000 // milliseconds
+            },
+            rock: {
+                tool: 'pickaxe',
+                yield: [
+                    { type: 'stone', quantity: 1, chance: 1.0 },
+                    { type: 'rock', quantity: 1, chance: 0.3 } // Intact rock
+                ],
+                harvestIntact: true,
+                harvestTime: 1500
+            },
+            grass: {
+                tool: null,
+                yield: [
+                    { type: 'grass', quantity: 1, chance: 1.0 }
+                ],
+                harvestIntact: false,
+                harvestTime: 500
+            }
+        };
+    }
+
+    async harvestEntity(entity, playerPosition, tool = null) {
+        if (!this.world || !this.inventoryManager) {
+            throw new Error('Harvesting system not properly initialized');
         }
 
-        console.log(`[HarvestingManager] Harvesting ${entity.type} at (${worldX}, ${worldY})`);
+        const rules = this.getHarvestingRules();
+        const entityRules = rules[entity.type];
 
-        // Determine what the entity yields when harvested
-        const yieldItems = this.getHarvestYield(entity);
-        
-        // Add items to inventory
-        for (const yieldItem of yieldItems) {
-            try {
-                await this.inventoryManager.addItemToInventory(
-                    yieldItem.type,
-                    yieldItem.quantity,
-                    yieldItem.metadata
-                );
-            } catch (error) {
-                console.error(`[HarvestingManager] Failed to add ${yieldItem.type} to inventory:`, error);
-                throw error;
+        if (!entityRules) {
+            console.warn(`[HarvestingManager] No harvesting rules for entity type: ${entity.type}`);
+            return false;
+        }
+
+        // Check if player is close enough
+        const distance = Math.sqrt(
+            Math.pow(entity.x - playerPosition.x, 2) + 
+            Math.pow(entity.y - playerPosition.y, 2)
+        );
+
+        if (distance > 50) { // 50 pixel interaction range
+            console.warn('[HarvestingManager] Entity too far away for harvesting');
+            return false;
+        }
+
+        // Check tool requirements
+        if (entityRules.tool && tool !== entityRules.tool) {
+            console.warn(`[HarvestingManager] Need ${entityRules.tool} to harvest ${entity.type}`);
+            return false;
+        }
+
+        // Calculate yields
+        const yields = [];
+        for (const yieldItem of entityRules.yield) {
+            if (Math.random() < yieldItem.chance) {
+                yields.push({
+                    type: yieldItem.type,
+                    quantity: yieldItem.quantity
+                });
             }
         }
 
-        // Mark entity as removed from world
-        const chunkX = Math.floor(worldX / (64 * 32)); // Assuming 64x64 chunks with 32px tiles
-        const chunkY = Math.floor(worldY / (64 * 32));
+        if (yields.length === 0) {
+            console.log(`[HarvestingManager] No yields from harvesting ${entity.type}`);
+            return false;
+        }
+
+        // Add items to inventory
+        for (const yieldItem of yields) {
+            try {
+                // Create harvest metadata
+                const harvestMetadata = {
+                    sourceEntity: entity.type,
+                    sourcePosition: { x: entity.x, y: entity.y },
+                    harvestTime: Date.now(),
+                    tool: tool,
+                    playerPosition: playerPosition
+                };
+
+                await this.inventoryManager.addItemToInventory(
+                    yieldItem.type, 
+                    yieldItem.quantity, 
+                    harvestMetadata
+                );
+            } catch (error) {
+                console.error(`[HarvestingManager] Failed to add ${yieldItem.type} to inventory:`, error);
+                return false;
+            }
+        }
+
+        // Remove entity from world
+        const chunkX = Math.floor(entity.x / (this.world.config.chunkSize * this.world.config.tileSize));
+        const chunkY = Math.floor(entity.y / (this.world.config.chunkSize * this.world.config.tileSize));
         
-        await this.persistenceManager.getCellStateManager().removeEntityFromCell(
-            chunkX, chunkY, 
-            Math.floor((worldX % (64 * 32)) / 32), 
-            Math.floor((worldY % (64 * 32)) / 32), 
-            entity.type
-        );
+        await this.world.markEntityRemoved(entity, chunkX, chunkY);
 
-        console.log(`[HarvestingManager] Successfully harvested ${entity.type}, yielded:`, yieldItems);
-        return yieldItems;
+        console.log(`[HarvestingManager] Successfully harvested ${entity.type}, got:`, yields);
+        return true;
     }
 
-    getHarvestYield(entity) {
-        // Define what each entity type yields when harvested
-        const harvestRules = {
-            'tree': [
-                { type: 'wood_block', quantity: 2, metadata: { source: 'tree' } }
-            ],
-            'rock': [
-                { type: 'stone', quantity: 1, metadata: { source: 'rock' } }
-            ],
-            'grass': [
-                { type: 'grass', quantity: 1, metadata: { source: 'grass' } }
-            ],
-            'wood_block': [
-                { type: 'wood_block', quantity: 1, metadata: { source: 'wood_block' } }
-            ],
-            'stone': [
-                { type: 'stone', quantity: 1, metadata: { source: 'stone' } }
-            ]
-        };
+    async placeEntityFromInventory(slotIndex, worldPosition) {
+        if (!this.world || !this.inventoryManager) {
+            throw new Error('Harvesting system not properly initialized');
+        }
 
-        return harvestRules[entity.type] || [];
-    }
-
-    canHarvest(entity) {
-        // Check if entity can be harvested
-        const harvestableTypes = ['tree', 'rock', 'grass', 'wood_block', 'stone'];
-        return harvestableTypes.includes(entity.type);
-    }
-
-    async placeEntityFromInventory(slotIndex, worldX, worldY) {
-        const item = await this.inventoryManager.getItemInSlot(slotIndex);
+        const item = this.inventoryManager.getItemAtSlot(slotIndex);
         if (!item) {
             throw new Error(`No item in slot ${slotIndex}`);
         }
 
-        // Check if the item is placeable
-        const entityTypeInfo = await this.persistenceManager.getWorldManager().getEntityTypeInfo(item.entityType);
-        if (!entityTypeInfo || !entityTypeInfo.is_placeable) {
-            throw new Error(`${item.entityType} is not placeable`);
+        if (!item.isPlaceable) {
+            throw new Error(`${item.type} is not placeable`);
         }
 
-        // Create entity for placement
+        // Create entity at world position
         const entity = {
-            type: item.entityType,
-            x: worldX,
-            y: worldY,
+            x: worldPosition.x,
+            y: worldPosition.y,
+            type: item.type,
             metadata: item.metadata
         };
 
+        // Add entity-specific properties
+        switch (item.type) {
+            case 'wood_block':
+                entity.collision = true;
+                entity.collisionRadius = 16;
+                break;
+            case 'rock':
+                entity.collision = true;
+                entity.collisionRadius = 12;
+                break;
+        }
+
         // Add entity to world
-        const chunkX = Math.floor(worldX / (64 * 32));
-        const chunkY = Math.floor(worldY / (64 * 32));
+        const chunkX = Math.floor(worldPosition.x / (this.world.config.chunkSize * this.world.config.tileSize));
+        const chunkY = Math.floor(worldPosition.y / (this.world.config.chunkSize * this.world.config.tileSize));
         
-        await this.persistenceManager.getCellStateManager().addEntityToCell(
-            chunkX, chunkY,
-            Math.floor((worldX % (64 * 32)) / 32),
-            Math.floor((worldY % (64 * 32)) / 32),
-            entity.type,
-            entity.metadata
-        );
+        await this.world.addEntityToWorld(entity, chunkX, chunkY);
 
         // Remove item from inventory
         await this.inventoryManager.removeItemFromInventory(slotIndex, 1);
 
-        console.log(`[HarvestingManager] Placed ${item.entityType} at (${worldX}, ${worldY})`);
-        return entity;
-    }
-
-    async findNearbyHarvestableEntities(playerX, playerY, radius = 50) {
-        // This would typically query the world for entities within radius
-        // For now, we'll return an empty array - this will be implemented
-        // when we integrate with the actual world rendering system
-        return [];
-    }
-
-    async getHarvestingStats() {
-        // Return statistics about harvesting
-        const inventory = await this.inventoryManager.getInventoryContents();
-        
-        const stats = {
-            totalItems: 0,
-            itemTypes: {},
-            harvestableItems: 0
-        };
-
-        for (const item of inventory) {
-            stats.totalItems += item.quantity;
-            stats.itemTypes[item.entityType] = (stats.itemTypes[item.entityType] || 0) + item.quantity;
-            
-            if (this.canHarvest({ type: item.entityType })) {
-                stats.harvestableItems += item.quantity;
-            }
-        }
-
-        return stats;
+        console.log(`[HarvestingManager] Placed ${item.type} at position:`, worldPosition);
+        return true;
     }
 } 

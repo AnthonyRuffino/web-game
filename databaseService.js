@@ -191,6 +191,17 @@ class DatabaseService {
         `, [characterId]);
     }
 
+    async saveCharacterPosition(characterId, x, y) {
+        await this.db.run(`
+            UPDATE characters 
+            SET position_x = ?, position_y = ?, last_saved = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `, [x, y, characterId]);
+        
+        console.log(`[DatabaseService] Saved character ${characterId} position: (${x}, ${y})`);
+        return true;
+    }
+
     // Entity type management
     async initializeEntityTypes() {
         const defaultEntityTypes = [
@@ -319,6 +330,37 @@ class DatabaseService {
             quantity: item.quantity,
             metadata: item.metadata ? JSON.parse(item.metadata) : null
         };
+    }
+
+    async addItemToInventory(characterId, slotIndex, entityTypeId, quantity, metadata) {
+        await this.db.run(`
+            INSERT OR REPLACE INTO inventory_entities 
+            (character_id, slot_index, entity_type_id, quantity, metadata)
+            VALUES (?, ?, ?, ?, ?)
+        `, [characterId, slotIndex, entityTypeId, quantity, metadata]);
+        
+        console.log(`[DatabaseService] Added item to inventory: character ${characterId}, slot ${slotIndex}, type ${entityTypeId}, quantity ${quantity}`);
+        return true;
+    }
+
+    async removeItemFromInventory(characterId, slotIndex, quantity) {
+        if (quantity <= 0) {
+            // Remove item completely
+            await this.db.run(`
+                DELETE FROM inventory_entities 
+                WHERE character_id = ? AND slot_index = ?
+            `, [characterId, slotIndex]);
+        } else {
+            // Update quantity
+            await this.db.run(`
+                UPDATE inventory_entities 
+                SET quantity = quantity - ?
+                WHERE character_id = ? AND slot_index = ?
+            `, [quantity, characterId, slotIndex]);
+        }
+        
+        console.log(`[DatabaseService] Removed item from inventory: character ${characterId}, slot ${slotIndex}, quantity ${quantity}`);
+        return true;
     }
 
     // Transaction methods for batch operations

@@ -28,10 +28,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbGetWorld: (worldId) => ipcRenderer.invoke('db-get-world', worldId),
   dbGetCharacters: (worldId) => ipcRenderer.invoke('db-get-characters', worldId),
   dbGetCharacter: (characterId) => ipcRenderer.invoke('db-get-character', characterId),
+  dbSaveCharacterPosition: (characterId, x, y) => ipcRenderer.invoke('db-save-character-position', characterId, x, y),
   dbGetCellState: (worldId, chunkX, chunkY, cellX, cellY) => ipcRenderer.invoke('db-get-cell-state', worldId, chunkX, chunkY, cellX, cellY),
   dbGetChunkCellStates: (worldId, chunkX, chunkY) => ipcRenderer.invoke('db-get-chunk-cell-states', worldId, chunkX, chunkY),
   dbGetInventoryContents: (characterId) => ipcRenderer.invoke('db-get-inventory-contents', characterId),
-  dbGetItemInSlot: (characterId, slotIndex) => ipcRenderer.invoke('db-get-item-in-slot', characterId, slotIndex),
+      dbGetItemInSlot: (characterId, slotIndex) => ipcRenderer.invoke('db-get-item-in-slot', characterId, slotIndex),
+    dbAddItemToInventory: (characterId, slotIndex, entityTypeId, quantity, metadata) => ipcRenderer.invoke('db-add-item-to-inventory', characterId, slotIndex, entityTypeId, quantity, metadata),
+    dbRemoveItemFromInventory: (characterId, slotIndex, quantity) => ipcRenderer.invoke('db-remove-item-from-inventory', characterId, slotIndex, quantity),
   
   // Remove event listeners
   removeAllListeners: (channel) => {

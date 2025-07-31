@@ -1,8 +1,15 @@
+import { InventoryManager } from './InventoryManager.js';
+import { HarvestingManager } from './HarvestingManager.js';
+
 export class RendererPersistenceManager {
     constructor() {
         this.isInitialized = false;
         this.currentWorldId = null;
         this.currentCharacterId = null;
+        
+        // Initialize managers
+        this.inventoryManager = new InventoryManager(this);
+        this.harvestingManager = new HarvestingManager(this);
     }
 
     async initialize() {
@@ -152,5 +159,14 @@ export class RendererPersistenceManager {
             currentWorldId: this.currentWorldId,
             currentCharacterId: this.currentCharacterId
         };
+    }
+
+    // Add getters for the new managers
+    getInventoryManager() {
+        return this.inventoryManager;
+    }
+
+    getHarvestingManager() {
+        return this.harvestingManager;
     }
 } 
