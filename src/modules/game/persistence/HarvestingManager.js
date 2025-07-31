@@ -190,6 +190,10 @@ export class HarvestingManager {
         const chunkX = Math.floor(entity.x / (this.world.config.chunkSize * this.world.config.tileSize));
         const chunkY = Math.floor(entity.y / (this.world.config.chunkSize * this.world.config.tileSize));
         
+        // Calculate cell coordinates within the chunk
+        const cellX = Math.floor((entity.x - chunkX * this.world.config.chunkSize * this.world.config.tileSize) / this.world.config.tileSize);
+        const cellY = Math.floor((entity.y - chunkY * this.world.config.chunkSize * this.world.config.tileSize) / this.world.config.tileSize);
+        
         // Get the chunk and remove the entity from it
         try {
             const chunk = this.world.loadChunk(chunkX, chunkY);
@@ -200,6 +204,20 @@ export class HarvestingManager {
                 if (entityIndex !== -1) {
                     chunk.entities.splice(entityIndex, 1);
                     console.log(`[HarvestingManager] Removed ${entity.type} from chunk (${chunkX}, ${chunkY})`);
+                    
+                    // Persist the cell change to the database
+                    if (this.persistenceManager && this.world.currentWorldId) {
+                        await this.persistenceManager.markCellModified(
+                            this.world.currentWorldId,
+                            chunkX,
+                            chunkY,
+                            cellX,
+                            cellY,
+                            entity.x,
+                            entity.y
+                        );
+                        console.log(`[HarvestingManager] Persisted cell change for ${entity.type} at (${cellX}, ${cellY})`);
+                    }
                 } else {
                     console.warn(`[HarvestingManager] Could not find ${entity.type} to remove from chunk`);
                 }

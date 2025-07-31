@@ -193,6 +193,42 @@ ipcMain.handle('db-get-chunk-cell-states', async (event, worldId, chunkX, chunkY
   }
 });
 
+ipcMain.handle('db-get-all-cell-changes', async (event, worldId) => {
+  try {
+    return await databaseService.getAllCellChanges(worldId);
+  } catch (error) {
+    console.error('[Main] Failed to get all cell changes:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-mark-cell-modified', async (event, worldId, chunkX, chunkY, cellX, cellY, worldX, worldY) => {
+  try {
+    return await databaseService.markCellModified(worldId, chunkX, chunkY, cellX, cellY, worldX, worldY);
+  } catch (error) {
+    console.error('[Main] Failed to mark cell modified:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-add-entity-to-cell', async (event, worldId, chunkX, chunkY, cellX, cellY, entityType, metadata) => {
+  try {
+    return await databaseService.addEntityToCell(worldId, chunkX, chunkY, cellX, cellY, entityType, metadata);
+  } catch (error) {
+    console.error('[Main] Failed to add entity to cell:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('db-remove-entity-from-cell', async (event, worldId, chunkX, chunkY, cellX, cellY, entityType) => {
+  try {
+    return await databaseService.removeEntityFromCell(worldId, chunkX, chunkY, cellX, cellY, entityType);
+  } catch (error) {
+    console.error('[Main] Failed to remove entity from cell:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('db-get-inventory-contents', async (event, characterId) => {
   try {
     return await databaseService.getInventoryContents(characterId);

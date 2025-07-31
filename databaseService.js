@@ -167,6 +167,30 @@ export class DatabaseService {
                 console.log('[DatabaseService] Added camera_zoom column');
             }
             
+            // Check if new columns exist in cell_changes table
+            const cellChangeColumns = await this.db.all("PRAGMA table_info(cell_changes)");
+            const cellChangeColumnNames = cellChangeColumns.map(col => col.name);
+            
+            // Add new columns if they don't exist
+            if (!cellChangeColumnNames.includes('modification_type')) {
+                await this.db.exec('ALTER TABLE cell_changes ADD COLUMN modification_type TEXT NOT NULL DEFAULT "removed"');
+                console.log('[DatabaseService] Added modification_type column to cell_changes');
+            }
+            
+            if (!cellChangeColumnNames.includes('modification_value')) {
+                await this.db.exec('ALTER TABLE cell_changes ADD COLUMN modification_value TEXT');
+                console.log('[DatabaseService] Added modification_value column to cell_changes');
+            }
+            
+            if (!cellChangeColumnNames.includes('timestamp')) {
+                await this.db.exec('ALTER TABLE cell_changes ADD COLUMN timestamp DATETIME DEFAULT CURRENT_TIMESTAMP');
+                console.log('[DatabaseService] Added timestamp column to cell_changes');
+            }
+            
+            // Clear corrupted inventory data (temporary fix)
+            await this.db.exec('DELETE FROM inventory_entities');
+            console.log('[DatabaseService] Cleared corrupted inventory data');
+            
             console.log('[DatabaseService] Database migration completed');
         } catch (error) {
             console.error('[DatabaseService] Migration failed:', error);
@@ -314,32 +338,133 @@ export class DatabaseService {
 
     async getChunkCellStates(worldId, chunkX, chunkY) {
         const cellChanges = await this.db.all(`
-            SELECT * FROM cell_changes 
-            WHERE world_id = ? AND chunk_x = ? AND chunk_y = ?
+            SELECT cc.*, ce.entity_type_id, ce.metadata, et.type_name
+            FROM cell_changes cc
+            LEFT JOIN cell_entities ce ON cc.id = ce.cell_changes_id
+            LEFT JOIN entity_types et ON ce.entity_type_id = et.id
+            WHERE cc.world_id = ? AND cc.chunk_x = ? AND cc.chunk_y = ?
+            ORDER BY cc.cell_x, cc.cell_y
         `, [worldId, chunkX, chunkY]);
 
         const chunkStates = new Map();
 
         for (const cellChange of cellChanges) {
-            const entities = await this.db.all(`
-                SELECT ce.*, et.type_name 
-                FROM cell_entities ce
-                JOIN entity_types et ON ce.entity_type_id = et.id
-                WHERE ce.cell_changes_id = ?
-            `, [cellChange.id]);
-
             const cellKey = `${cellChange.cell_x},${cellChange.cell_y}`;
-            chunkStates.set(cellKey, {
-                cellChange,
-                entities: entities.map(e => ({
-                    id: e.id,
-                    type: e.type_name,
-                    metadata: e.metadata ? JSON.parse(e.metadata) : null
-                }))
-            });
+            
+            if (!chunkStates.has(cellKey)) {
+                chunkStates.set(cellKey, {
+                    cellChange: {
+                        id: cellChange.id,
+                        worldId: cellChange.world_id,
+                        chunkX: cellChange.chunk_x,
+                        chunkY: cellChange.chunk_y,
+                        cellX: cellChange.cell_x,
+                        cellY: cellChange.cell_y,
+                        worldX: cellChange.world_x,
+                        worldY: cellChange.world_y,
+                        modificationType: cellChange.modification_type,
+                        modificationValue: cellChange.modification_value ? JSON.parse(cellChange.modification_value) : null,
+                        timestamp: cellChange.timestamp
+                    },
+                    entities: []
+                });
+            }
+
+            if (cellChange.entity_type_id) {
+                chunkStates.get(cellKey).entities.push({
+                    id: cellChange.id,
+                    type: cellChange.type_name,
+                    metadata: cellChange.metadata ? JSON.parse(cellChange.metadata) : null
+                });
+            }
         }
 
         return chunkStates;
+    }
+
+    async getAllCellChanges(worldId) {
+        const cellChanges = await this.db.all(`
+            SELECT cc.*, ce.entity_type_id, ce.metadata, et.type_name
+            FROM cell_changes cc
+            LEFT JOIN cell_entities ce ON cc.id = ce.cell_changes_id
+            LEFT JOIN entity_types et ON ce.entity_type_id = et.id
+            WHERE cc.world_id = ?
+            ORDER BY cc.chunk_x, cc.chunk_y, cc.cell_x, cc.cell_y
+        `, [worldId]);
+
+        const allChanges = new Map();
+
+        for (const cellChange of cellChanges) {
+            const cellKey = `${cellChange.chunk_x},${cellChange.chunk_y},${cellChange.cell_x},${cellChange.cell_y}`;
+            
+            if (!allChanges.has(cellKey)) {
+                allChanges.set(cellKey, {
+                    cellChange: {
+                        id: cellChange.id,
+                        worldId: cellChange.world_id,
+                        chunkX: cellChange.chunk_x,
+                        chunkY: cellChange.chunk_y,
+                        cellX: cellChange.cell_x,
+                        cellY: cellChange.cell_y,
+                        worldX: cellChange.world_x,
+                        worldY: cellChange.world_y,
+                        modificationType: cellChange.modification_type,
+                        modificationValue: cellChange.modification_value ? JSON.parse(cellChange.modification_value) : null,
+                        timestamp: cellChange.timestamp
+                    },
+                    entities: []
+                });
+            }
+
+            if (cellChange.entity_type_id) {
+                allChanges.get(cellKey).entities.push({
+                    id: cellChange.id,
+                    type: cellChange.type_name,
+                    metadata: cellChange.metadata ? JSON.parse(cellChange.metadata) : null
+                });
+            }
+        }
+
+        return allChanges;
+    }
+
+    async markCellModified(worldId, chunkX, chunkY, cellX, cellY, worldX, worldY) {
+        await this.db.run(`
+            INSERT OR REPLACE INTO cell_changes 
+            (world_id, chunk_x, chunk_y, cell_x, cell_y, world_x, world_y, modification_type, modification_value, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'removed', '[]', datetime('now'))
+        `, [worldId, chunkX, chunkY, cellX, cellY, worldX, worldY]);
+        
+        console.log(`[DatabaseService] Marked cell modified: world ${worldId}, chunk (${chunkX},${chunkY}), cell (${cellX},${cellY})`);
+        return true;
+    }
+
+    async addEntityToCell(worldId, chunkX, chunkY, cellX, cellY, entityType, metadata) {
+        // First mark the cell as modified
+        const cellChange = await this.db.run(`
+            INSERT INTO cell_changes 
+            (world_id, chunk_x, chunk_y, cell_x, cell_y, world_x, world_y, modification_type, modification_value, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'added', '[]', datetime('now'))
+        `, [worldId, chunkX, chunkY, cellX, cellY, chunkX * 64 * 32 + cellX * 32, chunkY * 64 * 32 + cellY * 32]);
+
+        // Then add the entity to the cell
+        const entityTypeId = await this.getEntityTypeId(entityType);
+        await this.db.run(`
+            INSERT INTO cell_entities 
+            (cell_changes_id, entity_type_id, metadata)
+            VALUES (?, ?, ?)
+        `, [cellChange.lastID, entityTypeId, metadata ? JSON.stringify(metadata) : null]);
+        
+        console.log(`[DatabaseService] Added entity ${entityType} to cell: world ${worldId}, chunk (${chunkX},${chunkY}), cell (${cellX},${cellY})`);
+        return true;
+    }
+
+    async removeEntityFromCell(worldId, chunkX, chunkY, cellX, cellY, entityType) {
+        // Mark the cell as modified with no entities (removed)
+        await this.markCellModified(worldId, chunkX, chunkY, cellX, cellY, chunkX * 64 * 32 + cellX * 32, chunkY * 64 * 32 + cellY * 32);
+        
+        console.log(`[DatabaseService] Removed entity ${entityType} from cell: world ${worldId}, chunk (${chunkX},${chunkY}), cell (${cellX},${cellY})`);
+        return true;
     }
 
     // Inventory management

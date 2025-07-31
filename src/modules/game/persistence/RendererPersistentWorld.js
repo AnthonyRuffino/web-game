@@ -6,6 +6,7 @@ export class RendererPersistentWorld extends World {
         this.persistenceManager = persistenceManager;
         this.currentWorldId = null;
         this.currentCharacterId = null;
+        this.persistedChanges = new Map(); // Cache for persisted changes
     }
 
     async initializeWithPersistence(worldId, characterId) {
@@ -39,7 +40,38 @@ export class RendererPersistentWorld extends World {
         this.currentWorldId = worldId;
         this.currentCharacterId = characterId;
         
+        // Pre-load all persisted changes for this world
+        await this.loadAllPersistedChanges();
+        
         console.log('[RendererPersistentWorld] Initialized with world ID:', worldId, 'character ID:', characterId);
+    }
+
+    async loadAllPersistedChanges() {
+        if (!this.persistenceManager || !this.currentWorldId) {
+            return;
+        }
+
+        try {
+            // Get all cell changes for this world
+            const allChanges = await this.persistenceManager.getAllCellChanges(this.currentWorldId);
+            
+            // Group changes by chunk
+            this.persistedChanges.clear();
+            for (const [cellKey, cellState] of allChanges) {
+                const [chunkX, chunkY, cellX, cellY] = cellKey.split(',').map(Number);
+                const chunkKey = `${chunkX},${chunkY}`;
+                
+                if (!this.persistedChanges.has(chunkKey)) {
+                    this.persistedChanges.set(chunkKey, new Map());
+                }
+                
+                this.persistedChanges.get(chunkKey).set(`${cellX},${cellY}`, cellState);
+            }
+            
+            console.log(`[RendererPersistentWorld] Loaded ${allChanges.size} persisted changes for world ${this.currentWorldId}`);
+        } catch (error) {
+            console.warn('[RendererPersistentWorld] Failed to load persisted changes:', error);
+        }
     }
 
     // Override loadChunk to integrate with persistence
@@ -51,13 +83,12 @@ export class RendererPersistentWorld extends World {
             return chunk;
         }
         
-        // Note: We can't use await here since loadChunk is synchronous
-        // For now, we'll skip persistence and just return the generated chunk
-        // TODO: Implement proper async persistence loading
-        return chunk;
-        
-        // Apply persisted changes to chunk
-        this.applyPersistedChangesToChunk(chunk, persistedStates);
+        const chunkKey = `${chunkX},${chunkY}`;
+        const chunkPersistedChanges = this.persistedChanges.get(chunkKey);
+
+        if (chunkPersistedChanges) {
+            this.applyPersistedChangesToChunk(chunk, chunkPersistedChanges);
+        }
         
         return chunk;
     }

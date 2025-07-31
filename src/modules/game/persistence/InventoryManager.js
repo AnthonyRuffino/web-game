@@ -17,25 +17,48 @@ export class InventoryManager {
             throw new Error('No current character set');
         }
 
+        console.log(`[InventoryManager] Loading inventory for character ${this.currentCharacterId}...`);
+
         // Use IPC call instead of direct database access
         const items = await window.electronAPI.dbGetInventoryContents(this.currentCharacterId);
+
+        console.log(`[InventoryManager] Raw items from database:`, items);
 
         // Clear cache and populate with loaded items
         this.inventoryCache.clear();
         items.forEach(item => {
-            this.inventoryCache.set(item.slot_index, {
+            console.log(`[InventoryManager] Processing item:`, item);
+            let metadata = null;
+            if (item.metadata) {
+                try {
+                    metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+                } catch (error) {
+                    console.warn('[InventoryManager] Failed to parse metadata for item:', item, error);
+                    metadata = null;
+                }
+            }
+            
+            const inventoryItem = {
                 id: item.id,
-                slotIndex: item.slot_index,
-                type: item.type_name,
+                slotIndex: item.slotIndex, // Use the mapped field name from database
+                type: item.entityType, // Use the mapped field name from database
                 quantity: item.quantity,
-                metadata: item.metadata ? JSON.parse(item.metadata) : null,
+                metadata: metadata,
                 isPlaceable: item.is_placeable,
                 canHarvestIntact: item.can_harvest_intact
-            });
+            };
+            
+            console.log(`[InventoryManager] Adding item to cache at slot ${item.slotIndex}:`, inventoryItem);
+            this.inventoryCache.set(item.slotIndex, inventoryItem);
         });
 
-        console.log('[InventoryManager] Loaded inventory with', items.length, 'items');
-        return this.getInventoryArray();
+        console.log(`[InventoryManager] Loaded inventory with ${items.length} items`);
+        console.log(`[InventoryManager] Cache contents:`, Array.from(this.inventoryCache.entries()));
+        
+        const inventoryArray = this.getInventoryArray();
+        console.log(`[InventoryManager] Inventory array:`, inventoryArray);
+        
+        return inventoryArray;
     }
 
     getInventoryArray() {
@@ -60,9 +83,9 @@ export class InventoryManager {
         // Get entity type ID - for now, we'll use a simple mapping
         // TODO: Add proper entity type ID lookup via IPC
         const entityTypeIds = {
-            'grass': 1,
-            'tree': 2,
-            'rock': 3,
+            'tree': 1,
+            'rock': 2,
+            'grass': 3,
             'wood_block': 4,
             'stone': 5,
             'tree_sapling': 6

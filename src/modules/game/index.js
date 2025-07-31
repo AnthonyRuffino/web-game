@@ -91,12 +91,6 @@ export class Game {
             this.player = new Player(0, 0);
             console.log('[Game] Player initialized');
             
-            // Test world
-            console.log('[Game] Initializing world...');
-            this.world = new RendererPersistentWorld();
-            this.world.init();
-            console.log('[Game] World initialized');
-            
             // Test other systems
             console.log('[Game] Initializing other systems...');
             this.dotsSystem = new DotsSystem();
@@ -111,6 +105,12 @@ export class Game {
             this.persistenceManager = new RendererPersistenceManager();
             await this.persistenceManager.initialize();
             console.log('[Game] Persistence initialized');
+            
+            // Test world
+            console.log('[Game] Initializing world...');
+            this.world = new RendererPersistentWorld(this.persistenceManager);
+            this.world.init();
+            console.log('[Game] World initialized');
             
             // Initialize world and character
             console.log('[Game] Initializing world and character...');
@@ -264,6 +264,28 @@ export class Game {
                         console.log('[Console] Persistence test completed');
                     } catch (error) {
                         console.error('[Console] Persistence test failed:', error);
+                    }
+                    break;
+
+                case 'inventory':
+                    try {
+                        console.log('[Console] Current inventory:');
+                        const inventory = this.getInventory();
+                        console.log('[Console] Raw inventory array:', inventory);
+                        console.log('[Console] Inventory length:', inventory.length);
+                        
+                        let itemCount = 0;
+                        inventory.forEach((item, index) => {
+                            console.log(`[Console] Slot ${index}:`, item);
+                            if (item) {
+                                console.log(`[Console] Slot ${index}: ${item.quantity}x ${item.type}`);
+                                itemCount++;
+                            }
+                        });
+                        console.log(`[Console] Found ${itemCount} items in inventory`);
+                        console.log('[Console] Inventory display completed');
+                    } catch (error) {
+                        console.error('[Console] Inventory display failed:', error);
                     }
                     break;
 

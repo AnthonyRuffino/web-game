@@ -95,18 +95,28 @@ export class RendererPersistenceManager {
 
     async getChunkCellStates(worldId, chunkX, chunkY) {
         try {
-            const chunkStates = await window.electronAPI.dbGetChunkCellStates(worldId, chunkX, chunkY);
-            return chunkStates;
+            const states = await window.electronAPI.dbGetChunkCellStates(worldId, chunkX, chunkY);
+            return states;
         } catch (error) {
             console.error('[RendererPersistenceManager] Failed to get chunk cell states:', error);
             throw error;
         }
     }
 
+    async getAllCellChanges(worldId) {
+        try {
+            const changes = await window.electronAPI.dbGetAllCellChanges(worldId);
+            return changes;
+        } catch (error) {
+            console.error('[RendererPersistenceManager] Failed to get all cell changes:', error);
+            throw error;
+        }
+    }
+
     async markCellModified(worldId, chunkX, chunkY, cellX, cellY, worldX, worldY) {
         try {
-            // For now, we'll use a placeholder since we don't have this IPC method yet
-            console.log(`[RendererPersistenceManager] Marking cell modified: (${chunkX},${chunkY}) cell (${cellX},${cellY})`);
+            await window.electronAPI.dbMarkCellModified(worldId, chunkX, chunkY, cellX, cellY, worldX, worldY);
+            console.log(`[RendererPersistenceManager] Marked cell modified: (${chunkX},${chunkY}) cell (${cellX},${cellY})`);
             return true;
         } catch (error) {
             console.error('[RendererPersistenceManager] Failed to mark cell modified:', error);
@@ -116,8 +126,8 @@ export class RendererPersistenceManager {
 
     async addEntityToCell(worldId, chunkX, chunkY, cellX, cellY, entityType, metadata) {
         try {
-            // For now, we'll use a placeholder since we don't have this IPC method yet
-            console.log(`[RendererPersistenceManager] Adding entity ${entityType} to cell (${chunkX},${chunkY}) cell (${cellX},${cellY})`);
+            await window.electronAPI.dbAddEntityToCell(worldId, chunkX, chunkY, cellX, cellY, entityType, metadata);
+            console.log(`[RendererPersistenceManager] Added entity ${entityType} to cell (${chunkX},${chunkY}) cell (${cellX},${cellY})`);
             return true;
         } catch (error) {
             console.error('[RendererPersistenceManager] Failed to add entity to cell:', error);
