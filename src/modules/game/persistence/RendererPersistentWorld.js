@@ -48,14 +48,12 @@ export class RendererPersistentWorld extends World {
         
         // Load persisted changes for this chunk
         if (!this.persistenceManager || !this.currentWorldId) {
-            console.warn('[RendererPersistentWorld] Skipping persistence - manager or world not initialized. Manager:', !!this.persistenceManager, 'World ID:', this.currentWorldId);
             return chunk;
         }
         
         // Note: We can't use await here since loadChunk is synchronous
         // For now, we'll skip persistence and just return the generated chunk
         // TODO: Implement proper async persistence loading
-        console.log('[RendererPersistentWorld] Skipping persistence loading - loadChunk is synchronous');
         return chunk;
         
         // Apply persisted changes to chunk

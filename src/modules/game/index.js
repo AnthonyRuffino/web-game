@@ -73,7 +73,6 @@ export class Game {
             this.assetManager = new AssetManager();
             this.persistenceManager = new RendererPersistenceManager();
             this.world = new RendererPersistentWorld(this.persistenceManager);
-            console.log('[Game] Created RendererPersistentWorld with persistence manager:', !!this.persistenceManager);
             this.collisionSystem = new CollisionSystem();
             this.interactionSystem = new InteractionSystem();
             this.worldEnhancements = new WorldEnhancements();
@@ -194,62 +193,18 @@ export class Game {
                 case 'testpersistence':
                     try {
                         console.log('[Console] Testing persistence system...');
-                        console.log('[Console] Persistence manager:', !!this.persistenceManager);
-                        console.log('[Console] Current world ID:', this.world?.currentWorldId);
-                        console.log('[Console] Current character ID:', this.world?.currentCharacterId);
-                        console.log('[Console] World config:', this.world?.config);
-                        console.log('[Console] World chunk cache size:', this.world?.chunkCache?.size);
-                        
-                        // Test a specific chunk
-                        const testChunk = this.world.loadChunk(0, 0);
-                        console.log('[Console] Test chunk (0,0) entities:', testChunk?.entities?.length || 0);
-                        if (testChunk?.entities?.length > 0) {
-                            console.log('[Console] First entity:', testChunk.entities[0]);
-                        }
-                        
-                        // Test visible chunks
-                        const visibleChunks = this.world.getVisibleChunks(this.player.x, this.player.y, this.canvas.width, this.canvas.height);
-                        console.log('[Console] Visible chunks:', visibleChunks.length);
-                        
-                        // Test entity rendering
-                        if (testChunk?.entities?.length > 0) {
-                            console.log('[Console] Testing entity rendering...');
-                            const testEntity = testChunk.entities[0];
-                            const testCanvas = document.createElement('canvas');
-                            const testCtx = testCanvas.getContext('2d');
-                            try {
-                                this.world.renderEntity(testEntity, testCtx);
-                                console.log('[Console] Entity rendering test completed');
-                            } catch (error) {
-                                console.error('[Console] Entity rendering test failed:', error);
-                            }
-                        }
-                        
-                        // Test world rendering
-                        console.log('[Console] Testing world rendering...');
-                        const testCanvas = document.createElement('canvas');
-                        const testCtx = testCanvas.getContext('2d');
-                        try {
-                            this.world.render(testCtx, this.camera.x, this.camera.y, this.canvas.width, this.canvas.height, this.player);
-                            console.log('[Console] World rendering test completed');
-                        } catch (error) {
-                            console.error('[Console] World rendering test failed:', error);
-                        }
                         
                         const worlds = await this.persistenceManager.getWorlds();
                         console.log('[Console] Worlds found:', worlds.length);
                         if (worlds.length > 0) {
                             const characters = await this.persistenceManager.getCharacters(worlds[0].id);
                             console.log('[Console] Characters in first world:', characters.length);
-                            
-                            // Test loading a specific world
-                            const worldData = await this.persistenceManager.getWorld(worlds[0].id);
-                            console.log('[Console] World data:', worldData);
-                            
-                            // Test chunk cell states
-                            const chunkStates = await this.persistenceManager.getChunkCellStates(worlds[0].id, 0, 0);
-                            console.log('[Console] Chunk (0,0) cell states:', chunkStates?.size || 0);
                         }
+                        
+                        // Test a specific chunk
+                        const testChunk = this.world.loadChunk(0, 0);
+                        console.log('[Console] Test chunk (0,0) entities:', testChunk?.entities?.length || 0);
+                        
                         console.log('[Console] Persistence test completed');
                     } catch (error) {
                         console.error('[Console] Persistence test failed:', error);
@@ -1165,9 +1120,7 @@ export class Game {
         } catch (error) {
             console.error('[Game] Failed to initialize world:', error);
             // Fallback to regular world initialization
-            console.log('[Game] Falling back to regular world initialization');
             this.world.init();
-            console.log('[Game] Fallback world initialized with config:', this.world.config);
         }
     }
 }

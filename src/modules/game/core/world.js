@@ -439,12 +439,10 @@ export class World {
     render(ctx, cameraX, cameraY, viewportWidth, viewportHeight, player) {
         // Get visible chunks
         const visibleChunks = this.getVisibleChunks(cameraX, cameraY, viewportWidth, viewportHeight);
-        console.log('[World] Rendering world with', visibleChunks.length, 'visible chunks');
         
         // Render chunk backgrounds first
         visibleChunks.forEach(chunkInfo => {
             const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
-            console.log('[World] Rendering chunk background for', chunkInfo.x, chunkInfo.y, 'biome:', chunk.biome);
             this.renderChunkBackground(ctx, chunk);
         });
         
@@ -456,7 +454,6 @@ export class World {
         // Now render entities (excluding fixed angle entities)
         const fixedAngleEntities = visibleChunks.flatMap(chunkInfo => {
             const chunk = this.loadChunk(chunkInfo.x, chunkInfo.y);
-            console.log('[World] Rendering chunk entities for', chunkInfo.x, chunkInfo.y, 'entities:', chunk.entities?.length || 0);
             return this.renderChunkEntities(ctx, chunk, player, this.renderEntity);
         });
 
@@ -481,10 +478,8 @@ export class World {
     // Render chunk entities (with option to exclude fixed angle entities)
     renderChunkEntities(ctx, chunk, player, entityRenderFunction) {
         if (!chunk.entities || !Array.isArray(chunk.entities)) {
-            console.log('[World] No entities in chunk or entities not array');
             return;
         }
-        console.log('[World] Rendering', chunk.entities.length, 'entities in chunk');
         
         // Sort entities for correct render order (matching core/world.js logic):
         // 1. Grass entities
@@ -497,9 +492,7 @@ export class World {
             (e.fixedScreenAngle === null || e.fixedScreenAngle === undefined)
         );
         
-        console.log('[World] Rendering', basicEntities.length, 'basic entities');
         basicEntities.forEach(entity => {
-            console.log('[World] Rendering entity:', entity.type, 'at', entity.x, entity.y);
             entityRenderFunction(entity, ctx);
         });
         return fixedAngleEntities;

@@ -29,8 +29,6 @@ export class EntityRenderer {
             console.warn('[EntityRenderer] Entity missing or no type:', entity);
             return;
         }
-        
-        console.log('[EntityRenderer] Rendering entity:', entity.type, 'at', entity.x, entity.y);
 
         // Get config: entity-specific config OR entity type config OR fallback
         let config = entity.imageConfig; // Optional entity-specific config
@@ -52,8 +50,6 @@ export class EntityRenderer {
                 cacheKey = EntityRenderer.generateEntityCacheKey(entity.type);
             }
         }
-        
-        console.log('[EntityRenderer] Using cache key:', cacheKey);
         
         const cachedImage = EntityRenderer.getCachedImage(cacheKey);
         
