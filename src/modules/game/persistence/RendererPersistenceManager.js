@@ -156,6 +156,11 @@ export class RendererPersistenceManager {
     setCurrentCharacter(characterId) {
         this.currentCharacterId = characterId;
         console.log('[RendererPersistenceManager] Set current character:', characterId);
+        
+        // Also set the character ID in the inventory manager
+        if (this.inventoryManager) {
+            this.inventoryManager.setCurrentCharacter(characterId);
+        }
     }
 
     getCurrentWorld() {

@@ -1,17 +1,18 @@
+import { CanvasManager } from './rendering/canvas.js';
 import { InputManager } from './input/input.js';
 import { Camera } from './rendering/camera.js';
 import { Player } from './core/character.js';
+import { World } from './core/world.js';
+import { RendererPersistentWorld } from './persistence/RendererPersistentWorld.js';
+import { RendererPersistenceManager } from './persistence/RendererPersistenceManager.js';
+import { AssetManager } from './assets.js';
 import { CollisionSystem } from './core/collision.js';
 import { InteractionSystem } from './ui/interactions.js';
-import { DotsSystem } from './rendering/dots.js';
-import { RendererPersistentWorld } from './persistence/RendererPersistentWorld.js';
-import { AssetManager } from './assets.js';
 import { WorldEnhancements } from './core/world-enhancements.js';
-import { CanvasManager } from './rendering/canvas.js';
-import { RendererPersistenceManager } from './persistence/RendererPersistenceManager.js';
+import { DotsSystem } from './rendering/dots.js';
 import { MenuManager } from './ui/menuManager.js';
-import MenuBarElectron from './ui/menuBarElectron.js';
 import { InputBar } from './ui/inputBar.js';
+import MenuBarElectron from './ui/menuBarElectron.js';
 import { EntitySkinConfigurationMenu } from './menus/EntitySkinConfigurationMenu.js';
 import { EntityRenderer } from './rendering/entityRenderer.js';
 
@@ -64,81 +65,113 @@ export class Game {
         try {
             console.log('[Game] Initializing game...');
             
-            // Initialize canvas
+            // Test basic systems one by one
+            console.log('[Game] Testing basic systems...');
+            
+            // Test canvas
+            console.log('[Game] Initializing canvas...');
             this.canvasManager = new CanvasManager();
             this.canvas = this.canvasManager.canvas;
             this.ctx = this.canvas.getContext('2d');
+            console.log('[Game] Canvas initialized');
             
-            // Initialize systems
+            // Test input manager
+            console.log('[Game] Initializing input manager...');
             this.inputManager = new InputManager();
+            this.inputManager.init();
+            console.log('[Game] Input manager initialized');
+            
+            // Test camera
+            console.log('[Game] Initializing camera...');
             this.camera = new Camera(this.canvas.width, this.canvas.height);
+            console.log('[Game] Camera initialized');
+            
+            // Test player
+            console.log('[Game] Initializing player...');
             this.player = new Player(0, 0);
+            console.log('[Game] Player initialized');
+            
+            // Test world
+            console.log('[Game] Initializing world...');
+            this.world = new RendererPersistentWorld();
+            this.world.init();
+            console.log('[Game] World initialized');
+            
+            // Test other systems
+            console.log('[Game] Initializing other systems...');
             this.dotsSystem = new DotsSystem();
             this.assetManager = new AssetManager();
-            this.persistenceManager = new RendererPersistenceManager();
-            this.world = new RendererPersistentWorld(this.persistenceManager);
             this.collisionSystem = new CollisionSystem();
             this.interactionSystem = new InteractionSystem();
             this.worldEnhancements = new WorldEnhancements();
-            this.menuManager = new MenuManager(this.assetManager);
-            this.inputBar = new InputBar();
+            console.log('[Game] Other systems initialized');
             
-            // Initialize Phase 3 managers
+            // Test persistence (optional)
+            console.log('[Game] Initializing persistence...');
+            this.persistenceManager = new RendererPersistenceManager();
+            await this.persistenceManager.initialize();
+            console.log('[Game] Persistence initialized');
+            
+            // Initialize world and character
+            console.log('[Game] Initializing world and character...');
+            await this.initializeWorld();
+            console.log('[Game] World and character initialized');
+            
+            // Test managers
+            console.log('[Game] Initializing managers...');
             this.inventoryManager = this.persistenceManager.getInventoryManager();
             this.harvestingManager = this.persistenceManager.getHarvestingManager();
             this.harvestingManager.setWorld(this.world);
-            
-            // Initialize Phase 4 managers
             this.entityModificationManager = this.persistenceManager.getEntityModificationManager();
             this.entityModificationManager.setWorld(this.world);
+            console.log('[Game] Managers initialized');
             
-            // Initialize systems
-            this.inputManager.init();
-            await this.persistenceManager.initialize();
-            await this.initializeWorld();
-            
-            // Load inventory for current character
-            if (this.world.currentCharacterId) {
-                this.inventoryManager.setCurrentCharacter(this.world.currentCharacterId);
-                await this.inventoryManager.loadInventory();
-            }
-            
-            this.inputBar.init();
-            
-            // Load assets
-            await this.assetManager.initializeImages();
-            
-            // Setup input bindings
-            this.setupInputBindings();
-            
-            // Load player position and camera state AFTER input bindings are set up
+            // Load player position and inventory
+            console.log('[Game] Loading player position and inventory...');
             await this.loadPlayerPosition();
+            await this.inventoryManager.loadInventory();
+            console.log('[Game] Player position and inventory loaded');
             
-            // Setup debug info
+            // Test UI systems
+            console.log('[Game] Initializing UI systems...');
+            this.menuManager = new MenuManager(this.assetManager);
+            this.inputBar = new InputBar();
+            this.inputBar.init();
+            console.log('[Game] UI systems initialized');
+            
+            // Test assets
+            console.log('[Game] Initializing assets...');
+            await this.assetManager.initializeImages();
+            console.log('[Game] Assets initialized');
+            
+            // Setup everything else
+            console.log('[Game] Setting up remaining systems...');
+            this.setupInputBindings();
             this.setupDebugInfo('1.0.0');
-            
-            // Setup window resize handling
             this.setupWindowResize();
-            
-            // Setup console commands
             this.setupConsoleCommands();
-
-            // Setup input event listeners for advanced input handling
             this.setupAdvancedInputListeners();
-            
-            // Setup Electron menu bar (after menuManager is ready)
             this.menuBarElectron = new MenuBarElectron(this.menuManager);
+            console.log('[Game] Remaining systems setup complete');
             
             // Start the game
+            console.log('[Game] About to start game loop...');
+            console.log('[Game] World object:', this.world);
+            console.log('[Game] World config:', this.world?.config);
+            
             if (this.world && this.world.config) {
+                console.log('[Game] Starting game loop...');
                 this.start();
             } else {
                 console.error('[Game] World not properly initialized, cannot start game loop');
+                console.error('[Game] World:', this.world);
+                console.error('[Game] World config:', this.world?.config);
             }
             
             console.log('[Game] Game initialized successfully');
         } catch (error) {
             console.error('[Game] Failed to initialize game:', error);
+            console.error('[Game] Error stack:', error.stack);
             this.showError(error.message);
             throw error;
         }
@@ -258,8 +291,8 @@ export class Game {
                     try {
                         console.log('[Console] Testing harvesting system...');
                         
-                        // Find a nearby tree to harvest
-                        const nearbyEntities = this.findNearbyEntities(this.player.x, this.player.y, 100);
+                        // Find a nearby tree to harvest (increased radius to 200 pixels)
+                        const nearbyEntities = this.findNearbyEntities(this.player.x, this.player.y, 200);
                         const harvestableEntity = nearbyEntities.find(e => e.type === 'tree' || e.type === 'rock');
                         
                         if (harvestableEntity) {
@@ -349,6 +382,48 @@ export class Game {
                         console.log('[Console] Entity modification test completed');
                     } catch (error) {
                         console.error('[Console] Entity modification test failed:', error);
+                    }
+                    break;
+
+                case 'testnearby':
+                    try {
+                        console.log('[Console] Testing nearby entity detection...');
+                        
+                        // Find all nearby entities
+                        const nearbyEntities = this.findNearbyEntities(this.player.x, this.player.y, 200);
+                        
+                        if (nearbyEntities.length === 0) {
+                            console.log('[Console] No entities found within 200 pixels');
+                        } else {
+                            console.log(`[Console] Found ${nearbyEntities.length} entities nearby:`);
+                            nearbyEntities.forEach((entity, index) => {
+                                const distance = Math.sqrt(
+                                    Math.pow(entity.x - this.player.x, 2) + 
+                                    Math.pow(entity.y - this.player.y, 2)
+                                );
+                                console.log(`[Console] ${index + 1}. ${entity.type} at (${entity.x.toFixed(1)}, ${entity.y.toFixed(1)}) - distance: ${distance.toFixed(1)}`);
+                            });
+                        }
+                        
+                        console.log('[Console] Nearby entity test completed');
+                    } catch (error) {
+                        console.error('[Console] Nearby entity test failed:', error);
+                    }
+                    break;
+
+                case 'givetools':
+                    try {
+                        console.log('[Console] Giving player tools...');
+                        this.harvestingManager.addTool('axe');
+                        this.harvestingManager.addTool('pickaxe');
+                        this.harvestingManager.addSkill('woodcutting', 3);
+                        this.harvestingManager.addSkill('mining', 5);
+                        this.harvestingManager.addSkill('gathering', 2);
+                        console.log('[Console] Tools and skills added successfully');
+                        console.log('[Console] Available tools:', Array.from(this.harvestingManager.tools.keys()));
+                        console.log('[Console] Available skills:', Array.from(this.harvestingManager.skills.keys()));
+                    } catch (error) {
+                        console.error('[Console] Failed to give tools:', error);
                     }
                     break;
 
@@ -947,12 +1022,14 @@ export class Game {
     }
 
     setupWindowResize() {
-        window.electronAPI.onWindowResized(() => {
-            this.canvasManager.resize();
-            this.camera.resize(this.canvas.width, this.canvas.height);
-            // Re-center player on new canvas size
-            this.player.centerOnCanvas(this.canvas.width, this.canvas.height);
-        });
+        if (window.electronAPI && window.electronAPI.onWindowResized) {
+            window.electronAPI.onWindowResized(() => {
+                this.canvasManager.resize();
+                this.camera.resize(this.canvas.width, this.canvas.height);
+                // Re-center player on new canvas size
+                this.player.centerOnCanvas(this.canvas.width, this.canvas.height);
+            });
+        }
     }
 
     setupAdvancedInputListeners() {
@@ -972,7 +1049,7 @@ export class Game {
             const tileY = Math.floor(worldY / tileSize);
             this.hoveredGridCell = { tileX, tileY };
         });
-        canvas.addEventListener('click', (e) => {
+        canvas.addEventListener('click', async (e) => {
             const rect = canvas.getBoundingClientRect();
             let x = (e.clientX - rect.left);
             let y = (e.clientY - rect.top);
@@ -997,13 +1074,17 @@ export class Game {
                         console.log('[Entity Click]', entitiesAtCell);
                         
                         // Spawn entity skin configuration menu for the first entity
-                        const entity = entitiesAtCell[0];
-                        if (entity && entity.type) {
-                            const entityConfigMenu = new EntitySkinConfigurationMenu(entity.type, this.menuManager);
-                            entityConfigMenu.createAndShow(() => {
-                                console.log(`[Game] Entity skin configuration menu closed for ${entity.type}`);
-                            });
-                        }
+                                              const entity = entitiesAtCell[0];
+                      if (entity && entity.type) {
+                          // Harvest the clicked entity
+                          console.log(`[Game] Clicked on ${entity.type} at (${entity.x}, ${entity.y})`);
+                          const success = await this.harvestEntity(entity);
+                          if (success) {
+                              console.log(`[Game] Successfully harvested ${entity.type}`);
+                          } else {
+                              console.log(`[Game] Failed to harvest ${entity.type}`);
+                          }
+                      }
                     }
                 }
             }
@@ -1282,7 +1363,14 @@ export class Game {
                 };
                 
                 const { worldId, characterId } = await this.persistenceManager.createWorld(worldConfig);
-                await this.world.initializeWithPersistence(worldId, characterId);
+                try {
+                    await this.world.initializeWithPersistence(worldId, characterId);
+                    console.log('[Game] New world initialized with persistence successfully');
+                } catch (error) {
+                    console.error('[Game] Failed to initialize new world with persistence:', error);
+                    // Fallback to regular initialization
+                    this.world.init();
+                }
                 
                 // Set current character in persistence manager
                 this.persistenceManager.setCurrentCharacter(characterId);
@@ -1294,7 +1382,14 @@ export class Game {
                 const characters = await this.persistenceManager.getCharacters(worldId);
                 const characterId = characters[0].id;
                 
-                await this.world.initializeWithPersistence(worldId, characterId);
+                try {
+                    await this.world.initializeWithPersistence(worldId, characterId);
+                    console.log('[Game] Existing world initialized with persistence successfully');
+                } catch (error) {
+                    console.error('[Game] Failed to initialize existing world with persistence:', error);
+                    // Fallback to regular initialization
+                    this.world.init();
+                }
                 
                 // Set current character in persistence manager
                 this.persistenceManager.setCurrentCharacter(characterId);
@@ -1411,6 +1506,9 @@ export class Game {
         const nearbyEntities = [];
         const playerChunk = this.world.worldToChunk(playerX, playerY);
         
+        console.log(`[Game] Searching for entities near player at (${playerX}, ${playerY}) in radius ${radius}`);
+        console.log(`[Game] Player chunk: (${playerChunk.x}, ${playerChunk.y})`);
+        
         // Check entities in current chunk and adjacent chunks
         for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
@@ -1420,16 +1518,22 @@ export class Game {
                 try {
                     const chunk = this.world.loadChunk(chunkX, chunkY);
                     if (chunk && chunk.entities) {
+                        console.log(`[Game] Chunk (${chunkX}, ${chunkY}) has ${chunk.entities.length} entities`);
                         chunk.entities.forEach(entity => {
                             const distance = Math.sqrt(
                                 Math.pow(entity.x - playerX, 2) + 
                                 Math.pow(entity.y - playerY, 2)
                             );
                             
+                            console.log(`[Game] Entity ${entity.type} at (${entity.x}, ${entity.y}) - distance: ${distance.toFixed(2)}`);
+                            
                             if (distance <= radius) {
                                 nearbyEntities.push(entity);
+                                console.log(`[Game] Added ${entity.type} to nearby entities`);
                             }
                         });
+                    } else {
+                        console.log(`[Game] Chunk (${chunkX}, ${chunkY}) has no entities or failed to load`);
                     }
                 } catch (error) {
                     console.warn('[Game] Error loading chunk for entity search:', error);
@@ -1437,6 +1541,7 @@ export class Game {
             }
         }
 
+        console.log(`[Game] Found ${nearbyEntities.length} nearby entities`);
         return nearbyEntities;
     }
 }

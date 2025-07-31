@@ -1,9 +1,9 @@
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
-const path = require('path');
-const { app } = require('electron');
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import path from 'path';
+import { app } from 'electron';
 
-class DatabaseService {
+export class DatabaseService {
     constructor() {
         this.db = null;
         this.dbPath = null;
@@ -425,6 +425,4 @@ class DatabaseService {
     async rollbackTransaction() {
         await this.db.run('ROLLBACK');
     }
-}
-
-module.exports = { DatabaseService }; 
+} 

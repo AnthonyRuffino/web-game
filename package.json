@@ -1,6 +1,7 @@
 {
   "name": "web-game-electron",
   "version": "1.0.0",
+  "type": "module",
   "description": "Web Game migrated to Electron with ES6 modules",
   "main": "main.js",
   "scripts": {

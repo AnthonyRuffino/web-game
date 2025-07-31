@@ -190,7 +190,23 @@ export class HarvestingManager {
         const chunkX = Math.floor(entity.x / (this.world.config.chunkSize * this.world.config.tileSize));
         const chunkY = Math.floor(entity.y / (this.world.config.chunkSize * this.world.config.tileSize));
         
-        await this.world.markEntityRemoved(entity, chunkX, chunkY);
+        // Get the chunk and remove the entity from it
+        try {
+            const chunk = this.world.loadChunk(chunkX, chunkY);
+            if (chunk && chunk.entities) {
+                const entityIndex = chunk.entities.findIndex(e => 
+                    e.x === entity.x && e.y === entity.y && e.type === entity.type
+                );
+                if (entityIndex !== -1) {
+                    chunk.entities.splice(entityIndex, 1);
+                    console.log(`[HarvestingManager] Removed ${entity.type} from chunk (${chunkX}, ${chunkY})`);
+                } else {
+                    console.warn(`[HarvestingManager] Could not find ${entity.type} to remove from chunk`);
+                }
+            }
+        } catch (error) {
+            console.error(`[HarvestingManager] Failed to remove entity from world:`, error);
+        }
 
         // Gain skill experience
         this.gainSkillExperience(entityRules.skill, 1);
