@@ -32,11 +32,11 @@ public class Renderer {
         // Draw world entities
         drawWorldEntities(gc, world, camera);
         
-        // Draw player
-        drawPlayer(gc, player, camera);
-        
         // Restore camera transformations
         camera.restoreTransform(gc);
+        
+        // Draw player in screen coordinates (always faces upward in player perspective mode)
+        drawPlayer(gc, player, camera);
         
         // Draw UI overlay (not affected by camera)
         drawUI(gc, width, height, player, camera);
@@ -128,8 +128,22 @@ public class Renderer {
     }
     
     private void drawPlayer(GraphicsContext gc, Player player, Camera camera) {
+        // Convert player world position to screen position
+        double screenX, screenY;
+        if (camera.getMode() == Camera.CameraMode.PLAYER_PERSPECTIVE) {
+            // In player perspective mode, player is always at center of screen
+            screenX = camera.getWidth() / 2;
+            screenY = camera.getHeight() / 2;
+        } else {
+            // In fixed angle mode, convert world position to screen position
+            double worldX = player.getX() - camera.getX();
+            double worldY = player.getY() - camera.getY();
+            screenX = camera.getWidth() / 2 + worldX * camera.getZoom();
+            screenY = camera.getHeight() / 2 + worldY * camera.getZoom();
+        }
+        
         gc.setFill(Color.BLUE);
-        gc.fillOval(player.getX() - player.getSize() / 2, player.getY() - player.getSize() / 2, 
+        gc.fillOval(screenX - player.getSize() / 2, screenY - player.getSize() / 2, 
                    player.getSize(), player.getSize());
         
         // Draw player direction indicator
@@ -145,11 +159,13 @@ public class Renderer {
             angle = player.getAngle(); // Show actual movement direction in fixed angle mode
         }
         
-
+        // Debug: Log the angle being used for the direction line
+        logger.debug("Player direction line: cameraMode={}, playerAngle={} degrees, displayAngle={} degrees", 
+                    camera.getMode(), Math.toDegrees(player.getAngle()), Math.toDegrees(angle));
         
-        double endX = player.getX() + Math.sin(angle) * player.getSize();
-        double endY = player.getY() - Math.cos(angle) * player.getSize();
-        gc.strokeLine(player.getX(), player.getY(), endX, endY);
+        double endX = screenX + Math.sin(angle) * player.getSize();
+        double endY = screenY - Math.cos(angle) * player.getSize();
+        gc.strokeLine(screenX, screenY, endX, endY);
     }
     
     private void drawUI(GraphicsContext gc, double width, double height, Player player, Camera camera) {
