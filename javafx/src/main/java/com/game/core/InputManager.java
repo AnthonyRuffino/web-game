@@ -38,23 +38,19 @@ public class InputManager {
         logger.info("Input handling setup completed");
     }
     
-    private void handleKeyPressed(KeyEvent event) {
+    public void handleKeyPressed(KeyEvent event) {
         KeyCode keyCode = event.getCode();
         pressedKeys.add(keyCode);
         justPressedKeys.add(keyCode);
         
-        if (logger.isDebugEnabled()) {
-            logger.debug("Key pressed: {}", keyCode);
-        }
+        logger.info("Key pressed: {}", keyCode);
     }
     
-    private void handleKeyReleased(KeyEvent event) {
+    public void handleKeyReleased(KeyEvent event) {
         KeyCode keyCode = event.getCode();
         pressedKeys.remove(keyCode);
         
-        if (logger.isDebugEnabled()) {
-            logger.debug("Key released: {}", keyCode);
-        }
+        logger.info("Key released: {}", keyCode);
     }
     
     private void handleMouseMoved(MouseEvent event) {

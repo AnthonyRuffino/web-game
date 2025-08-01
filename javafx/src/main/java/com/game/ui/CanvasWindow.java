@@ -34,6 +34,10 @@ public class CanvasWindow {
         gc = gameCanvas.getGraphicsContext2D();
         root.setCenter(gameCanvas);
         
+        // Make canvas focusable and request focus
+        gameCanvas.setFocusTraversable(true);
+        gameCanvas.requestFocus();
+        
         // Setup canvas event handling
         setupCanvasEvents();
         
@@ -89,7 +93,17 @@ public class CanvasWindow {
         gameCanvas.setOnMouseReleased(e -> gameEngine.handleMouseReleased(e.getX(), e.getY()));
         gameCanvas.setOnScroll(e -> gameEngine.handleMouseScroll(e.getDeltaY()));
         
-        // Keyboard events are handled at scene level
+        // Keyboard events (backup to scene level)
+        gameCanvas.setOnKeyPressed(e -> {
+            if (gameEngine.getInputManager() != null) {
+                gameEngine.getInputManager().handleKeyPressed(e);
+            }
+        });
+        gameCanvas.setOnKeyReleased(e -> {
+            if (gameEngine.getInputManager() != null) {
+                gameEngine.getInputManager().handleKeyReleased(e);
+            }
+        });
     }
     
     private void setupResizeHandling() {

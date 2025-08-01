@@ -2,8 +2,10 @@ package com.game.core;
 
 import com.game.persistence.DatabaseManager;
 import com.game.rendering.Renderer;
+import com.game.rendering.Camera;
 import javafx.scene.Scene;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.KeyCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +25,11 @@ public class GameEngine {
     private GraphicsContext graphicsContext;
     private double canvasWidth = 1200;
     private double canvasHeight = 800;
+    
+    // Game systems
+    private World world;
+    private Player player;
+    private Camera camera;
     
     public GameEngine(DatabaseManager databaseManager) {
         this.databaseManager = databaseManager;
@@ -60,6 +67,15 @@ public class GameEngine {
         
         // Initialize input system
         inputManager = new InputManager();
+        
+        // Initialize world
+        world = new World(databaseManager);
+        
+        // Initialize player
+        player = new Player(0, 0);
+        
+        // Initialize camera
+        camera = new Camera(canvasWidth, canvasHeight);
         
         // Initialize renderer
         renderer = new Renderer();
@@ -140,14 +156,41 @@ public class GameEngine {
         // Update input
         inputManager.update(deltaTime);
         
-        // TODO: Update other game systems
+        // Update player
+        player.update(deltaTime, inputManager);
+        
+        // Update camera
+        camera.update(deltaTime);
+        camera.follow(player.getX(), player.getY());
+        
+        // Handle input
+        handleInput();
+    }
+    
+    private void handleInput() {
+        // Camera controls
+        if (inputManager.isKeyPressed(KeyCode.P)) {
+            // Toggle camera mode
+            camera.setMode(camera.getMode() == Camera.CameraMode.FIXED_ANGLE ? 
+                          Camera.CameraMode.PLAYER_PERSPECTIVE : Camera.CameraMode.FIXED_ANGLE);
+        }
+        if (inputManager.isKeyPressed(KeyCode.R)) {
+            // Reset camera rotation
+            camera.setRotation(0);
+        }
+        
+        // Zoom
+        double wheelDelta = inputManager.getMouseWheelDelta();
+        if (wheelDelta != 0) {
+            camera.setZoom(camera.getZoom() + wheelDelta * 0.1);
+        }
     }
     
     public void render() {
         if (!running.get()) return;
         
         if (renderer != null && graphicsContext != null) {
-            renderer.render(graphicsContext, canvasWidth, canvasHeight);
+            renderer.render(graphicsContext, canvasWidth, canvasHeight, world, player, camera);
         }
     }
     
@@ -170,6 +213,9 @@ public class GameEngine {
     public void handleResize(double width, double height) {
         canvasWidth = width;
         canvasHeight = height;
+        if (camera != null) {
+            camera.resize(width, height);
+        }
         logger.debug("Canvas resized to: {}x{}", width, height);
     }
     
