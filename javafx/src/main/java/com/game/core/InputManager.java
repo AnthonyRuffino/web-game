@@ -44,15 +44,11 @@ public class InputManager {
         KeyCode keyCode = event.getCode();
         pressedKeys.add(keyCode);
         justPressedKeys.add(keyCode);
-        
-        logger.info("Key pressed: {}", keyCode);
     }
     
     public void handleKeyReleased(KeyEvent event) {
         KeyCode keyCode = event.getCode();
         pressedKeys.remove(keyCode);
-        
-        logger.info("Key released: {}", keyCode);
     }
     
     private void handleMouseMoved(MouseEvent event) {
@@ -101,7 +97,6 @@ public class InputManager {
     
     public void setCameraMode(Camera.CameraMode mode) {
         this.cameraMode = mode;
-        logger.info("Input camera mode set to: {}", mode);
     }
     
     public Camera.CameraMode getCameraMode() {

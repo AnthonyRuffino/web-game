@@ -69,11 +69,7 @@ public class Player {
             moveY += Math.sin(cameraRotation);
         }
 
-        // Debug: Log camera rotation and movement when any key is pressed
-        if (input.forward() || input.backward() || input.left() || input.right() || input.strafeLeft() || input.strafeRight()) {
-            logger.debug("Fixed-angle movement: cameraRotation={}° ({} rad), moveX={}, moveY={}", 
-                        Math.toDegrees(cameraRotation), cameraRotation, moveX, moveY);
-        }
+
 
         // Normalize movement vector to ensure consistent speed
         double magnitude = Math.sqrt(moveX * moveX + moveY * moveY);

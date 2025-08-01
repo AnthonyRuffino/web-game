@@ -161,9 +161,7 @@ public class Renderer {
             angle = player.getAngle() - camera.getRotation();
         }
         
-        // Debug: Log the angle being used for the direction line
-        logger.debug("Player direction line: cameraMode={}, playerAngle={} degrees, cameraRotation={} degrees, displayAngle={} degrees", 
-                    camera.getMode(), Math.toDegrees(player.getAngle()), Math.toDegrees(camera.getRotation()), Math.toDegrees(angle));
+
         
         double endX = screenX + Math.sin(angle) * player.getSize();
         double endY = screenY - Math.cos(angle) * player.getSize();
