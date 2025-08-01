@@ -156,12 +156,14 @@ public class Renderer {
         if (camera.getMode() == Camera.CameraMode.PLAYER_PERSPECTIVE) {
             angle = 0.0; // Always face upward in player perspective mode
         } else {
-            angle = player.getAngle(); // Show actual movement direction in fixed angle mode
+            // In fixed-angle mode, we need to adjust the angle for the rotated camera
+            // The direction line should be rotated by the camera rotation
+            angle = player.getAngle() - camera.getRotation();
         }
         
         // Debug: Log the angle being used for the direction line
-        logger.debug("Player direction line: cameraMode={}, playerAngle={} degrees, displayAngle={} degrees", 
-                    camera.getMode(), Math.toDegrees(player.getAngle()), Math.toDegrees(angle));
+        logger.debug("Player direction line: cameraMode={}, playerAngle={} degrees, cameraRotation={} degrees, displayAngle={} degrees", 
+                    camera.getMode(), Math.toDegrees(player.getAngle()), Math.toDegrees(camera.getRotation()), Math.toDegrees(angle));
         
         double endX = screenX + Math.sin(angle) * player.getSize();
         double endY = screenY - Math.cos(angle) * player.getSize();

@@ -69,6 +69,12 @@ public class Player {
             moveY += Math.sin(cameraRotation);
         }
 
+        // Debug: Log camera rotation and movement when any key is pressed
+        if (input.forward() || input.backward() || input.left() || input.right() || input.strafeLeft() || input.strafeRight()) {
+            logger.debug("Fixed-angle movement: cameraRotation={}° ({} rad), moveX={}, moveY={}", 
+                        Math.toDegrees(cameraRotation), cameraRotation, moveX, moveY);
+        }
+
         // Normalize movement vector to ensure consistent speed
         double magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
         if (magnitude > 0) {
@@ -100,18 +106,36 @@ public class Player {
             rotateRight(deltaTime);
         }
         
-        // Handle movement
+        // Handle movement - combine all movement inputs for proper diagonal movement
+        double moveX = 0;
+        double moveY = 0;
+        
         if (input.forward()) {
-            moveForward(deltaTime);
+            moveX += Math.sin(angle);
+            moveY -= Math.cos(angle);
         }
         if (input.backward()) {
-            moveBackward(deltaTime);
+            moveX -= Math.sin(angle);
+            moveY += Math.cos(angle);
         }
         if (input.strafeLeft()) {
-            moveStrafeLeft(deltaTime);
+            moveX += Math.sin(angle - Math.PI / 2); // 90 degrees to the right (Q key)
+            moveY -= Math.cos(angle - Math.PI / 2);
         }
         if (input.strafeRight()) {
-            moveStrafeRight(deltaTime);
+            moveX += Math.sin(angle + Math.PI / 2); // 90 degrees to the left (E key)
+            moveY -= Math.cos(angle + Math.PI / 2);
+        }
+        
+        // Normalize movement vector to ensure consistent speed
+        double magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+        if (magnitude > 0) {
+            moveX /= magnitude;
+            moveY /= magnitude;
+            
+            // Apply movement
+            x += moveX * speed * deltaTime;
+            y += moveY * speed * deltaTime;
         }
     }
     
