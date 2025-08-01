@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.game.core.InputManager.MovementInput;
+
 public class GameEngine {
     private static final Logger logger = LoggerFactory.getLogger(GameEngine.class);
     
@@ -157,7 +159,7 @@ public class GameEngine {
         inputManager.update(deltaTime);
         
         // Update player
-        player.update(deltaTime, inputManager);
+        player.update(deltaTime, inputManager, camera);
         
         // Update camera
         camera.update(deltaTime);
@@ -165,18 +167,34 @@ public class GameEngine {
         
         // Handle input
         handleInput();
+        
+        // Clear just pressed keys after handling input
+        inputManager.clearJustPressedKeys();
     }
     
     private void handleInput() {
-        // Camera controls
-        if (inputManager.isKeyPressed(KeyCode.P)) {
+        // Camera controls - use justPressed to avoid multiple triggers
+        if (inputManager.isKeyJustPressed(KeyCode.P)) {
             // Toggle camera mode
-            camera.setMode(camera.getMode() == Camera.CameraMode.FIXED_ANGLE ? 
-                          Camera.CameraMode.PLAYER_PERSPECTIVE : Camera.CameraMode.FIXED_ANGLE);
+            Camera.CameraMode newMode = camera.getMode() == Camera.CameraMode.FIXED_ANGLE ? 
+                                       Camera.CameraMode.PLAYER_PERSPECTIVE : Camera.CameraMode.FIXED_ANGLE;
+            camera.setMode(newMode);
+            inputManager.setCameraMode(newMode);
+            logger.info("Camera mode toggled to: {}", newMode);
         }
-        if (inputManager.isKeyPressed(KeyCode.R)) {
+        if (inputManager.isKeyJustPressed(KeyCode.R)) {
             // Reset camera rotation
             camera.setRotation(0);
+            logger.info("Camera rotation reset");
+        }
+        
+        // Camera rotation in fixed-angle mode
+        MovementInput movementInput = inputManager.getMovementInput();
+        if (movementInput.cameraLeft()) {
+            camera.rotateCamera(-camera.getRotationSpeed() * (1.0 / 60.0)); // Using fixed delta for consistency
+        }
+        if (movementInput.cameraRight()) {
+            camera.rotateCamera(camera.getRotationSpeed() * (1.0 / 60.0));
         }
         
         // Zoom
@@ -207,7 +225,10 @@ public class GameEngine {
     }
     
     public void handleMouseScroll(double delta) {
-        // Handle mouse scroll
+        // Handle mouse scroll - pass to input manager
+        if (inputManager != null) {
+            inputManager.handleMouseScroll(delta);
+        }
     }
     
     public void handleResize(double width, double height) {

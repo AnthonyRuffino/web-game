@@ -1,5 +1,6 @@
 package com.game.core;
 
+import com.game.rendering.Camera;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -18,6 +19,7 @@ public class InputManager {
     private double mouseX, mouseY;
     private double mouseWheelDelta;
     private boolean mousePressed;
+    private Camera.CameraMode cameraMode = Camera.CameraMode.FIXED_ANGLE;
     
     public InputManager() {
         this.pressedKeys = ConcurrentHashMap.newKeySet();
@@ -70,6 +72,10 @@ public class InputManager {
         mouseWheelDelta = event.getDeltaY();
     }
     
+    public void handleMouseScroll(double delta) {
+        mouseWheelDelta = delta;
+    }
+    
     public boolean isKeyPressed(KeyCode keyCode) {
         return pressedKeys.contains(keyCode);
     }
@@ -79,15 +85,65 @@ public class InputManager {
     }
     
     public void update(double deltaTime) {
-        // Clear just pressed keys
-        justPressedKeys.clear();
-        
         // Reset mouse wheel delta
         mouseWheelDelta = 0;
+    }
+    
+    public void clearJustPressedKeys() {
+        // Clear just pressed keys - called after input handling
+        justPressedKeys.clear();
     }
     
     public double getMouseX() { return mouseX; }
     public double getMouseY() { return mouseY; }
     public double getMouseWheelDelta() { return mouseWheelDelta; }
     public boolean isMousePressed() { return mousePressed; }
+    
+    public void setCameraMode(Camera.CameraMode mode) {
+        this.cameraMode = mode;
+        logger.info("Input camera mode set to: {}", mode);
+    }
+    
+    public Camera.CameraMode getCameraMode() {
+        return cameraMode;
+    }
+    
+    public MovementInput getMovementInput() {
+        if (cameraMode == Camera.CameraMode.FIXED_ANGLE) {
+            // Fixed-angle mode: WASD moves in fixed directions, arrow keys rotate camera
+            return new MovementInput(
+                isKeyPressed(KeyCode.W),    // forward
+                isKeyPressed(KeyCode.S),    // backward
+                isKeyPressed(KeyCode.A),    // left
+                isKeyPressed(KeyCode.D),    // right
+                isKeyPressed(KeyCode.Q),    // strafeLeft
+                isKeyPressed(KeyCode.E),    // strafeRight
+                isKeyPressed(KeyCode.LEFT), // cameraLeft
+                isKeyPressed(KeyCode.RIGHT) // cameraRight
+            );
+        } else {
+            // Player-perspective mode: A/D rotates player, W/S moves forward/backward
+            return new MovementInput(
+                isKeyPressed(KeyCode.W),    // forward
+                isKeyPressed(KeyCode.S),    // backward
+                isKeyPressed(KeyCode.A),    // left
+                isKeyPressed(KeyCode.D),    // right
+                isKeyPressed(KeyCode.Q),    // strafeLeft
+                isKeyPressed(KeyCode.E),    // strafeRight
+                false,                      // cameraLeft (not used in player-perspective)
+                false                       // cameraRight (not used in player-perspective)
+            );
+        }
+    }
+    
+    public record MovementInput(
+        boolean forward,
+        boolean backward,
+        boolean left,
+        boolean right,
+        boolean strafeLeft,
+        boolean strafeRight,
+        boolean cameraLeft,
+        boolean cameraRight
+    ) {}
 } 

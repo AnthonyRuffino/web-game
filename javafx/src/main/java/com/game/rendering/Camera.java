@@ -42,12 +42,30 @@ public class Camera {
         // Apply camera transformations
         gc.translate(width / 2, height / 2);
         gc.scale(zoom, zoom);
-        gc.rotate(Math.toDegrees(rotation));
-        gc.translate(-x, -y);
+        
+        if (mode == CameraMode.PLAYER_PERSPECTIVE) {
+            // In player-perspective mode, we'll apply rotation in the game render loop
+            // based on player angle, so we just translate here
+            gc.translate(-x, -y);
+        } else {
+            // Fixed-angle mode: apply camera rotation
+            gc.rotate(Math.toDegrees(-rotation));
+            gc.translate(-x, -y);
+        }
     }
     
     public void restoreTransform(GraphicsContext gc) {
         gc.restore();
+    }
+    
+    public void applyPlayerPerspectiveTransform(GraphicsContext gc, double playerAngle) {
+        if (mode == CameraMode.PLAYER_PERSPECTIVE) {
+            // Rotate the entire world around the player's position
+            // First translate to player position, rotate, then translate back
+            gc.translate(x, y);
+            gc.rotate(-Math.toDegrees(playerAngle)); // Convert radians to degrees and negate
+            gc.translate(-x, -y);
+        }
     }
     
     public void follow(double targetX, double targetY) {
@@ -66,6 +84,19 @@ public class Camera {
     public void setMode(CameraMode mode) {
         this.mode = mode;
         logger.info("Camera mode changed to: {}", mode);
+    }
+    
+    public void rotateCamera(double deltaRotation) {
+        if (mode == CameraMode.FIXED_ANGLE) {
+            rotation += deltaRotation;
+            // Keep rotation in reasonable bounds
+            while (rotation > Math.PI * 2) rotation -= Math.PI * 2;
+            while (rotation < 0) rotation += Math.PI * 2;
+        }
+    }
+    
+    public double getRotationSpeed() {
+        return Math.PI * 0.8; // radians per second
     }
     
     public void resize(double width, double height) {

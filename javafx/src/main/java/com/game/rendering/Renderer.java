@@ -21,6 +21,11 @@ public class Renderer {
         gc.setFill(Color.SKYBLUE);
         gc.fillRect(-1000, -1000, 2000, 2000); // Large background area
         
+        // Apply player perspective transform if needed (BEFORE rendering world content)
+        if (camera.getMode() == Camera.CameraMode.PLAYER_PERSPECTIVE) {
+            camera.applyPlayerPerspectiveTransform(gc, player.getAngle());
+        }
+        
         // Draw world grid
         drawGrid(gc, camera);
         
@@ -28,7 +33,7 @@ public class Renderer {
         drawWorldEntities(gc, world, camera);
         
         // Draw player
-        drawPlayer(gc, player);
+        drawPlayer(gc, player, camera);
         
         // Restore camera transformations
         camera.restoreTransform(gc);
@@ -122,7 +127,7 @@ public class Renderer {
         gc.fillOval(x - 4, y - 4, 8, 8);
     }
     
-    private void drawPlayer(GraphicsContext gc, Player player) {
+    private void drawPlayer(GraphicsContext gc, Player player, Camera camera) {
         gc.setFill(Color.BLUE);
         gc.fillOval(player.getX() - player.getSize() / 2, player.getY() - player.getSize() / 2, 
                    player.getSize(), player.getSize());
@@ -130,7 +135,18 @@ public class Renderer {
         // Draw player direction indicator
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(2);
-        double angle = Math.toRadians(player.getAngle());
+        
+        // In player perspective mode, player always faces upward (angle = 0)
+        // In fixed angle mode, player shows actual movement direction
+        double angle;
+        if (camera.getMode() == Camera.CameraMode.PLAYER_PERSPECTIVE) {
+            angle = 0.0; // Always face upward in player perspective mode
+        } else {
+            angle = player.getAngle(); // Show actual movement direction in fixed angle mode
+        }
+        
+
+        
         double endX = player.getX() + Math.sin(angle) * player.getSize();
         double endY = player.getY() - Math.cos(angle) * player.getSize();
         gc.strokeLine(player.getX(), player.getY(), endX, endY);
@@ -142,7 +158,7 @@ public class Renderer {
         
         // Game info
         gc.fillText(String.format("Player: (%.1f, %.1f) Angle: %.1f°", 
-                                 player.getX(), player.getY(), player.getAngle()), 10, 20);
+                                 player.getX(), player.getY(), Math.toDegrees(player.getAngle())), 10, 20);
         gc.fillText(String.format("Camera: Zoom %.2f, Mode: %s", 
                                  camera.getZoom(), camera.getMode()), 10, 35);
         
