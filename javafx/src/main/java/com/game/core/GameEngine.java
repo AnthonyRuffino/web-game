@@ -171,8 +171,7 @@ public class GameEngine {
         camera.follow(player.getX(), player.getY());
         
         // Debug: Log player and camera positions
-        logger.debug("Player: ({}, {}), Camera: ({}, {})", 
-                    player.getX(), player.getY(), camera.getX(), camera.getY());
+        // Debug logging removed for performance
         
         // Handle input
         handleInput();

@@ -40,16 +40,14 @@ public class GridHighlightSystem {
         int gridY = (int) Math.floor(worldY / gridSize);
         
         // Debug: Log the coordinate conversion
-        logger.debug("Grid conversion: mouse({}, {}) -> world({}, {}) -> grid({}, {})", 
-                    mouseX, mouseY, worldX, worldY, gridX, gridY);
+                // Debug logging removed for performance
         
         // Draw highlight rectangle in world coordinates (before camera transform is restored)
         // This matches the JavaScript: ctx.strokeRect(tileX * tileSize, tileY * tileSize, tileSize, tileSize);
         double worldCellX = gridX * gridSize;
         double worldCellY = gridY * gridSize;
         
-        logger.debug("Grid highlight: mouse({}, {}) -> world({}, {}) -> grid({}, {}) -> cell({}, {})", 
-                    mouseX, mouseY, worldX, worldY, gridX, gridY, worldCellX, worldCellY);
+                // Debug logging removed for performance
         
         gc.setStroke(Color.YELLOW);
         gc.setLineWidth(2);

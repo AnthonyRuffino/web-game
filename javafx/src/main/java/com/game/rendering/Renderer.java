@@ -188,7 +188,7 @@ public class Renderer {
         double screenY = camera.getHeight() / 2;
         
         // Debug: Log player drawing coordinates
-        logger.debug("Drawing player at screen coordinates: ({}, {})", screenX, screenY);
+        // Debug logging removed for performance
         
         gc.setFill(Color.BLUE);
         gc.fillOval(screenX - player.getSize() / 2, screenY - player.getSize() / 2, 

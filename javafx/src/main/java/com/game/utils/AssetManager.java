@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import com.game.graphics.svg.SvgGenerator;
 
 public class AssetManager {
     private static final Logger logger = LoggerFactory.getLogger(AssetManager.class);
