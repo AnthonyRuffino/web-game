@@ -6,6 +6,7 @@ module com.game {
     requires org.slf4j;
     requires com.fasterxml.jackson.databind;
     requires jdk.jsobject;
+    requires java.desktop;
     
     exports com.game;
     exports com.game.core;

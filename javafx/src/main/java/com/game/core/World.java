@@ -54,12 +54,16 @@ public class World {
         double random = (hash % 1000) / 1000.0;
         
         // Place entities based on probability
+        // Position entities at the center of each grid cell
+        double centerX = worldX * config.tileSize() + config.tileSize() / 2.0;
+        double centerY = worldY * config.tileSize() + config.tileSize() / 2.0;
+        
         if (random < 0.01) {
-            chunk.addEntity(new Entity("grass", worldX * config.tileSize(), worldY * config.tileSize()));
+            chunk.addEntity(new Entity("grass", centerX, centerY));
         } else if (random < 0.025) {
-            chunk.addEntity(new Entity("tree", worldX * config.tileSize(), worldY * config.tileSize()));
+            chunk.addEntity(new Entity("tree", centerX, centerY));
         } else if (random < 0.04) {
-            chunk.addEntity(new Entity("rock", worldX * config.tileSize(), worldY * config.tileSize()));
+            chunk.addEntity(new Entity("rock", centerX, centerY));
         }
     }
     

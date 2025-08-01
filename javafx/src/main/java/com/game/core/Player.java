@@ -69,6 +69,12 @@ public class Player {
             moveY += Math.sin(cameraRotation);
         }
 
+        // Debug: Log input state
+        if (input.forward() || input.backward() || input.left() || input.right() || input.strafeLeft() || input.strafeRight()) {
+            logger.debug("Input: forward={}, backward={}, left={}, right={}, strafeLeft={}, strafeRight={}, moveX={}, moveY={}", 
+                        input.forward(), input.backward(), input.left(), input.right(), input.strafeLeft(), input.strafeRight(), moveX, moveY);
+        }
+
 
 
         // Normalize movement vector to ensure consistent speed

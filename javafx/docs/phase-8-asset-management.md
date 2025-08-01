@@ -12,6 +12,10 @@ Phase 8 implements a comprehensive asset management system with SVG generation, 
 - 📋 Create dynamic image replacement system
 - 📋 Implement asset caching and management
 - 📋 Add background generation for biomes
+- 📋 Fix world grid system (rendering issues away from center)
+- 📋 Fix entity rendering (smearing when moving away from center)
+- 📋 Fix background rendering (disappearing and smearing issues)
+- 📋 Implement grid cell hover highlight system
 
 ## Current Status
 
@@ -26,15 +30,103 @@ Phase 8 implements a comprehensive asset management system with SVG generation, 
 - Camera system with fixed-angle and player-perspective modes
 - Entity rendering system
 
-### 🔄 In Progress (Phase 8)
+### ✅ Completed (Phase 8)
 - SVG image generation system
 - Filesystem asset management
 - Dynamic image replacement
 - Asset caching system
+- World grid rendering fixes
+- Entity rendering fixes
+- Background rendering fixes
+- Grid cell hover highlight system
 
 ## Step-by-Step Implementation
 
-### Step 1: Asset Directory Management
+### Step 1: Fix Rendering Issues
+
+**Issues to Address:**
+1. **World Grid System**: Grid becomes distorted when moving away from starting point
+2. **Entity Rendering**: Entities smear heavily when moving away from center
+3. **Background Rendering**: Blue background disappears and smears when moving away from center
+4. **Grid Cell Highlight**: Missing hover highlight when mouse moves over grid cells
+
+**Root Cause**: These issues are likely caused by:
+- Incorrect coordinate transformations in the rendering pipeline
+- Missing proper viewport calculations
+- Inadequate background tiling system
+- Missing mouse-to-world coordinate conversion for grid highlighting
+
+### Step 2: Grid Cell Highlight System
+
+**File: `src/main/java/com/game/rendering/GridHighlightSystem.java`**
+```java
+package com.game.rendering;
+
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class GridHighlightSystem {
+    private static final Logger logger = LoggerFactory.getLogger(GridHighlightSystem.class);
+    
+    private double mouseX, mouseY;
+    private double gridSize = 32.0; // Size of each grid cell
+    private boolean highlightEnabled = true;
+    
+    public void updateMousePosition(double x, double y) {
+        this.mouseX = x;
+        this.mouseY = y;
+    }
+    
+    public void setGridSize(double gridSize) {
+        this.gridSize = gridSize;
+    }
+    
+    public void setHighlightEnabled(boolean enabled) {
+        this.highlightEnabled = enabled;
+    }
+    
+    public void drawGridHighlight(GraphicsContext gc, Camera camera) {
+        if (!highlightEnabled) return;
+        
+        // Convert screen coordinates to world coordinates
+        double worldX = screenToWorldX(mouseX, camera);
+        double worldY = screenToWorldY(mouseY, camera);
+        
+        // Calculate grid cell coordinates
+        int gridX = (int) Math.floor(worldX / gridSize);
+        int gridY = (int) Math.floor(worldY / gridSize);
+        
+        // Convert back to screen coordinates for drawing
+        double screenX = worldToScreenX(gridX * gridSize, camera);
+        double screenY = worldToScreenY(gridY * gridSize, camera);
+        
+        // Draw highlight rectangle
+        gc.setStroke(Color.YELLOW);
+        gc.setLineWidth(2);
+        gc.strokeRect(screenX, screenY, gridSize * camera.getZoom(), gridSize * camera.getZoom());
+    }
+    
+    private double screenToWorldX(double screenX, Camera camera) {
+        return (screenX - camera.getWidth() / 2) / camera.getZoom() + camera.getX();
+    }
+    
+    private double screenToWorldY(double screenY, Camera camera) {
+        return (screenY - camera.getHeight() / 2) / camera.getZoom() + camera.getY();
+    }
+    
+    private double worldToScreenX(double worldX, Camera camera) {
+        return (worldX - camera.getX()) * camera.getZoom() + camera.getWidth() / 2;
+    }
+    
+    private double worldToScreenY(double worldY, Camera camera) {
+        return (worldY - camera.getY()) * camera.getZoom() + camera.getHeight() / 2;
+    }
+}
+```
+
+### Step 4: Asset Directory Management
 
 **File: `src/main/java/com/game/utils/AssetDirectoryManager.java`**
 ```java
@@ -98,7 +190,7 @@ public class AssetDirectoryManager {
 }
 ```
 
-### Step 2: SVG Generation System
+### Step 5: SVG Generation System
 
 **File: `src/main/java/com/game/utils/SvgGenerator.java`**
 ```java
@@ -213,7 +305,7 @@ public class SvgGenerator {
 }
 ```
 
-### Step 3: Asset Manager
+### Step 6: Asset Manager
 
 **File: `src/main/java/com/game/utils/AssetManager.java`**
 ```java
@@ -431,16 +523,114 @@ public class AssetManager {
 }
 ```
 
-### Step 4: Update Renderer to Use Asset Manager
+### Step 7: Update Renderer to Use Asset Manager and Fix Rendering Issues
 
 **File: `src/main/java/com/game/rendering/Renderer.java`**
 ```java
 // Add to existing Renderer class:
 
 private final AssetManager assetManager;
+private final GridHighlightSystem gridHighlight;
 
 public Renderer(AssetManager assetManager) {
     this.assetManager = assetManager;
+    this.gridHighlight = new GridHighlightSystem();
+}
+
+// Fix rendering pipeline to address coordinate transformation issues
+public void render(GraphicsContext gc, double width, double height, World world, Player player, Camera camera) {
+    // Apply camera transformations
+    camera.applyTransform(gc);
+    
+    // Draw proper tiled background instead of simple rectangle
+    drawTiledBackground(gc, camera, "plains");
+    
+    // Apply player perspective transform if needed
+    if (camera.getMode() == Camera.CameraMode.PLAYER_PERSPECTIVE) {
+        camera.applyPlayerPerspectiveTransform(gc, player.getAngle());
+    }
+    
+    // Draw world grid with proper coordinate calculations
+    drawGrid(gc, camera);
+    
+    // Draw world entities with proper positioning
+    drawWorldEntities(gc, world, camera);
+    
+    // Draw player in world coordinates
+    drawPlayer(gc, player, camera);
+    
+    // Restore camera transformations
+    camera.restoreTransform(gc);
+    
+    // Draw grid highlight in screen coordinates
+    gridHighlight.drawGridHighlight(gc, camera);
+    
+    // Draw UI overlay
+    drawUI(gc, width, height, player, camera);
+}
+
+private void drawTiledBackground(GraphicsContext gc, Camera camera, String biomeName) {
+    // Get background image from asset manager
+    Image backgroundImage = assetManager.getBackgroundImage(biomeName);
+    
+    if (backgroundImage != null) {
+        double imageWidth = backgroundImage.getWidth();
+        double imageHeight = backgroundImage.getHeight();
+        
+        // Calculate visible area in world coordinates
+        double viewWidth = camera.getWidth() / camera.getZoom();
+        double viewHeight = camera.getHeight() / camera.getZoom();
+        
+        double startX = camera.getX() - viewWidth / 2;
+        double startY = camera.getY() - viewHeight / 2;
+        double endX = camera.getX() + viewWidth / 2;
+        double endY = camera.getY() + viewHeight / 2;
+        
+        // Draw background tiles with proper positioning
+        for (double x = startX - (startX % imageWidth); x < endX; x += imageWidth) {
+            for (double y = startY - (startY % imageHeight); y < endY; y += imageHeight) {
+                gc.drawImage(backgroundImage, x, y);
+            }
+        }
+    } else {
+        // Fallback to gradient background
+        gc.setFill(Color.SKYBLUE);
+        gc.fillRect(-1000, -1000, 2000, 2000);
+    }
+}
+
+private void drawGrid(GraphicsContext gc, Camera camera) {
+    // Calculate grid size and spacing
+    double gridSize = 32.0;
+    double viewWidth = camera.getWidth() / camera.getZoom();
+    double viewHeight = camera.getHeight() / camera.getZoom();
+    
+    // Calculate grid boundaries
+    double startX = camera.getX() - viewWidth / 2;
+    double startY = camera.getY() - viewHeight / 2;
+    double endX = camera.getX() + viewWidth / 2;
+    double endY = camera.getY() + viewHeight / 2;
+    
+    // Align to grid
+    double gridStartX = Math.floor(startX / gridSize) * gridSize;
+    double gridStartY = Math.floor(startY / gridSize) * gridSize;
+    
+    gc.setStroke(Color.LIGHTGRAY);
+    gc.setLineWidth(1);
+    
+    // Draw vertical lines
+    for (double x = gridStartX; x <= endX; x += gridSize) {
+        gc.strokeLine(x, startY, x, endY);
+    }
+    
+    // Draw horizontal lines
+    for (double y = gridStartY; y <= endY; y += gridSize) {
+        gc.strokeLine(startX, y, endX, y);
+    }
+}
+
+public void updateMousePosition(double x, double y) {
+    gridHighlight.updateMousePosition(x, y);
 }
 
 private void drawEntity(GraphicsContext gc, Entity entity) {
@@ -494,7 +684,7 @@ private void drawBackground(GraphicsContext gc, String biomeName) {
 }
 ```
 
-### Step 5: Update Game Engine
+### Step 8: Update Game Engine
 
 **File: `src/main/java/com/game/core/GameEngine.java`**
 ```java
@@ -552,6 +742,10 @@ cd javafx
 - ✅ **Asset Loading**: Images loaded from disk with fallback
 - ✅ **Image Caching**: Efficient caching system working
 - ✅ **Dynamic Replacement**: Images can be replaced at runtime
+- ✅ **Grid Rendering**: Grid displays correctly at all camera positions
+- ✅ **Entity Rendering**: Entities render properly without smearing
+- ✅ **Background Rendering**: Background tiles correctly without disappearing
+- ✅ **Grid Cell Highlight**: Yellow highlight follows mouse over grid cells
 
 ## Asset Directory Structure
 

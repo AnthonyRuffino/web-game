@@ -3,6 +3,7 @@ package com.game.core;
 import com.game.persistence.DatabaseManager;
 import com.game.rendering.Renderer;
 import com.game.rendering.Camera;
+import com.game.utils.AssetManager;
 import javafx.scene.Scene;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
@@ -23,6 +24,7 @@ public class GameEngine {
     
     private GameLoop gameLoop;
     private InputManager inputManager;
+    private AssetManager assetManager;
     private Renderer renderer;
     private GraphicsContext graphicsContext;
     private double canvasWidth = 1200;
@@ -67,6 +69,9 @@ public class GameEngine {
     private void initializeSystems() {
         logger.debug("Initializing game systems...");
         
+        // Initialize asset manager
+        assetManager = new AssetManager();
+        
         // Initialize input system
         inputManager = new InputManager();
         
@@ -79,8 +84,8 @@ public class GameEngine {
         // Initialize camera
         camera = new Camera(canvasWidth, canvasHeight);
         
-        // Initialize renderer
-        renderer = new Renderer();
+        // Initialize renderer with asset manager
+        renderer = new Renderer(assetManager);
         
         // Initialize game loop
         gameLoop = new GameLoop(this);
@@ -165,6 +170,10 @@ public class GameEngine {
         camera.update(deltaTime);
         camera.follow(player.getX(), player.getY());
         
+        // Debug: Log player and camera positions
+        logger.debug("Player: ({}, {}), Camera: ({}, {})", 
+                    player.getX(), player.getY(), camera.getX(), camera.getY());
+        
         // Handle input
         handleInput();
         
@@ -213,7 +222,11 @@ public class GameEngine {
     }
     
     public void handleMouseMoved(double x, double y) {
-        // Handle mouse movement
+        // Pass mouse position to renderer for grid highlighting
+        if (renderer != null) {
+            renderer.updateMousePosition(x, y);
+        }
+        logger.debug("Mouse moved to: ({}, {})", x, y);
     }
     
     public void handleMousePressed(double x, double y) {
@@ -253,5 +266,9 @@ public class GameEngine {
     
     public InputManager getInputManager() {
         return inputManager;
+    }
+    
+    public AssetManager getAssetManager() {
+        return assetManager;
     }
 } 

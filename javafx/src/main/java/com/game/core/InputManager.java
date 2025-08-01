@@ -104,9 +104,10 @@ public class InputManager {
     }
     
     public MovementInput getMovementInput() {
+        MovementInput input;
         if (cameraMode == Camera.CameraMode.FIXED_ANGLE) {
             // Fixed-angle mode: WASD moves in fixed directions, arrow keys rotate camera
-            return new MovementInput(
+            input = new MovementInput(
                 isKeyPressed(KeyCode.W),    // forward
                 isKeyPressed(KeyCode.S),    // backward
                 isKeyPressed(KeyCode.A),    // left
@@ -118,7 +119,7 @@ public class InputManager {
             );
         } else {
             // Player-perspective mode: A/D rotates player, W/S moves forward/backward
-            return new MovementInput(
+            input = new MovementInput(
                 isKeyPressed(KeyCode.W),    // forward
                 isKeyPressed(KeyCode.S),    // backward
                 isKeyPressed(KeyCode.A),    // left
@@ -129,6 +130,14 @@ public class InputManager {
                 false                       // cameraRight (not used in player-perspective)
             );
         }
+        
+        // Debug: Log input state
+        if (input.forward() || input.backward() || input.left() || input.right() || input.strafeLeft() || input.strafeRight()) {
+            logger.debug("MovementInput: forward={}, backward={}, left={}, right={}, strafeLeft={}, strafeRight={}", 
+                        input.forward(), input.backward(), input.left(), input.right(), input.strafeLeft(), input.strafeRight());
+        }
+        
+        return input;
     }
     
     public record MovementInput(

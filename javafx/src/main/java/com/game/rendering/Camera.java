@@ -1,5 +1,6 @@
 package com.game.rendering;
 
+import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,8 +70,10 @@ public class Camera {
     }
     
     public void follow(double targetX, double targetY) {
-        this.x = targetX;
-        this.y = targetY;
+        // Smooth camera following (like JavaScript implementation)
+        double followSpeed = 0.1; // Same as JavaScript
+        this.x += (targetX - this.x) * followSpeed;
+        this.y += (targetY - this.y) * followSpeed;
     }
     
     public void setZoom(double zoom) {
@@ -97,6 +100,22 @@ public class Camera {
     
     public double getRotationSpeed() {
         return Math.PI * 0.8; // radians per second
+    }
+    
+    // Convert screen coordinates to world coordinates (like JavaScript implementation)
+    public Point2D screenToWorld(double screenX, double screenY, double playerAngle) {
+        // Undo zoom and center translation
+        double x = (screenX - width / 2) / zoom;
+        double y = (screenY - height / 2) / zoom;
+        double undoAngle = (mode == CameraMode.PLAYER_PERSPECTIVE) ? playerAngle : rotation;
+        
+        // Undo rotation
+        double cos = Math.cos(undoAngle);
+        double sin = Math.sin(undoAngle);
+        double worldX = x * cos - y * sin + this.x;
+        double worldY = x * sin + y * cos + this.y;
+        
+        return new Point2D(worldX, worldY);
     }
     
     public void resize(double width, double height) {
