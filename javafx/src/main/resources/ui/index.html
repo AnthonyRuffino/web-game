@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Game - Electron</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas" width="1200" height="800"></canvas>
+        <div id="debug-info">
+            <div id="fps">FPS: --</div>
+            <div id="position">Position: (0, 0)</div>
+            <div id="version">Version: --</div>
+        </div>
+    </div>
+    
+    <!-- Game modules -->
+    <script type="module" src="modules/game/index.js"></script>
+</body>
+</html> 
