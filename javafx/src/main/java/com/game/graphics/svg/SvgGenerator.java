@@ -56,6 +56,7 @@ public class SvgGenerator {
         parseRectangles(content, g2d, size);
         parseEllipses(content, g2d, size);
         parseCircles(content, g2d, size);
+        parseLines(content, g2d, size);
     }
     
     /**
@@ -115,6 +116,22 @@ public class SvgGenerator {
         while (matcher.find()) {
             String attributes = matcher.group(1);
             renderCircle(attributes, g2d, size);
+        }
+    }
+    
+    /**
+     * Parse and render line elements
+     */
+    private static void parseLines(String content, Graphics2D g2d, int size) {
+        Pattern pattern = Pattern.compile(
+            "<line\\s+([^>]*)/?>", 
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+        );
+        Matcher matcher = pattern.matcher(content);
+        
+        while (matcher.find()) {
+            String attributes = matcher.group(1);
+            renderLine(attributes, g2d, size);
         }
     }
     
@@ -204,6 +221,27 @@ public class SvgGenerator {
         
         // Draw circle
         g2d.fillOval((int)(cx - r), (int)(cy - r), (int)(r * 2), (int)(r * 2));
+    }
+    
+    /**
+     * Render a line from SVG attributes
+     */
+    private static void renderLine(String attributes, Graphics2D g2d, int size) {
+        double x1 = parseAttribute(attributes, "x1", 0);
+        double y1 = parseAttribute(attributes, "y1", 0);
+        double x2 = parseAttribute(attributes, "x2", 0);
+        double y2 = parseAttribute(attributes, "y2", 0);
+        String stroke = parseStringAttribute(attributes, "stroke", "#000000");
+        double strokeWidth = parseAttribute(attributes, "stroke-width", 1.0);
+        double opacity = parseAttribute(attributes, "opacity", 1.0);
+        
+        // Set stroke color with opacity
+        Color color = parseColor(stroke, opacity);
+        g2d.setColor(color);
+        g2d.setStroke(new BasicStroke((float)strokeWidth));
+        
+        // Draw line
+        g2d.drawLine((int)x1, (int)y1, (int)x2, (int)y2);
     }
     
     /**
