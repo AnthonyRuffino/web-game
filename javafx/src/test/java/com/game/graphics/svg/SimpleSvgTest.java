@@ -49,11 +49,12 @@ public class SimpleSvgTest {
     
     @Test
     void testGameAssets() throws Exception {
-        // Test tree generation
+        // Test tree generation (now uses configurable size)
         BufferedImage treeImage = SvgGenerator.generateTreeImage(64);
         assertNotNull(treeImage);
-        assertEquals(64, treeImage.getWidth());
-        assertEquals(64, treeImage.getHeight());
+        // Tree uses imageHeight from config (96) and width based on foliageRadius*2 (48)
+        assertEquals(48, treeImage.getWidth());
+        assertEquals(96, treeImage.getHeight());
         
         // Test rock generation
         BufferedImage rockImage = SvgGenerator.generateRockImage(64);

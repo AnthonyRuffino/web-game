@@ -91,6 +91,13 @@ public class SvgGeneratorWebView {
     }
     
     /**
+     * Generate tree image using configurable parameters
+     */
+    public static BufferedImage generateTreeImage(EntityConfig.TreeConfig config) throws Exception {
+        return SvgGenerator.generateTreeImage(config);
+    }
+    
+    /**
      * Generate rock image using SVG
      */
     public static BufferedImage generateRockImage(int size) throws Exception {
@@ -98,10 +105,24 @@ public class SvgGeneratorWebView {
     }
     
     /**
+     * Generate rock image using configurable parameters
+     */
+    public static BufferedImage generateRockImage(EntityConfig.RockConfig config) throws Exception {
+        return SvgGenerator.generateRockImage(config);
+    }
+    
+    /**
      * Generate grass image using SVG
      */
     public static BufferedImage generateGrassImage(int size) throws Exception {
         return SvgGenerator.generateGrassImage(size);
+    }
+    
+    /**
+     * Generate grass image using configurable parameters
+     */
+    public static BufferedImage generateGrassImage(EntityConfig.GrassConfig config) throws Exception {
+        return SvgGenerator.generateGrassImage(config);
     }
     
     /**

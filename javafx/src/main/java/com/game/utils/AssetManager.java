@@ -84,7 +84,7 @@ public class AssetManager {
             File imageFile = imagePath.toFile();
             
             if (imageFile.exists()) {
-                logger.debug("Loading entity image from filesystem: {}", imagePath);
+                // Debug logging removed for performance
                 return new Image(new FileInputStream(imageFile));
             }
         } catch (Exception e) {
@@ -100,7 +100,7 @@ public class AssetManager {
             File imageFile = imagePath.toFile();
             
             if (imageFile.exists()) {
-                logger.debug("Loading background image from filesystem: {}", imagePath);
+                // Debug logging removed for performance
                 return new Image(new FileInputStream(imageFile));
             }
         } catch (Exception e) {

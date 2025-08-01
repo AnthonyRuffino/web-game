@@ -19,22 +19,29 @@ public class SvgGenerator {
      * Parse SVG and render to BufferedImage
      */
     public static BufferedImage svgToImage(String svg, int size) {
+        return svgToImage(svg, size, size);
+    }
+    
+    /**
+     * Parse SVG and render to BufferedImage with custom dimensions
+     */
+    public static BufferedImage svgToImage(String svg, int width, int height) {
         try {
-            BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+            BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2d = image.createGraphics();
             
             // Enable anti-aliasing
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             
             // Parse and render SVG elements
-            parseAndRenderSvg(svg, g2d, size);
+            parseAndRenderSvg(svg, g2d, Math.max(width, height));
             
             g2d.dispose();
             return image;
         } catch (Exception e) {
             logger.error("Failed to parse SVG: {}", e.getMessage());
             // Fallback to basic shape
-            return generateFallbackImage(size);
+            return generateFallbackImage(Math.max(width, height));
         }
     }
     
@@ -121,7 +128,7 @@ public class SvgGenerator {
         double height = parseAttribute(attributes, "height", 0);
         String fill = parseStringAttribute(attributes, "fill", "#000000");
         double opacity = parseAttribute(attributes, "opacity", 1.0);
-        double rotation = parseAttribute(attributes, "transform", 0.0);
+        double rotation = parseTransformRotation(attributes);
         
         // Apply rotation if specified
         if (rotation != 0) {
@@ -153,7 +160,7 @@ public class SvgGenerator {
         double opacity = parseAttribute(attributes, "opacity", 1.0);
         String stroke = parseStringAttribute(attributes, "stroke", null);
         double strokeWidth = parseAttribute(attributes, "stroke-width", 0);
-        double rotation = parseAttribute(attributes, "transform", 0.0);
+        double rotation = parseTransformRotation(attributes);
         
         // Apply rotation if specified
         if (rotation != 0) {
@@ -228,6 +235,28 @@ public class SvgGenerator {
     }
     
     /**
+     * Parse transform attribute from SVG (e.g., "rotate(45, 10, 10)")
+     */
+    private static double parseTransformRotation(String attributes) {
+        String transform = parseStringAttribute(attributes, "transform", "");
+        if (transform.isEmpty()) {
+            return 0.0;
+        }
+        
+        // Parse rotate(angle, cx, cy) format
+        Pattern pattern = Pattern.compile("rotate\\(([^,]+)");
+        Matcher matcher = pattern.matcher(transform);
+        if (matcher.find()) {
+            try {
+                return Double.parseDouble(matcher.group(1).trim());
+            } catch (NumberFormatException e) {
+                logger.warn("Failed to parse transform rotation: {}", transform);
+            }
+        }
+        return 0.0;
+    }
+    
+    /**
      * Parse color from SVG color string
      */
     private static Color parseColor(String colorStr, double opacity) {
@@ -281,47 +310,176 @@ public class SvgGenerator {
      * Generate tree image using SVG-like approach
      */
     public static BufferedImage generateTreeImage(int size) {
+        EntityConfig.TreeConfig config = new EntityConfig.TreeConfig();
+        config.size = size;
+        return generateTreeImage(config);
+    }
+    
+    /**
+     * Generate tree image using configurable parameters
+     */
+    public static BufferedImage generateTreeImage(EntityConfig.TreeConfig config) {
+        String svg = generateTreeSVG(config);
+        // Use the actual SVG dimensions: width = foliageRadius*2, height = imageHeight
+        return svgToImage(svg, config.foliageRadius * 2, config.imageHeight);
+    }
+    
+    /**
+     * Generate SVG for tree entity (matches JavaScript implementation)
+     */
+    public static String generateTreeSVG(EntityConfig.TreeConfig config) {
+        int foliageRadius = config.foliageRadius;
+        int width = foliageRadius * 2;
+        int height = config.imageHeight;
+        int trunkWidth = config.trunkWidth;
+
+        // Trunk: from bottom center up
+        int trunkX = (width / 2) - (trunkWidth / 2);
+        int trunkY = (foliageRadius * 2) - 1;
+        int trunkHeight = height - trunkY;
+        
+        double fixedAngle = config.fixedScreenAngle != null ? config.fixedScreenAngle : 0.0;
+        
         String svg = String.format(
             "<svg width=\"%d\" height=\"%d\" xmlns=\"http://www.w3.org/2000/svg\">" +
-            "<rect x=\"%d\" y=\"%d\" width=\"8\" height=\"16\" fill=\"#8B4513\" opacity=\"1.0\"/>" +
-            "<ellipse cx=\"%d\" cy=\"%d\" rx=\"12\" ry=\"12\" fill=\"#228B22\" opacity=\"1.0\"/>" +
+            "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" fill=\"%s\" opacity=\"%.1f\" " +
+            "transform=\"rotate(%.1f, %d, %d)\"/>" +
+            "<ellipse cx=\"%d\" cy=\"%d\" rx=\"%d\" ry=\"%d\" fill=\"%s\" opacity=\"%.1f\" " +
+            "stroke=\"%s\" stroke-width=\"%d\" " +
+            "transform=\"rotate(%.1f, %d, %d)\"/>" +
             "</svg>",
-            size, size,
-            size/2 - 4, size/2 + 8,
-            size/2, size/2
+            width, height,
+            trunkX, trunkY, trunkWidth, trunkHeight, config.trunkColor, config.opacity,
+            fixedAngle, foliageRadius, foliageRadius,
+            foliageRadius, foliageRadius, foliageRadius, foliageRadius, config.foliageColor, config.opacity,
+            config.foliageBorderColor, config.foliageBorderWidth,
+            fixedAngle, foliageRadius, foliageRadius
         );
         
-        return svgToImage(svg, size);
+        return svg;
     }
     
     /**
      * Generate rock image using SVG-like approach
      */
     public static BufferedImage generateRockImage(int size) {
+        EntityConfig.RockConfig config = new EntityConfig.RockConfig();
+        config.size = size;
+        return generateRockImage(config);
+    }
+    
+    /**
+     * Generate rock image using configurable parameters
+     */
+    public static BufferedImage generateRockImage(EntityConfig.RockConfig config) {
+        String svg = generateRockSVG(config);
+        return svgToImage(svg, config.size);
+    }
+    
+    /**
+     * Generate SVG for rock entity (matches JavaScript implementation)
+     */
+    public static String generateRockSVG(EntityConfig.RockConfig config) {
+        int center = config.size / 2;
+        int radius = (config.size / 2) - config.strokeWidth;
+
+        // Generate texture spots with deterministic positions
+        StringBuilder textureElements = new StringBuilder();
+        for (int i = 0; i < config.textureSpots; i++) {
+            double angle = (i * 137.5) * (Math.PI / 180);
+            double distance = radius * (0.3 + (i * 0.2) % 0.4);
+            double spotX = center + Math.cos(angle) * distance;
+            double spotY = center + Math.sin(angle) * distance;
+            double spotSize = radius * (0.1 + (i * 0.05) % 0.1);
+            
+            textureElements.append(String.format(
+                "<circle cx=\"%.1f\" cy=\"%.1f\" r=\"%.1f\" fill=\"%s\"/>",
+                spotX, spotY, spotSize, config.textureColor
+            ));
+        }
+
         String svg = String.format(
             "<svg width=\"%d\" height=\"%d\" xmlns=\"http://www.w3.org/2000/svg\">" +
-            "<circle cx=\"%d\" cy=\"%d\" r=\"8\" fill=\"#808080\" opacity=\"1.0\"/>" +
+            "<circle cx=\"%d\" cy=\"%d\" r=\"%d\" fill=\"%s\" opacity=\"%.1f\" " +
+            "stroke=\"%s\" stroke-width=\"%d\"/>" +
+            "%s" +
             "</svg>",
-            size, size,
-            size/2, size/2
+            config.size, config.size,
+            center, center, radius, config.baseColor, config.opacity,
+            config.strokeColor, config.strokeWidth,
+            textureElements.toString()
         );
         
-        return svgToImage(svg, size);
+        return svg;
     }
     
     /**
      * Generate grass image using SVG-like approach
      */
     public static BufferedImage generateGrassImage(int size) {
+        EntityConfig.GrassConfig config = new EntityConfig.GrassConfig();
+        config.size = size;
+        return generateGrassImage(config);
+    }
+    
+    /**
+     * Generate grass image using configurable parameters
+     */
+    public static BufferedImage generateGrassImage(EntityConfig.GrassConfig config) {
+        String svg = generateGrassSVG(config);
+        return svgToImage(svg, config.size);
+    }
+    
+    /**
+     * Generate SVG for grass entity (matches JavaScript implementation)
+     */
+    public static String generateGrassSVG(EntityConfig.GrassConfig config) {
+        int center = config.size / 2;
+        double clusterRadius = config.size * 0.3;
+
+        // Generate grass clusters with deterministic positions
+        StringBuilder grassElements = new StringBuilder();
+        
+        for (int cluster = 0; cluster < config.clusterCount; cluster++) {
+            // Calculate cluster center using deterministic positioning
+            double angle = (cluster * 120) * (Math.PI / 180);
+            double distance = clusterRadius * (0.3 + (cluster * 0.2) % 0.4);
+            double clusterX = center + Math.cos(angle) * distance;
+            double clusterY = center + Math.sin(angle) * distance;
+            
+            // Generate blades for this cluster
+            int clusterBladeCount = config.bladeCount + (cluster % 2);
+            double baseAngle = (cluster * 137.5) * (Math.PI / 180);
+            
+            for (int blade = 0; blade < clusterBladeCount; blade++) {
+                // Vary the angle slightly for each blade
+                double angleVariation = ((cluster * 100 + blade * 50) % (config.bladeAngleVariation * 2) - config.bladeAngleVariation) * (Math.PI / 180);
+                double bladeAngle = baseAngle + angleVariation;
+                
+                // Vary the length slightly
+                double length = config.bladeLength + (cluster * 200 + blade * 30) % 6;
+                
+                // Calculate blade end point
+                double endX = clusterX + Math.cos(bladeAngle) * length;
+                double endY = clusterY + Math.sin(bladeAngle) * length;
+                
+                // Create grass blade as a line
+                grassElements.append(String.format(
+                    "<line x1=\"%.1f\" y1=\"%.1f\" x2=\"%.1f\" y2=\"%.1f\" stroke=\"%s\" stroke-width=\"%.1f\" opacity=\"%.1f\"/>",
+                    clusterX, clusterY, endX, endY, config.bladeColor, config.bladeWidth, config.opacity
+                ));
+            }
+        }
+
         String svg = String.format(
             "<svg width=\"%d\" height=\"%d\" xmlns=\"http://www.w3.org/2000/svg\">" +
-            "<circle cx=\"%d\" cy=\"%d\" r=\"4\" fill=\"#7CFC00\" opacity=\"1.0\"/>" +
+            "%s" +
             "</svg>",
-            size, size,
-            size/2, size/2
+            config.size, config.size,
+            grassElements.toString()
         );
-        
-        return svgToImage(svg, size);
+
+        return svg;
     }
     
     /**

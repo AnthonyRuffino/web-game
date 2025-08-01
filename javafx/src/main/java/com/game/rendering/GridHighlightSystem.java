@@ -16,7 +16,7 @@ public class GridHighlightSystem {
     public void updateMousePosition(double x, double y) {
         this.mouseX = x;
         this.mouseY = y;
-        logger.debug("Mouse position updated: ({}, {})", x, y);
+        // Debug logging removed for performance
     }
     
     public void setGridSize(double gridSize) {

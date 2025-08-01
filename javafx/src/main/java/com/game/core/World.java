@@ -26,7 +26,7 @@ public class World {
         String chunkKey = getChunkKey(chunkX, chunkY);
         
         return chunkCache.computeIfAbsent(chunkKey, key -> {
-            logger.debug("Loading chunk: ({}, {})", chunkX, chunkY);
+            // Debug logging removed for performance
             return generateChunk(chunkX, chunkY);
         });
     }

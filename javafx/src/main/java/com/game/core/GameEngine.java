@@ -225,7 +225,7 @@ public class GameEngine {
         if (renderer != null) {
             renderer.updateMousePosition(x, y);
         }
-        logger.debug("Mouse moved to: ({}, {})", x, y);
+        // Debug logging removed for performance
     }
     
     public void handleMousePressed(double x, double y) {

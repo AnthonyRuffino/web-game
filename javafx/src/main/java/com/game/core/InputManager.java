@@ -133,8 +133,7 @@ public class InputManager {
         
         // Debug: Log input state
         if (input.forward() || input.backward() || input.left() || input.right() || input.strafeLeft() || input.strafeRight()) {
-            logger.debug("MovementInput: forward={}, backward={}, left={}, right={}, strafeLeft={}, strafeRight={}", 
-                        input.forward(), input.backward(), input.left(), input.right(), input.strafeLeft(), input.strafeRight());
+                    // Debug logging removed for performance
         }
         
         return input;
