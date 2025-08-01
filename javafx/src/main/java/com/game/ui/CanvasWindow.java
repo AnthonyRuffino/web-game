@@ -40,6 +40,9 @@ public class CanvasWindow {
         // Setup resize handling
         setupResizeHandling();
         
+        // Connect graphics context to game engine
+        gameEngine.setGraphicsContext(gc);
+        
         logger.info("Canvas window initialized");
     }
     

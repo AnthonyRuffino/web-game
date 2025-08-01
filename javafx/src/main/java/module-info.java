@@ -10,6 +10,7 @@ module com.game {
     exports com.game;
     exports com.game.core;
     exports com.game.persistence;
+    exports com.game.rendering;
     exports com.game.ui;
     exports com.game.utils;
     

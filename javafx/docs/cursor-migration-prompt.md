@@ -38,19 +38,16 @@ The current codebase uses **loose object-oriented practices**:
 1. **Language/Platform**: Java 21+ with:
    - **Project Loom** (virtual threads)
    - **Structured Concurrency APIs** (even if experimental)
-2. **Native Image Compilation**:
-   - **GraalVM Native Image**
-   - Explore **Micronaut** or **Quarkus** if beneficial for DI/lifecycle
-3. **Persistence**: **SQLite** (same schema as Electron version)
-4. **UI Phases**:
+2. **Persistence**: **SQLite** (same schema as Electron version)
+3. **UI Phases**:
    - **Phase 1**: WebView bridge (load existing HTML/JS UI)
    - **Phase 2**: Progressive JavaFX widget migration
    - **Phase 3**: Full Canvas-rendered UI using JavaFX Canvas
-5. **Game Loop**: JavaFX AnimationTimer with Loom-powered background tasks
+4. **Game Loop**: JavaFX AnimationTimer with Loom-powered background tasks
 
 ### Performance Targets
-- **Startup Time**: < 3 seconds (JVM), < 1 second (native)
-- **Memory Usage**: < 256MB (JVM), < 128MB (native)
+- **Startup Time**: < 3 seconds
+- **Memory Usage**: < 256MB
 - **Frame Rate**: 60 FPS stable, 30 FPS minimum under load
 
 ## Migration Strategy
@@ -79,7 +76,6 @@ Create a **phased migration plan** that makes sense based on architectural compl
 4. **Phase 4**: Advanced Features
    - Project Loom integration for background tasks
    - Structured concurrency for game systems
-   - Native image compilation
    - Performance profiling and optimization
 
 ## Implementation Requirements
@@ -189,7 +185,6 @@ Given the heterogeneous nature of the current entity system:
 - **Compatibility**: Full data compatibility between versions
 
 ### Technical Success
-- **Native Compilation**: Successful GraalVM native image compilation
 - **Virtual Threads**: Effective use of Project Loom features
 - **Memory Efficiency**: Reduced memory usage compared to Electron
 - **Startup Performance**: Faster startup times than Electron

@@ -1,7 +1,9 @@
 package com.game.core;
 
 import com.game.persistence.DatabaseManager;
+import com.game.rendering.Renderer;
 import javafx.scene.Scene;
+import javafx.scene.canvas.GraphicsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +19,10 @@ public class GameEngine {
     
     private GameLoop gameLoop;
     private InputManager inputManager;
+    private Renderer renderer;
+    private GraphicsContext graphicsContext;
+    private double canvasWidth = 1200;
+    private double canvasHeight = 800;
     
     public GameEngine(DatabaseManager databaseManager) {
         this.databaseManager = databaseManager;
@@ -54,6 +60,9 @@ public class GameEngine {
         
         // Initialize input system
         inputManager = new InputManager();
+        
+        // Initialize renderer
+        renderer = new Renderer();
         
         // Initialize game loop
         gameLoop = new GameLoop(this);
@@ -137,7 +146,9 @@ public class GameEngine {
     public void render() {
         if (!running.get()) return;
         
-        // TODO: Render game on canvas
+        if (renderer != null && graphicsContext != null) {
+            renderer.render(graphicsContext, canvasWidth, canvasHeight);
+        }
     }
     
     public void handleMouseMoved(double x, double y) {
@@ -157,7 +168,14 @@ public class GameEngine {
     }
     
     public void handleResize(double width, double height) {
-        // Handle window resize
+        canvasWidth = width;
+        canvasHeight = height;
+        logger.debug("Canvas resized to: {}x{}", width, height);
+    }
+    
+    public void setGraphicsContext(GraphicsContext gc) {
+        this.graphicsContext = gc;
+        logger.debug("Graphics context set");
     }
     
     public void setupInputHandling(Scene scene) {
