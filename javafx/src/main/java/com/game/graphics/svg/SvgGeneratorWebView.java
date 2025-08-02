@@ -67,6 +67,8 @@ public class SvgGeneratorWebView {
      * Render SVG on the JavaFX Application Thread
      */
     private static BufferedImage renderSvgOnFxThread(String svgContent, int width, int height, boolean waitForLoad) throws Exception {
+        logger.debug("Starting WebView SVG rendering: {}x{}", width, height);
+        
         WebView webView = new WebView();
         webView.setPrefWidth(width);
         webView.setPrefHeight(height);
@@ -80,24 +82,44 @@ public class SvgGeneratorWebView {
         
         // Sanitize SVG content
         String sanitizedSvg = sanitizeSvg(svgContent);
+        logger.debug("Sanitized SVG content length: {}", sanitizedSvg.length());
         
         // Create HTML wrapper for the SVG
         String htmlContent = createHtmlWrapper(sanitizedSvg, width, height);
+        logger.debug("Created HTML wrapper, total length: {}", htmlContent.length());
+        
+        // Debug: Log HTML snippet
+        String htmlSnippet = htmlContent.length() > 200 ? htmlContent.substring(0, 200) + "..." : htmlContent;
+        logger.debug("HTML snippet: {}", htmlSnippet);
         
         // Load the HTML content
+        logger.debug("Loading HTML content into WebView...");
         webView.getEngine().loadContent(htmlContent);
         
+        // Add a longer delay to let WebView initialize and render
+        logger.debug("Waiting for WebView to initialize...");
+        Thread.sleep(500);
+        
         if (waitForLoad) {
-            // Wait for the WebView to load
-            waitForWebViewLoad(webView);
+            // Try to wait for the WebView to load, but don't fail if it times out
+            try {
+                waitForWebViewLoad(webView);
+            } catch (Exception e) {
+                logger.warn("WebView load wait failed, proceeding anyway: {}", e.getMessage());
+            }
         }
         
         // Take a snapshot
+        logger.debug("Taking WebView snapshot...");
         SnapshotParameters params = new SnapshotParameters();
         WritableImage snapshot = webView.snapshot(params, null);
         
         // Convert to BufferedImage
-        return convertWritableImageToBufferedImage(snapshot);
+        logger.debug("Converting snapshot to BufferedImage...");
+        BufferedImage result = convertWritableImageToBufferedImage(snapshot);
+        logger.debug("WebView rendering completed successfully");
+        
+        return result;
     }
     
     /**
@@ -114,16 +136,30 @@ public class SvgGeneratorWebView {
      * Wait for WebView to finish loading
      */
     private static void waitForWebViewLoad(WebView webView) throws Exception {
-        // Simple polling approach instead of CompletableFuture
-        int maxAttempts = 50; // 5 seconds with 100ms intervals
+        // Simple polling approach with better debugging
+        int maxAttempts = 30; // 3 seconds with 100ms intervals
         int attempts = 0;
         
+        logger.debug("Waiting for WebView to load...");
+        
         while (attempts < maxAttempts) {
-            if (webView.getEngine().getLoadWorker().getState() == javafx.concurrent.Worker.State.SUCCEEDED) {
+            javafx.concurrent.Worker.State state = webView.getEngine().getLoadWorker().getState();
+            
+            // Log every 5th attempt to avoid spam
+            if (attempts % 5 == 0) {
+                logger.debug("WebView state: {} (attempt {}/{})", state, attempts + 1, maxAttempts);
+            }
+            
+            if (state == javafx.concurrent.Worker.State.SUCCEEDED) {
+                logger.debug("WebView load succeeded");
                 return;
-            } else if (webView.getEngine().getLoadWorker().getState() == javafx.concurrent.Worker.State.FAILED) {
-                throw new RuntimeException("WebView load failed");
-            } else if (webView.getEngine().getLoadWorker().getState() == javafx.concurrent.Worker.State.CANCELLED) {
+            } else if (state == javafx.concurrent.Worker.State.FAILED) {
+                String errorMessage = webView.getEngine().getLoadWorker().getException() != null ? 
+                    webView.getEngine().getLoadWorker().getException().getMessage() : "Unknown error";
+                logger.error("WebView load failed: {}", errorMessage);
+                throw new RuntimeException("WebView load failed: " + errorMessage);
+            } else if (state == javafx.concurrent.Worker.State.CANCELLED) {
+                logger.error("WebView load cancelled");
                 throw new RuntimeException("WebView load cancelled");
             }
             
@@ -131,6 +167,7 @@ public class SvgGeneratorWebView {
             attempts++;
         }
         
+        logger.error("WebView load timeout after {} attempts", maxAttempts);
         throw new RuntimeException("WebView load timeout");
     }
     
@@ -142,16 +179,20 @@ public class SvgGeneratorWebView {
             "<!DOCTYPE html>" +
             "<html>" +
             "<head>" +
+            "<meta charset=\"UTF-8\">" +
             "<style>" +
-            "body { margin: 0; padding: 0; overflow: hidden; }" +
-            "svg { display: block; }" +
+            "body { margin: 0; padding: 0; overflow: hidden; background: white; }" +
+            "svg { display: block; width: %dpx; height: %dpx; }" +
             "</style>" +
+            "<script>" +
+            "window.onload = function() { console.log('Page loaded successfully'); };" +
+            "</script>" +
             "</head>" +
             "<body>" +
             "%s" +
             "</body>" +
             "</html>",
-            svgContent
+            width, height, svgContent
         );
     }
     
@@ -245,8 +286,20 @@ public class SvgGeneratorWebView {
      * Generate tree image using configurable parameters
      */
     public static BufferedImage generateTreeImage(EntityConfig.TreeConfig config) throws Exception {
-        // For now, use Java2D fallback to avoid WebView timeout issues
-        return SvgGenerator.generateTreeImage(config);
+        logger.info("SvgGeneratorWebView.generateTreeImage(config) called with size={}, foliageRadius={}, imageHeight={}", 
+                   config.size, config.foliageRadius, config.imageHeight);
+        
+        try {
+            String svg = SvgGenerator.generateTreeSVG(config);
+            logger.info("Generated tree SVG (length: {}), attempting WebView rendering...", svg.length());
+            BufferedImage result = svgToImage(svg, config.foliageRadius * 2, config.imageHeight);
+            logger.info("WebView tree rendering successful");
+            return result;
+        } catch (Exception e) {
+            logger.error("WebView tree rendering failed: {}", e.getMessage());
+            logger.info("Falling back to Java2D renderer for tree");
+            return SvgGenerator.generateTreeImage(config);
+        }
     }
     
     /**
@@ -262,14 +315,26 @@ public class SvgGeneratorWebView {
      * Generate rock image using configurable parameters
      */
     public static BufferedImage generateRockImage(EntityConfig.RockConfig config) throws Exception {
-        // For now, use Java2D fallback to avoid WebView timeout issues
-        return SvgGenerator.generateRockImage(config);
+        logger.info("SvgGeneratorWebView.generateRockImage(config) called with size={}", config.size);
+        
+        try {
+            String svg = SvgGenerator.generateRockSVG(config);
+            logger.info("Generated rock SVG (length: {}), attempting WebView rendering...", svg.length());
+            BufferedImage result = svgToImage(svg, config.size, config.size);
+            logger.info("WebView rock rendering successful");
+            return result;
+        } catch (Exception e) {
+            logger.error("WebView rock rendering failed: {}", e.getMessage());
+            logger.info("Falling back to Java2D renderer for rock");
+            return SvgGenerator.generateRockImage(config);
+        }
     }
     
-    /**
+        /**
      * Generate grass image using SVG
      */
     public static BufferedImage generateGrassImage(int size) throws Exception {
+        logger.info("SvgGeneratorWebView.generateGrassImage(size={}) called", size);
         EntityConfig.GrassConfig config = new EntityConfig.GrassConfig();
         config.size = size;
         return generateGrassImage(config);
@@ -279,24 +344,116 @@ public class SvgGeneratorWebView {
      * Generate grass image using configurable parameters
      */
     public static BufferedImage generateGrassImage(EntityConfig.GrassConfig config) throws Exception {
-        // For now, use Java2D fallback to avoid WebView timeout issues
-        return SvgGenerator.generateGrassImage(config);
+        logger.info("SvgGeneratorWebView.generateGrassImage(config) called with size={}, bladeCount={}", 
+                   config.size, config.bladeCount);
+        
+        try {
+            String svg = SvgGenerator.generateGrassSVG(config);
+            logger.info("Generated grass SVG (length: {}), attempting WebView rendering...", svg.length());
+            BufferedImage result = svgToImage(svg, config.size, config.size);
+            logger.info("WebView grass rendering successful");
+            return result;
+        } catch (Exception e) {
+            logger.error("WebView grass rendering failed: {}", e.getMessage());
+            logger.info("Falling back to Java2D renderer for grass");
+            return SvgGenerator.generateGrassImage(config);
+        }
     }
     
     /**
      * Generate plains background using SVG
      */
     public static BufferedImage generatePlainsBackground(int size) throws Exception {
-        // For now, use the Java2D implementation since it doesn't generate SVG strings
-        return SvgGenerator.generatePlainsBackground(size);
+        logger.info("SvgGeneratorWebView.generatePlainsBackground(size={}) called", size);
+        
+        try {
+            String svg = generatePlainsBackgroundSVG(size);
+            logger.info("Generated plains background SVG (length: {}), attempting WebView rendering...", svg.length());
+            BufferedImage result = svgToImage(svg, size, size);
+            logger.info("WebView plains background rendering successful");
+            return result;
+        } catch (Exception e) {
+            logger.error("WebView plains background rendering failed: {}", e.getMessage());
+            logger.info("Falling back to Java2D renderer for plains background");
+            return SvgGenerator.generatePlainsBackground(size);
+        }
     }
     
     /**
      * Generate desert background using SVG
      */
     public static BufferedImage generateDesertBackground(int size) throws Exception {
-        // For now, use the Java2D implementation since it doesn't generate SVG strings
-        return SvgGenerator.generateDesertBackground(size);
+        logger.info("SvgGeneratorWebView.generateDesertBackground(size={}) called", size);
+        
+        try {
+            String svg = generateDesertBackgroundSVG(size);
+            logger.info("Generated desert background SVG (length: {}), attempting WebView rendering...", svg.length());
+            BufferedImage result = svgToImage(svg, size, size);
+            logger.info("WebView desert background rendering successful");
+            return result;
+        } catch (Exception e) {
+            logger.error("WebView desert background rendering failed: {}", e.getMessage());
+            logger.info("Falling back to Java2D renderer for desert background");
+            return SvgGenerator.generateDesertBackground(size);
+        }
+    }
+    
+    /**
+     * Generate SVG for plains background (matches JavaScript implementation)
+     */
+    private static String generatePlainsBackgroundSVG(int size) {
+        // Use the exact entityRenderer plains configuration from the JavaScript
+        String baseColor = "#3cb043";
+        String[] rectColors = {"#4fdc5a", "#2e8b3d", "#4fdc5a", "#2e8b3d", "#4fdc5a", "#2e8b3d", "#4fdc5a", "#2e8b3d"};
+        int[] rectX = {40, 120, 320, 480, 600, 200, 560, 80};
+        int[] rectY = {80, 200, 320, 560, 40, 400, 320, 600};
+        
+        StringBuilder rects = new StringBuilder();
+        for (int i = 0; i < rectColors.length; i++) {
+            rects.append(String.format(
+                "<rect x=\"%d\" y=\"%d\" width=\"40\" height=\"40\" fill=\"%s\"/>",
+                rectX[i], rectY[i], rectColors[i]
+            ));
+        }
+        
+        return String.format(
+            "<svg width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\" xmlns=\"http://www.w3.org/2000/svg\">" +
+            "<rect width=\"%d\" height=\"%d\" fill=\"%s\"/>" +
+            "%s" +
+            "</svg>",
+            size, size, size, size,
+            size, size, baseColor,
+            rects.toString()
+        );
+    }
+    
+    /**
+     * Generate SVG for desert background (matches JavaScript implementation)
+     */
+    private static String generateDesertBackgroundSVG(int size) {
+        // Use the exact entityRenderer desert configuration from the JavaScript
+        String baseColor = "#f7e9a0";
+        String[] rectColors = {"#e6d17a", "#fff7c0", "#e6d17a", "#fff7c0", "#e6d17a", "#fff7c0", "#e6d17a", "#fff7c0"};
+        int[] rectX = {40, 120, 320, 480, 600, 200, 560, 80};
+        int[] rectY = {80, 200, 320, 560, 40, 400, 320, 600};
+        
+        StringBuilder rects = new StringBuilder();
+        for (int i = 0; i < rectColors.length; i++) {
+            rects.append(String.format(
+                "<rect x=\"%d\" y=\"%d\" width=\"40\" height=\"40\" fill=\"%s\"/>",
+                rectX[i], rectY[i], rectColors[i]
+            ));
+        }
+        
+        return String.format(
+            "<svg width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\" xmlns=\"http://www.w3.org/2000/svg\">" +
+            "<rect width=\"%d\" height=\"%d\" fill=\"%s\"/>" +
+            "%s" +
+            "</svg>",
+            size, size, size, size,
+            size, size, baseColor,
+            rects.toString()
+        );
     }
     
 
