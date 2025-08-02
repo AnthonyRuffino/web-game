@@ -309,12 +309,16 @@ public class GameEngine {
         if (camera != null && player != null) {
             javafx.geometry.Point2D worldPos = camera.screenToWorld(x, y, player.getAngle());
             
-            // Calculate grid cell coordinates
-            int tileSize = world.getConfig().tileSize();
-            int gridX = (int) (worldPos.getX() / tileSize);
-            int gridY = (int) (worldPos.getY() / tileSize);
+            // Wrap world coordinates using WorldUtils
+            double worldSize = world.getConfig().worldSize();
+            WorldUtils.Point2D wrappedWorldPos = WorldUtils.wrapWorldCoordinates(worldPos.getX(), worldPos.getY(), worldSize);
             
-            // Calculate chunk coordinates
+            // Calculate grid cell coordinates from wrapped world coordinates
+            int tileSize = world.getConfig().tileSize();
+            int gridX = (int) (wrappedWorldPos.x / tileSize);
+            int gridY = (int) (wrappedWorldPos.y / tileSize);
+            
+            // Calculate chunk coordinates from wrapped grid coordinates
             int chunkSize = world.getConfig().chunkSize();
             int chunkX = gridX / chunkSize;
             int chunkY = gridY / chunkSize;
@@ -323,17 +327,31 @@ public class GameEngine {
             int localTileX = gridX % chunkSize;
             int localTileY = gridY % chunkSize;
             
-                           // Calculate player cell coordinates
-               int playerGridX = (int) (player.getX() / tileSize);
-               int playerGridY = (int) (player.getY() / tileSize);
-               
-               gameLogger.info(() -> {
-                String logMessage = String.format("Click: Screen(%d, %d) -> World(%.1f, %.1f) -> Grid(%d, %d) -> Chunk(%d, %d)", 
-                (int)x, (int)y, worldPos.getX(), worldPos.getY(), gridX, gridY, chunkX, chunkY);
-                   logger.info(logMessage);
-                   return String.format("Click: Screen(%d, %d) -> World(%.1f, %.1f) -> Grid(%d, %d) -> Chunk(%d, %d)", 
-                                      (int)x, (int)y, worldPos.getX(), worldPos.getY(), gridX, gridY, chunkX, chunkY);
-               });
+            // Calculate player cell coordinates (also wrapped)
+            WorldUtils.Point2D wrappedPlayerPos = WorldUtils.wrapWorldCoordinates(player.getX(), player.getY(), worldSize);
+            int playerGridX = (int) (wrappedPlayerPos.x / tileSize);
+            int playerGridY = (int) (wrappedPlayerPos.y / tileSize);
+            
+            // Calculate camera position (also wrapped)
+            WorldUtils.Point2D wrappedCameraPos = WorldUtils.wrapWorldCoordinates(camera.getX(), camera.getY(), worldSize);
+            
+            gameLogger.info(() -> {
+                String logMessage = String.format("=== CLICK COORDINATES ===\n" +
+                    "Screen: (%.0f, %.0f)\n" +
+                    "World pixels: (%.1f, %.1f)\n" +
+                    "Grid cell: (%d, %d)\n" +
+                    "Chunk: (%d, %d)\n" +
+                    "Local tile in chunk: (%d, %d)\n" +
+                    "Player position: (%.1f, %.1f)\n" +
+                    "Player cell: (%d, %d)\n" +
+                    "Camera position: (%.1f, %.1f)\n" +
+                    "======================",
+                    x, y, wrappedWorldPos.x, wrappedWorldPos.y, gridX, gridY, chunkX, chunkY, 
+                    localTileX, localTileY, wrappedPlayerPos.x, wrappedPlayerPos.y, 
+                    playerGridX, playerGridY, wrappedCameraPos.x, wrappedCameraPos.y);
+                logger.info(logMessage);
+                return logMessage;
+            });
         }
     }
     
