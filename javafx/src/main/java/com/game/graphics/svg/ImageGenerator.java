@@ -52,7 +52,7 @@ public class ImageGenerator {
      * Generate tree image using configurable parameters
      */
     public static BufferedImage generateTreeImage(EntityConfig.TreeConfig config) throws Exception {
-        logger.info("SvgGeneratorWebView.generateTreeImage(config) called with size={}, foliageRadius={}, imageHeight={}", 
+        logger.info("ImageGenerator.generateTreeImage(config) called with size={}, foliageRadius={}, imageHeight={}", 
                    config.size, config.foliageRadius, config.imageHeight);
         
         String svg = SvgGenerator.generateTreeSVG(config);
@@ -74,7 +74,7 @@ public class ImageGenerator {
      * Generate rock image using configurable parameters
      */
     public static BufferedImage generateRockImage(EntityConfig.RockConfig config) throws Exception {
-        logger.info("SvgGeneratorWebView.generateRockImage(config) called with size={}", config.size);
+        logger.info("ImageGenerator.generateRockImage(config) called with size={}", config.size);
         
         String svg = SvgGenerator.generateRockSVG(config);
         return SvgGenerator.svgToImage(svg, config.size, config.size);
@@ -84,7 +84,7 @@ public class ImageGenerator {
      * Generate grass image using SVG
      */
     public static BufferedImage generateGrassImage(int size) throws Exception {
-        logger.info("SvgGeneratorWebView.generateGrassImage(size={}) called", size);
+        logger.info("ImageGenerator.generateGrassImage(size={}) called", size);
         EntityConfig.GrassConfig config = new EntityConfig.GrassConfig();
         config.size = size;
         return generateGrassImage(config);
@@ -94,7 +94,7 @@ public class ImageGenerator {
      * Generate grass image using configurable parameters
      */
     public static BufferedImage generateGrassImage(EntityConfig.GrassConfig config) throws Exception {
-        logger.info("SvgGeneratorWebView.generateGrassImage(config) called with size={}, bladeCount={}", 
+        logger.info("ImageGenerator.generateGrassImage(config) called with size={}, bladeCount={}", 
                    config.size, config.bladeCount);
         
         String svg = SvgGenerator.generateGrassSVG(config);
@@ -105,7 +105,7 @@ public class ImageGenerator {
      * Generate plains background using SVG
      */
     public static BufferedImage generatePlainsBackground(int size) throws Exception {
-        logger.info("SvgGeneratorWebView.generatePlainsBackground(size={}) called", size);
+        logger.info("ImageGenerator.generatePlainsBackground(size={}) called", size);
         
         String svg = SvgGenerator.generatePlainsBackgroundSVG(size);
         return SvgGenerator.svgToImage(svg, size, size);
@@ -115,7 +115,7 @@ public class ImageGenerator {
      * Generate desert background using SVG
      */
     public static BufferedImage generateDesertBackground(int size) throws Exception {
-        logger.info("SvgGeneratorWebView.generateDesertBackground(size={}) called", size);
+        logger.info("ImageGenerator.generateDesertBackground(size={}) called", size);
         
         String svg = SvgGenerator.generateDesertBackgroundSVG(size);
         return SvgGenerator.svgToImage(svg, size, size);
