@@ -14,4 +14,12 @@ public record WorldConfig(
     public WorldConfig withSeed(int seed) {
         return new WorldConfig(seed, chunkSize, tileSize, chunkCount, biomePlainsFraction);
     }
+    
+    /**
+     * Get the world size in pixels (precomputed)
+     * @return The world size in pixels
+     */
+    public double worldSize() {
+        return chunkCount * chunkSize * tileSize;
+    }
 } 

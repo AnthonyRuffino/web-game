@@ -229,7 +229,34 @@ public class GameEngine {
     }
     
     public void handleMousePressed(double x, double y) {
-        // Handle mouse press
+        // Convert screen coordinates to world coordinates
+        if (camera != null && player != null) {
+            javafx.geometry.Point2D worldPos = camera.screenToWorld(x, y, player.getAngle());
+            
+            // Calculate grid cell coordinates
+            int tileSize = world.getConfig().tileSize();
+            int gridX = (int) (worldPos.getX() / tileSize);
+            int gridY = (int) (worldPos.getY() / tileSize);
+            
+            // Calculate chunk coordinates
+            int chunkSize = world.getConfig().chunkSize();
+            int chunkX = gridX / chunkSize;
+            int chunkY = gridY / chunkSize;
+            
+            // Calculate local tile coordinates within chunk
+            int localTileX = gridX % chunkSize;
+            int localTileY = gridY % chunkSize;
+            
+            logger.info("=== CLICK COORDINATES ===");
+            logger.info("Screen: ({}, {})", x, y);
+            logger.info("World pixels: ({}, {})", worldPos.getX(), worldPos.getY());
+            logger.info("Grid cell: ({}, {})", gridX, gridY);
+            logger.info("Chunk: ({}, {})", chunkX, chunkY);
+            logger.info("Local tile in chunk: ({}, {})", localTileX, localTileY);
+            logger.info("Player position: ({}, {})", player.getX(), player.getY());
+            logger.info("Camera position: ({}, {})", camera.getX(), camera.getY());
+            logger.info("========================");
+        }
     }
     
     public void handleMouseReleased(double x, double y) {

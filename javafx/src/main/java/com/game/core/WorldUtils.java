@@ -31,6 +31,15 @@ public class WorldUtils {
     }
     
     /**
+     * Get the world size in pixels (using precomputed value)
+     * @param worldConfig The world configuration for dimensions
+     * @return The world size in pixels
+     */
+    public static double getWorldSize(WorldConfig worldConfig) {
+        return worldConfig.worldSize();
+    }
+    
+    /**
      * Check if coordinates are within world bounds
      * @param x The x coordinate to check
      * @param y The y coordinate to check
@@ -38,7 +47,7 @@ public class WorldUtils {
      * @return true if coordinates are within bounds, false otherwise
      */
     public static boolean isWithinWorldBounds(double x, double y, WorldConfig worldConfig) {
-        double worldSize = worldConfig.chunkCount() * worldConfig.chunkSize() * worldConfig.tileSize();
+        double worldSize = worldConfig.worldSize();
         return x >= 0 && x < worldSize && y >= 0 && y < worldSize;
     }
     
