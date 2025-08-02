@@ -160,7 +160,10 @@ public class GameEngine {
     public void update(double deltaTime) {
         if (!running.get()) return;
         
-        // Update input
+        // Handle input (including zoom) BEFORE updating input manager
+        handleInput();
+        
+        // Update input (this resets mouseWheelDelta)
         inputManager.update(deltaTime);
         
         // Update player
@@ -172,9 +175,6 @@ public class GameEngine {
         
         // Debug: Log player and camera positions
         // Debug logging removed for performance
-        
-        // Handle input
-        handleInput();
         
         // Clear just pressed keys after handling input
         inputManager.clearJustPressedKeys();
@@ -208,7 +208,12 @@ public class GameEngine {
         // Zoom
         double wheelDelta = inputManager.getMouseWheelDelta();
         if (wheelDelta != 0) {
-            camera.setZoom(camera.getZoom() + wheelDelta * 0.1);
+            // Adjust zoom sensitivity - JavaFX wheel delta is typically 40/-40
+            double zoomChange = wheelDelta > 0 ? 0.2 : -0.2;
+            double oldZoom = camera.getZoom();
+            camera.setZoom(oldZoom + zoomChange);
+            logger.info("Zoom: wheelDelta={}, zoomChange={}, oldZoom={}, newZoom={}", 
+                       wheelDelta, zoomChange, oldZoom, camera.getZoom());
         }
     }
     

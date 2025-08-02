@@ -66,10 +66,12 @@ public class InputManager {
     
     private void handleMouseScroll(javafx.scene.input.ScrollEvent event) {
         mouseWheelDelta = event.getDeltaY();
+        logger.info("Scroll event received: deltaY = {}", event.getDeltaY());
     }
     
     public void handleMouseScroll(double delta) {
         mouseWheelDelta = delta;
+        logger.info("Scroll delta set: {}", delta);
     }
     
     public boolean isKeyPressed(KeyCode keyCode) {
