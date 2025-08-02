@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 public class Camera {
     private static final Logger logger = LoggerFactory.getLogger(Camera.class);
+    private static final double ROTATION_SPEED = Math.PI * 0.1;
     
     private double x, y;
     private double zoom = 1.0;
@@ -99,7 +100,7 @@ public class Camera {
     }
     
     public double getRotationSpeed() {
-        return Math.PI * 0.8; // radians per second
+        return ROTATION_SPEED;
     }
     
     // Convert screen coordinates to world coordinates (like JavaScript implementation)
