@@ -9,46 +9,22 @@ public class WorldUtils {
      * @param worldConfig The world configuration for dimensions
      * @return Wrapped coordinates as a Point2D
      */
-    public static Point2D wrapWorldCoordinates(double x, double y, WorldConfig worldConfig) {
-        double worldSize = worldConfig.chunkCount() * worldConfig.chunkSize() * worldConfig.tileSize();
-        
+    public static Point2D wrapWorldCoordinates(double x, double y, double worldSize) {
         // Wrap coordinates using modulo arithmetic
-        double wrappedX = ((x % worldSize) + worldSize) % worldSize;
-        double wrappedY = ((y % worldSize) + worldSize) % worldSize;
+        
+        double wrappedX = x;
+        double wrappedY = y;
+
+        if (x > worldSize || x < 0) {
+            wrappedX = ((x % worldSize) + worldSize) % worldSize;
+            System.out.println("World Wrap X: " + x + " -> " + wrappedX + " (worldSize: " + worldSize + ")");
+        }
+        if (y > worldSize || y < 0) {
+            wrappedY = ((y % worldSize) + worldSize) % worldSize;
+            System.out.println("World Wrap Y: " + y + " -> " + wrappedY + " (worldSize: " + worldSize + ")");
+        }
         
         return new Point2D(wrappedX, wrappedY);
-    }
-    
-    /**
-     * Wrap a single coordinate to world bounds
-     * @param coordinate The coordinate to wrap
-     * @param worldConfig The world configuration for dimensions
-     * @return The wrapped coordinate
-     */
-    public static double wrapCoordinate(double coordinate, WorldConfig worldConfig) {
-        double worldSize = worldConfig.chunkCount() * worldConfig.chunkSize() * worldConfig.tileSize();
-        return ((coordinate % worldSize) + worldSize) % worldSize;
-    }
-    
-    /**
-     * Get the world size in pixels (using precomputed value)
-     * @param worldConfig The world configuration for dimensions
-     * @return The world size in pixels
-     */
-    public static double getWorldSize(WorldConfig worldConfig) {
-        return worldConfig.worldSize();
-    }
-    
-    /**
-     * Check if coordinates are within world bounds
-     * @param x The x coordinate to check
-     * @param y The y coordinate to check
-     * @param worldConfig The world configuration for dimensions
-     * @return true if coordinates are within bounds, false otherwise
-     */
-    public static boolean isWithinWorldBounds(double x, double y, WorldConfig worldConfig) {
-        double worldSize = worldConfig.worldSize();
-        return x >= 0 && x < worldSize && y >= 0 && y < worldSize;
     }
     
     /**

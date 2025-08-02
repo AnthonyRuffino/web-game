@@ -3,6 +3,7 @@ package com.game.rendering;
 import com.game.core.World;
 import com.game.core.Player;
 import com.game.core.Entity;
+import com.game.core.WorldConfig;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
@@ -17,12 +18,17 @@ public class Renderer {
     
     private final AssetManager assetManager;
     private final GridHighlightSystem gridHighlight;
+    private final WorldConfig worldConfig;
+    private final double worldSize;
+    private final int chunkSize;
+    private final int tileSize;
     
-    // World boundary constants (will be calculated dynamically)
-    private static final double WORLD_START = 0;
-    
-    public Renderer(AssetManager assetManager) {
+    public Renderer(AssetManager assetManager, WorldConfig worldConfig) {
         this.assetManager = assetManager;
+        this.worldConfig = worldConfig;
+        this.worldSize = worldConfig.worldSize();
+        this.chunkSize = worldConfig.chunkSize() * worldConfig.tileSize();
+        this.tileSize = worldConfig.tileSize();
         this.gridHighlight = new GridHighlightSystem();
     }
     
@@ -61,10 +67,9 @@ public class Renderer {
         // Get background image from asset manager
         Image backgroundImage = assetManager.getBackgroundImage(biomeName);
         
-        // Calculate world boundaries
-        double worldSize = 64 * 64 * 32; // chunkCount * chunkSize * tileSize
+        // Use precomputed world boundaries
         double worldStart = 0;
-        double worldEnd = worldSize;
+        double worldEnd = this.worldSize;
         
         // Calculate visible area in world coordinates
         double viewWidth = camera.getWidth() / camera.getZoom();
@@ -92,13 +97,18 @@ public class Renderer {
         // Only draw background tiles if we're within world bounds
         if (renderStartX < renderEndX && renderStartY < renderEndY) {
             if (backgroundImage != null) {
-                double imageWidth = backgroundImage.getWidth();
-                double imageHeight = backgroundImage.getHeight();
+                // Use chunk dimensions instead of image file dimensions
+                double chunkWidth = this.chunkSize;
+                double chunkHeight = this.chunkSize;
                 
-                // Draw background tiles with proper positioning (only within world bounds)
-                for (double x = renderStartX - (renderStartX % imageWidth); x < renderEndX; x += imageWidth) {
-                    for (double y = renderStartY - (renderStartY % imageHeight); y < renderEndY; y += imageHeight) {
-                        gc.drawImage(backgroundImage, x, y);
+                // Draw background tiles using chunk dimensions (not image file dimensions)
+                for (double x = renderStartX - (renderStartX % chunkWidth); x < renderEndX; x += chunkWidth) {
+                    for (double y = renderStartY - (renderStartY % chunkHeight); y < renderEndY; y += chunkHeight) {
+                        // Only draw if the chunk is within world bounds
+                        if (x < worldEnd && y < worldEnd) {
+                            // Draw the image scaled to chunk size
+                            gc.drawImage(backgroundImage, x, y, chunkWidth, chunkHeight);
+                        }
                     }
                 }
             } else {
@@ -110,15 +120,14 @@ public class Renderer {
     }
     
     private void drawGrid(GraphicsContext gc, Camera camera) {
-        // Calculate grid size and spacing
-        double gridSize = 32.0;
+        // Use stored tile size for grid spacing
+        double gridSize = this.tileSize;
         double viewWidth = camera.getWidth() / camera.getZoom();
         double viewHeight = camera.getHeight() / camera.getZoom();
         
-        // Calculate world boundaries
-        double worldSize = 64 * 64 * 32; // chunkCount * chunkSize * tileSize
+        // Use precomputed world boundaries
         double worldStart = 0;
-        double worldEnd = worldSize;
+        double worldEnd = this.worldSize;
         
         // Calculate diagonal length to ensure grid covers entire rotated viewport
         double diagonalLength = Math.sqrt(viewWidth * viewWidth + viewHeight * viewHeight);
@@ -164,10 +173,9 @@ public class Renderer {
         double viewWidth = camera.getWidth() / camera.getZoom();
         double viewHeight = camera.getHeight() / camera.getZoom();
         
-        // Calculate world boundaries
-        double worldSize = 64 * 64 * 32; // chunkCount * chunkSize * tileSize
+        // Use precomputed world boundaries
         double worldStart = 0;
-        double worldEnd = worldSize;
+        double worldEnd = this.worldSize;
         
         // Calculate diagonal length to ensure entities cover entire rotated viewport
         double diagonalLength = Math.sqrt(viewWidth * viewWidth + viewHeight * viewHeight);

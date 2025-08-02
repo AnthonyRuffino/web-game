@@ -82,10 +82,10 @@ public class GameEngine {
         player = new Player(0, 0, world.getConfig());
         
         // Initialize camera with world config for wrapping
-        camera = new Camera(canvasWidth, canvasHeight, world.getConfig());
+        camera = new Camera(canvasWidth, canvasHeight);
         
         // Initialize renderer with asset manager
-        renderer = new Renderer(assetManager);
+        renderer = new Renderer(assetManager, world.getConfig());
         
         // Initialize game loop
         gameLoop = new GameLoop(this);
@@ -247,15 +247,20 @@ public class GameEngine {
             int localTileX = gridX % chunkSize;
             int localTileY = gridY % chunkSize;
             
-            logger.info("=== CLICK COORDINATES ===");
-            logger.info("Screen: ({}, {})", x, y);
-            logger.info("World pixels: ({}, {})", worldPos.getX(), worldPos.getY());
-            logger.info("Grid cell: ({}, {})", gridX, gridY);
-            logger.info("Chunk: ({}, {})", chunkX, chunkY);
-            logger.info("Local tile in chunk: ({}, {})", localTileX, localTileY);
-            logger.info("Player position: ({}, {})", player.getX(), player.getY());
-            logger.info("Camera position: ({}, {})", camera.getX(), camera.getY());
-            logger.info("========================");
+                           // Calculate player cell coordinates
+               int playerGridX = (int) (player.getX() / tileSize);
+               int playerGridY = (int) (player.getY() / tileSize);
+               
+               logger.info("=== CLICK COORDINATES ===");
+               logger.info("Screen: ({}, {})", x, y);
+               logger.info("World pixels: ({}, {})", worldPos.getX(), worldPos.getY());
+               logger.info("Grid cell: ({}, {})", gridX, gridY);
+               logger.info("Chunk: ({}, {})", chunkX, chunkY);
+               logger.info("Local tile in chunk: ({}, {})", localTileX, localTileY);
+               logger.info("Player position: ({}, {})", player.getX(), player.getY());
+               logger.info("Player cell: ({}, {})", playerGridX, playerGridY);
+               logger.info("Camera position: ({}, {})", camera.getX(), camera.getY());
+               logger.info("========================");
         }
     }
     
