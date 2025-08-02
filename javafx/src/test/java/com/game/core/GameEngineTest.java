@@ -5,8 +5,11 @@ import com.game.persistence.DatabaseManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -15,6 +18,9 @@ class GameEngineTest {
     
     @Mock
     private DatabaseManager databaseManager;
+    
+    @TempDir
+    Path tempDir;
     
     private GameEngine gameEngine;
     private GameLogger testLogger;
@@ -26,8 +32,9 @@ class GameEngineTest {
         // Create a test logger that always enables debug mode
         testLogger = new GameLogger(() -> true);
         
-        // Create game engine with mocked database manager
-        gameEngine = new GameEngine(databaseManager);
+        // Create game engine with mocked database manager and test-specific assets directory
+        Path testAssetsDir = tempDir.resolve("test-assets");
+        gameEngine = new GameEngine(databaseManager, testAssetsDir);
     }
     
     @AfterEach

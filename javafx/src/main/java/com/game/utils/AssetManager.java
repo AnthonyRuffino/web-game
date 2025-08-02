@@ -23,16 +23,16 @@ public class AssetManager {
     private final Map<String, Image> imageCache;
     private final Map<String, byte[]> imageDataCache;
     
-    public AssetManager() {
-        this(new AssetDirectoryManager());
-    }
-    
     public AssetManager(AssetDirectoryManager directoryManager) {
         this.directoryManager = directoryManager;
         this.imageCache = new ConcurrentHashMap<>();
         this.imageDataCache = new ConcurrentHashMap<>();
         
         logger.info("Asset manager initialized");
+    }
+    
+    public AssetManager(Path assetsDirectory) {
+        this(new AssetDirectoryManager(assetsDirectory));
     }
     
     public Image getEntityImage(String entityType, String imageName) {

@@ -12,17 +12,13 @@ public class AssetDirectoryManager {
     
     private final Path assetsDirectory;
     
-    public AssetDirectoryManager() {
-        this(getDefaultAssetsDirectory());
-    }
-    
     public AssetDirectoryManager(Path assetsDirectory) {
         this.assetsDirectory = assetsDirectory;
         ensureDirectoryExists();
         logger.info("Asset directory initialized: {}", assetsDirectory);
     }
     
-    private static Path getDefaultAssetsDirectory() {
+    public static Path getDefaultAssetsDirectory() {
         // Create assets directory in user's home folder
         String userHome = System.getProperty("user.home");
         return Paths.get(userHome, ".web-game", "assets");

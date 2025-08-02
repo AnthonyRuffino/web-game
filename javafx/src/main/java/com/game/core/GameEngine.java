@@ -4,6 +4,7 @@ import com.game.persistence.DatabaseManager;
 import com.game.rendering.Renderer;
 import com.game.rendering.Camera;
 import com.game.utils.AssetManager;
+import com.game.utils.AssetDirectoryManager;
 import com.game.logging.GameLogger;
 import javafx.scene.Scene;
 import javafx.scene.canvas.GraphicsContext;
@@ -11,6 +12,7 @@ import javafx.scene.input.KeyCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -23,6 +25,7 @@ public class GameEngine {
     private final AtomicBoolean running;
     private final AtomicBoolean debugMode;
     private final GameLogger gameLogger;
+    private final Path assetsDirectory;
     
     private GameLoop gameLoop;
     private InputManager inputManager;
@@ -38,7 +41,12 @@ public class GameEngine {
     private Camera camera;
     
     public GameEngine(DatabaseManager databaseManager) {
+        this(databaseManager, AssetDirectoryManager.getDefaultAssetsDirectory());
+    }
+    
+    public GameEngine(DatabaseManager databaseManager, Path assetsDirectory) {
         this.databaseManager = databaseManager;
+        this.assetsDirectory = assetsDirectory;
         this.running = new AtomicBoolean(false);
         this.debugMode = new AtomicBoolean(false);
         this.gameLogger = new GameLogger(this::isDebugMode);
@@ -94,8 +102,8 @@ public class GameEngine {
             return "Initializing game systems...";
         });
         
-        // Initialize asset manager
-        assetManager = new AssetManager();
+        // Initialize asset manager with specified assets directory
+        assetManager = new AssetManager(assetsDirectory);
         
         // Initialize input system
         inputManager = new InputManager();
