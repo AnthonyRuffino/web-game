@@ -48,35 +48,6 @@ public class SimpleSvgTest {
     }
     
     @Test
-    void testGameAssets() throws Exception {
-        // Test tree generation (now uses configurable size)
-        BufferedImage treeImage = SvgGenerator.generateTreeImage(64);
-        assertNotNull(treeImage);
-        // Tree uses imageHeight from config (96) and width based on foliageRadius*2 (48)
-        assertEquals(48, treeImage.getWidth());
-        assertEquals(96, treeImage.getHeight());
-        
-        // Test rock generation
-        BufferedImage rockImage = SvgGenerator.generateRockImage(64);
-        assertNotNull(rockImage);
-        assertEquals(64, rockImage.getWidth());
-        assertEquals(64, rockImage.getHeight());
-        
-        // Test grass generation
-        BufferedImage grassImage = SvgGenerator.generateGrassImage(64);
-        assertNotNull(grassImage);
-        assertEquals(64, grassImage.getWidth());
-        assertEquals(64, grassImage.getHeight());
-        
-        // Save test images
-        ImageIO.write(treeImage, "PNG", tempDir.resolve("tree.png").toFile());
-        ImageIO.write(rockImage, "PNG", tempDir.resolve("rock.png").toFile());
-        ImageIO.write(grassImage, "PNG", tempDir.resolve("grass.png").toFile());
-        
-        System.out.println("Game assets generated successfully in: " + tempDir);
-    }
-    
-    @Test
     void testSvgSanitization() {
         String maliciousSvg = """
             <svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">

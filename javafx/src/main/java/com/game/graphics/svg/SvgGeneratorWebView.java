@@ -289,16 +289,18 @@ public class SvgGeneratorWebView {
         logger.info("SvgGeneratorWebView.generateTreeImage(config) called with size={}, foliageRadius={}, imageHeight={}", 
                    config.size, config.foliageRadius, config.imageHeight);
         
+        String svg = SvgGenerator.generateTreeSVG(config);
+        int width = config.foliageRadius * 2;
+        int height = config.imageHeight;
         try {
-            String svg = SvgGenerator.generateTreeSVG(config);
             logger.info("Generated tree SVG (length: {}), attempting WebView rendering...", svg.length());
-            BufferedImage result = svgToImage(svg, config.foliageRadius * 2, config.imageHeight);
+            BufferedImage result = svgToImage(svg, width, height);
             logger.info("WebView tree rendering successful");
             return result;
         } catch (Exception e) {
             logger.error("WebView tree rendering failed: {}", e.getMessage());
             logger.info("Falling back to Java2D renderer for tree");
-            return SvgGenerator.generateTreeImage(config);
+            return SvgGenerator.svgToImage(svg, width, height);
         }
     }
     
@@ -317,8 +319,8 @@ public class SvgGeneratorWebView {
     public static BufferedImage generateRockImage(EntityConfig.RockConfig config) throws Exception {
         logger.info("SvgGeneratorWebView.generateRockImage(config) called with size={}", config.size);
         
+        String svg = SvgGenerator.generateRockSVG(config);
         try {
-            String svg = SvgGenerator.generateRockSVG(config);
             logger.info("Generated rock SVG (length: {}), attempting WebView rendering...", svg.length());
             BufferedImage result = svgToImage(svg, config.size, config.size);
             logger.info("WebView rock rendering successful");
@@ -326,7 +328,7 @@ public class SvgGeneratorWebView {
         } catch (Exception e) {
             logger.error("WebView rock rendering failed: {}", e.getMessage());
             logger.info("Falling back to Java2D renderer for rock");
-            return SvgGenerator.generateRockImage(config);
+            return SvgGenerator.svgToImage(svg, config.size, config.size);
         }
     }
     
@@ -347,8 +349,9 @@ public class SvgGeneratorWebView {
         logger.info("SvgGeneratorWebView.generateGrassImage(config) called with size={}, bladeCount={}", 
                    config.size, config.bladeCount);
         
+        String svg = SvgGenerator.generateGrassSVG(config);
         try {
-            String svg = SvgGenerator.generateGrassSVG(config);
+            
             logger.info("Generated grass SVG (length: {}), attempting WebView rendering...", svg.length());
             BufferedImage result = svgToImage(svg, config.size, config.size);
             logger.info("WebView grass rendering successful");
@@ -356,7 +359,7 @@ public class SvgGeneratorWebView {
         } catch (Exception e) {
             logger.error("WebView grass rendering failed: {}", e.getMessage());
             logger.info("Falling back to Java2D renderer for grass");
-            return SvgGenerator.generateGrassImage(config);
+            return SvgGenerator.svgToImage(svg, config.size, config.size);
         }
     }
     
@@ -366,8 +369,8 @@ public class SvgGeneratorWebView {
     public static BufferedImage generatePlainsBackground(int size) throws Exception {
         logger.info("SvgGeneratorWebView.generatePlainsBackground(size={}) called", size);
         
+        String svg = generatePlainsBackgroundSVG(size);
         try {
-            String svg = generatePlainsBackgroundSVG(size);
             logger.info("Generated plains background SVG (length: {}), attempting WebView rendering...", svg.length());
             BufferedImage result = svgToImage(svg, size, size);
             logger.info("WebView plains background rendering successful");
@@ -375,7 +378,7 @@ public class SvgGeneratorWebView {
         } catch (Exception e) {
             logger.error("WebView plains background rendering failed: {}", e.getMessage());
             logger.info("Falling back to Java2D renderer for plains background");
-            return SvgGenerator.generatePlainsBackground(size);
+            return SvgGenerator.svgToImage(svg, size, size);
         }
     }
     
@@ -385,8 +388,9 @@ public class SvgGeneratorWebView {
     public static BufferedImage generateDesertBackground(int size) throws Exception {
         logger.info("SvgGeneratorWebView.generateDesertBackground(size={}) called", size);
         
+        String svg = generateDesertBackgroundSVG(size);
         try {
-            String svg = generateDesertBackgroundSVG(size);
+            
             logger.info("Generated desert background SVG (length: {}), attempting WebView rendering...", svg.length());
             BufferedImage result = svgToImage(svg, size, size);
             logger.info("WebView desert background rendering successful");
@@ -394,7 +398,7 @@ public class SvgGeneratorWebView {
         } catch (Exception e) {
             logger.error("WebView desert background rendering failed: {}", e.getMessage());
             logger.info("Falling back to Java2D renderer for desert background");
-            return SvgGenerator.generateDesertBackground(size);
+            return SvgGenerator.svgToImage(svg, size, size);
         }
     }
     

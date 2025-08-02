@@ -343,25 +343,7 @@ public class SvgGenerator {
         // Default to black
         return new Color(0, 0, 0, (int)(opacity * 255));
     }
-    
-    /**
-     * Generate tree image using SVG-like approach
-     */
-    public static BufferedImage generateTreeImage(int size) {
-        EntityConfig.TreeConfig config = new EntityConfig.TreeConfig();
-        config.size = size;
-        return generateTreeImage(config);
-    }
-    
-    /**
-     * Generate tree image using configurable parameters
-     */
-    public static BufferedImage generateTreeImage(EntityConfig.TreeConfig config) {
-        String svg = generateTreeSVG(config);
-        // Use the actual SVG dimensions: width = foliageRadius*2, height = imageHeight
-        return svgToImage(svg, config.foliageRadius * 2, config.imageHeight);
-    }
-    
+
     /**
      * Generate SVG for tree entity (matches JavaScript implementation)
      */
@@ -395,23 +377,6 @@ public class SvgGenerator {
         );
         
         return svg;
-    }
-    
-    /**
-     * Generate rock image using SVG-like approach
-     */
-    public static BufferedImage generateRockImage(int size) {
-        EntityConfig.RockConfig config = new EntityConfig.RockConfig();
-        config.size = size;
-        return generateRockImage(config);
-    }
-    
-    /**
-     * Generate rock image using configurable parameters
-     */
-    public static BufferedImage generateRockImage(EntityConfig.RockConfig config) {
-        String svg = generateRockSVG(config);
-        return svgToImage(svg, config.size);
     }
     
     /**
@@ -449,23 +414,6 @@ public class SvgGenerator {
         );
         
         return svg;
-    }
-    
-    /**
-     * Generate grass image using SVG-like approach
-     */
-    public static BufferedImage generateGrassImage(int size) {
-        EntityConfig.GrassConfig config = new EntityConfig.GrassConfig();
-        config.size = size;
-        return generateGrassImage(config);
-    }
-    
-    /**
-     * Generate grass image using configurable parameters
-     */
-    public static BufferedImage generateGrassImage(EntityConfig.GrassConfig config) {
-        String svg = generateGrassSVG(config);
-        return svgToImage(svg, config.size);
     }
     
     /**
@@ -518,48 +466,6 @@ public class SvgGenerator {
         );
 
         return svg;
-    }
-    
-    /**
-     * Generate plains background using SVG-like approach
-     */
-    public static BufferedImage generatePlainsBackground(int size) {
-        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = image.createGraphics();
-        
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        // Create gradient background (similar to SVG gradient)
-        GradientPaint gradient = new GradientPaint(
-            0, 0, new Color(135, 206, 235), // Sky blue
-            0, size, new Color(144, 238, 144) // Light green
-        );
-        g2d.setPaint(gradient);
-        g2d.fillRect(0, 0, size, size);
-        
-        g2d.dispose();
-        return image;
-    }
-    
-    /**
-     * Generate desert background using SVG-like approach
-     */
-    public static BufferedImage generateDesertBackground(int size) {
-        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = image.createGraphics();
-        
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        // Create desert gradient
-        GradientPaint gradient = new GradientPaint(
-            0, 0, new Color(255, 215, 0), // Gold
-            0, size, new Color(210, 180, 140) // Tan
-        );
-        g2d.setPaint(gradient);
-        g2d.fillRect(0, 0, size, size);
-        
-        g2d.dispose();
-        return image;
     }
     
     /**
