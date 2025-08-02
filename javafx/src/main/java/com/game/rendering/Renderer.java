@@ -27,13 +27,13 @@ public class Renderer {
         // Apply camera transformations
         camera.applyTransform(gc);
         
-        // Draw proper tiled background instead of simple rectangle
-        drawTiledBackground(gc, camera, "plains");
-        
-        // Apply player perspective transform if needed
+        // Apply player perspective transform if needed (before background drawing)
         if (camera.getMode() == Camera.CameraMode.PLAYER_PERSPECTIVE) {
             camera.applyPlayerPerspectiveTransform(gc, player.getAngle());
         }
+        
+        // Draw proper tiled background after rotation is applied
+        drawTiledBackground(gc, camera, "plains");
         
         // Draw world grid with proper coordinate calculations
         drawGrid(gc, camera);
