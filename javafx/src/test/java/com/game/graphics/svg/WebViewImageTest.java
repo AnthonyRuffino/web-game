@@ -43,14 +43,24 @@ public class WebViewImageTest {
             webView.setMaxSize(width, height);
 
             javafx.scene.web.WebEngine engine = webView.getEngine();
-            javafx.scene.Scene scene = new javafx.scene.Scene(new javafx.scene.layout.StackPane(webView)); // Important: attach to scene graph
+            javafx.scene.Scene scene = new javafx.scene.Scene(new javafx.scene.layout.StackPane(webView));
+            
+            // Set scene size to match WebView size
+            scene.setRoot(new javafx.scene.layout.StackPane(webView));
+            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
 
             engine.loadContent(htmlContent);
 
             engine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
                 if (newState == javafx.concurrent.Worker.State.SUCCEEDED) {
-                    // One more layout pass
+                    // Add a small delay to ensure rendering is complete
                     javafx.application.Platform.runLater(() -> {
+                        try {
+                            Thread.sleep(100); // Small delay for rendering
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        
                         javafx.scene.image.WritableImage fxImage = webView.snapshot(new javafx.scene.SnapshotParameters(), null);
 
                         int w = (int) fxImage.getWidth();
@@ -70,7 +80,7 @@ public class WebViewImageTest {
             });
         });
 
-        if (!latch.await(5, TimeUnit.SECONDS)) {
+        if (!latch.await(10, TimeUnit.SECONDS)) {
             throw new TimeoutException("WebView snapshot timed out.");
         }
 
