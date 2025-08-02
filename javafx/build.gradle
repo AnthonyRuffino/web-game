@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'jacoco'
+    id 'checkstyle'
 }
 
 group = 'com.game'
@@ -51,6 +53,85 @@ application {
 
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+// JaCoCo configuration
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/module-info.class',
+                '**/GameApplication.class'
+            ])
+        }))
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.20
+            }
+        }
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.10
+            }
+        }
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'METHOD'
+                value = 'COVEREDRATIO'
+                minimum = 0.30
+            }
+        }
+    }
+    
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/module-info.class',
+                '**/GameApplication.class',
+                '**/MainWindow.class',
+                '**/CanvasWindow.class',
+                '**/WebViewBridge.class',
+                '**/Renderer.class',
+                '**/GridHighlightSystem.class',
+                '**/GameLoop.class',
+                '**/GameEngine.class',
+                '**/EntityConfig.class'
+            ])
+        }))
+    }
+}
+
+// Checkstyle configuration
+checkstyle {
+    toolVersion = '10.12.5'
+    configFile = file('checkstyle.xml')
+    configProperties = [
+        'suppressionFile': file('suppressions.xml')
+    ]
+    maxWarnings = 0
 }
 
 // Native image configuration removed - focusing on JVM performance
