@@ -328,16 +328,9 @@ public class GameEngine {
                int playerGridY = (int) (player.getY() / tileSize);
                
                gameLogger.info(() -> {
-                   logger.info("=== CLICK COORDINATES ===");
-                   logger.info("Screen: ({}, {})", x, y);
-                   logger.info("World pixels: ({}, {})", worldPos.getX(), worldPos.getY());
-                   logger.info("Grid cell: ({}, {})", gridX, gridY);
-                   logger.info("Chunk: ({}, {})", chunkX, chunkY);
-                   logger.info("Local tile in chunk: ({}, {})", localTileX, localTileY);
-                   logger.info("Player position: ({}, {})", player.getX(), player.getY());
-                   logger.info("Player cell: ({}, {})", playerGridX, playerGridY);
-                   logger.info("Camera position: ({}, {})", camera.getX(), camera.getY());
-                   logger.info("========================");
+                String logMessage = String.format("Click: Screen(%d, %d) -> World(%.1f, %.1f) -> Grid(%d, %d) -> Chunk(%d, %d)", 
+                (int)x, (int)y, worldPos.getX(), worldPos.getY(), gridX, gridY, chunkX, chunkY);
+                   logger.info(logMessage);
                    return String.format("Click: Screen(%d, %d) -> World(%.1f, %.1f) -> Grid(%d, %d) -> Chunk(%d, %d)", 
                                       (int)x, (int)y, worldPos.getX(), worldPos.getY(), gridX, gridY, chunkX, chunkY);
                });
