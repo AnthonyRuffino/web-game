@@ -1,160 +1,244 @@
-# Web Game - Electron Migration
+# JavaFX Game Migration
 
 ## Overview
-This is the Electron version of the web game, migrated from browser-based script loading to a proper desktop application with ES6 modules.
 
-## Current Status: Phase 1 Complete ✅
+This directory contains the JavaFX-based migration of the Electron web game. The migration preserves all existing functionality while leveraging Java's performance benefits, Project Loom for virtual threads, and GraalVM for native compilation.
 
-### What's Working
-- ✅ Basic Electron app structure
-- ✅ Main process and renderer process setup
-- ✅ Canvas initialization and responsive sizing
-- ✅ Basic game loop with FPS counter
-- ✅ Window resize handling
-- ✅ Debug information display
+## Architecture Overview
 
-### Features Implemented
-1. **Electron Foundation**
-   - Main process (`main.js`) with proper window management
-   - Preload script for secure IPC communication
-   - Renderer process with ES6 module support
-   - Responsive canvas that scales with window size
+### Technology Stack
+- **Java 21+**: Latest LTS with Project Loom support
+- **JavaFX**: Modern UI framework for desktop applications
+- **GraalVM Native Image**: For native compilation and performance
+- **SQLite**: Shared persistence layer with Electron version
+- **Project Loom**: Virtual threads and structured concurrency
+- **Gradle**: Build system with native image support
 
-2. **Canvas System**
-   - CanvasManager class for handling canvas operations
-   - Responsive sizing that maintains aspect ratio
-   - Basic rendering utilities (rectangles, circles, text)
-   - Window resize event handling
+### Migration Strategy
 
-3. **Game Loop**
-   - Proper timing system with delta time
-   - FPS counter and performance monitoring
-   - Debug information display
-   - Basic rendering pipeline
+#### Phase 1: Foundation & WebView Bridge
+- Basic JavaFX application structure
+- WebView integration to load existing HTML/JS UI
+- SQLite database connectivity
+- Shared asset loading
 
-## How to Run
+#### Phase 2: Core Systems Migration
+- Game loop implementation with JavaFX AnimationTimer
+- Input system with JavaFX event handling
+- Camera and rendering pipeline
+- World generation and chunk management
+
+#### Phase 3: Canvas Rendering Migration
+- Replace WebView with JavaFX Canvas
+- Entity rendering system
+- UI components on canvas
+- Performance optimization
+
+#### Phase 4: Advanced Features
+- Project Loom integration for background tasks
+- Structured concurrency for game systems
+- Native image compilation
+- Performance profiling and optimization
+
+## Directory Structure
+
+```
+javafx/
+├── docs/                          # Migration documentation
+│   ├── requirements.md            # System requirements and architecture
+│   ├── phase-1-migration.md      # Phase 1 implementation guide
+│   ├── phase-2-migration.md      # Phase 2 implementation guide
+│   ├── phase-3-migration.md      # Phase 3 implementation guide
+│   └── phase-4-migration.md      # Phase 4 implementation guide
+├── src/
+│   ├── main/
+│   │   ├── java/                 # Java source code
+│   │   │   ├── com/game/         # Main game package
+│   │   │   │   ├── core/         # Core game systems
+│   │   │   │   ├── rendering/    # Rendering pipeline
+│   │   │   │   ├── persistence/  # Database and persistence
+│   │   │   │   ├── ui/           # User interface components
+│   │   │   │   └── utils/        # Utility classes
+│   │   │   └── module-info.java  # Java module definition
+│   │   └── resources/            # Resources and assets
+│   │       ├── assets/           # Shared game assets
+│   │       ├── database/         # SQLite database files
+│   │       └── ui/               # HTML/CSS/JS for WebView
+│   └── test/
+│       └── java/                 # Test code
+├── build.gradle                  # Gradle build configuration
+├── gradle.properties             # Gradle properties
+└── README.md                     # This file
+```
+
+## Quick Start
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- npm
+- Java 21+ with GraalVM
+- Gradle 8.0+
+- SQLite 3.x
 
-### Installation
+### Development Setup
 ```bash
-cd electron
-npm install
+# Navigate to JavaFX directory
+cd javafx
+
+# Build the project
+./gradlew build
+
+# Run in development mode
+./gradlew run
+
+# Build native image (requires GraalVM)
+./gradlew nativeCompile
 ```
 
-### Development
+### Running Both Versions
 ```bash
+# Run Electron version
 npm start
+
+# Run JavaFX version (in another terminal)
+cd javafx && ./gradlew run
 ```
 
-### Development with DevTools
+## Key Design Principles
+
+### Object-Oriented Philosophy
+- **Prefer composition over inheritance** for flexible entity systems
+- **Use interfaces and strategy patterns** for polymorphic behavior
+- **Avoid deep class hierarchies** that complicate generics
+- **Leverage Java records** for simple data structures
+- **Use Map<String, Object>** for heterogeneous collections when appropriate
+
+### Performance Considerations
+- **Virtual threads** for I/O operations (database, file loading)
+- **Structured concurrency** for coordinated background tasks
+- **Native image compilation** for startup performance
+- **Canvas rendering** for optimal graphics performance
+- **Chunk-based world loading** for memory efficiency
+
+### Migration Guidelines
+- **Preserve existing behavior** during migration
+- **Maintain shared database schema** for compatibility
+- **Reference Electron code** for implementation details
+- **Test both versions** to ensure feature parity
+- **Incremental migration** with working checkpoints
+
+## Build Profiles
+
+### Development Profile
 ```bash
-npm run dev
+./gradlew run -Pprofile=dev
 ```
+- Full logging enabled
+- Hot reload support
+- Debug information displayed
+- Development database
 
-## Project Structure
+### Production Profile
+```bash
+./gradlew run -Pprofile=prod
 ```
-electron/
-├── package.json          # Electron dependencies and scripts
-├── main.js              # Main Electron process
-├── preload.js           # Preload script for security
-├── src/
-│   ├── index.html       # Main HTML file
-│   ├── styles/
-│   │   └── main.css     # Basic styles
-│   └── modules/
-│       └── game/
-│           ├── index.js # Game entry point
-│           └── canvas.js # Canvas management
-└── assets/
-    └── images/          # Game assets (future)
+- Optimized performance
+- Minimal logging
+- Production database
+- Release configuration
+
+### Native Profile
+```bash
+./gradlew nativeCompile -Pprofile=native
 ```
+- GraalVM native image compilation
+- Optimized for startup time
+- Reduced memory footprint
+- Platform-specific binaries
 
-## Next Steps: Phase 2 - Character System
+## Testing Strategy
 
-### Planned Features
-1. **Player Character**
-   - Simple circle/square representation
-   - Position tracking
-   - Basic movement system
+### Unit Tests
+- Core game logic validation
+- Database operations testing
+- Rendering pipeline verification
+- Input system validation
 
-2. **Input Handling**
-   - Keyboard input (WASD/Arrow keys)
-   - Movement validation
-   - Smooth movement
+### Integration Tests
+- End-to-end game flow testing
+- Database migration testing
+- Asset loading verification
+- Performance benchmarking
 
-### Implementation Plan
-- Create Player class with position and movement
-- Add InputManager for keyboard handling
-- Integrate input with character movement
-- Add visual feedback for movement
+### Compatibility Tests
+- Feature parity with Electron version
+- Database schema compatibility
+- Asset format compatibility
+- UI behavior consistency
 
-## Migration Strategy
+## Performance Targets
 
-### Phase-by-Phase Approach
-1. **Phase 1**: ✅ Electron Foundation (Complete)
-2. **Phase 2**: Character System with Input
-3. **Phase 3**: Rendering System with Dots/Particles
-4. **Phase 4**: World System with Chunks
-5. **Phase 5**: Entity System (Rocks, Trees, Grass)
-6. **Phase 6**: Game Loop and State Management
-7. **Phase 7**: UI System (Console, Menus)
-8. **Phase 8**: Persistence (Save/Load)
-9. **Phase 9+**: Advanced Features
+### Startup Time
+- **Development**: < 5 seconds
+- **Production**: < 3 seconds
+- **Native**: < 1 second
 
-### Code Organization
-- **ES6 Modules**: Proper import/export syntax
-- **Class-based**: Organized into focused classes
-- **Separation of Concerns**: Independent modules
-- **TypeScript Ready**: Structure for future TypeScript conversion
+### Memory Usage
+- **Development**: < 512MB
+- **Production**: < 256MB
+- **Native**: < 128MB
 
-## Development Guidelines
-
-### Code Style
-- Use ES6+ features (classes, arrow functions, destructuring)
-- Follow consistent naming conventions
-- Add proper error handling
-- Include JSDoc comments for complex functions
-
-### Testing
-- Test each iteration thoroughly
-- Verify feature parity with original game
-- Monitor performance at each step
-- Test with actual gameplay scenarios
-
-### Debugging
-- Use Electron DevTools for debugging
-- Check console output for errors
-- Monitor FPS and performance metrics
-- Use debug info panel for real-time data
+### Frame Rate
+- **Target**: 60 FPS stable
+- **Minimum**: 30 FPS under load
+- **Peak**: 120 FPS with vsync
 
 ## Troubleshooting
 
 ### Common Issues
-1. **Canvas not rendering**: Check if canvas element exists in HTML
-2. **Module import errors**: Verify file paths and ES6 module syntax
-3. **Window not opening**: Check main.js for proper window creation
-4. **Performance issues**: Monitor FPS counter and optimize rendering
+1. **GraalVM not found**: Install GraalVM and set JAVA_HOME
+2. **Native compilation fails**: Check GraalVM version compatibility
+3. **Database connection errors**: Verify SQLite file permissions
+4. **Asset loading issues**: Check resource paths and file existence
 
 ### Debug Commands
-- Open DevTools: `Ctrl+Shift+I` (or `Cmd+Option+I` on Mac)
-- Reload app: `Ctrl+R` (or `Cmd+R` on Mac)
-- Force quit: `Ctrl+Q` (or `Cmd+Q` on Mac)
+```bash
+# Enable debug logging
+./gradlew run -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
+
+# Profile memory usage
+./gradlew run -Dcom.sun.management.jmxremote
+
+# Run with specific JVM options
+./gradlew run -Djava.vm.options="-Xmx2g -XX:+UseG1GC"
+```
+
+## Contributing
+
+### Development Workflow
+1. **Create feature branch** from main
+2. **Implement changes** following migration phases
+3. **Test thoroughly** with both Electron and JavaFX versions
+4. **Update documentation** for any architectural changes
+5. **Submit pull request** with detailed description
+
+### Code Standards
+- **Java 21+ syntax** and features
+- **Consistent naming conventions**
+- **Comprehensive error handling**
+- **Javadoc documentation** for public APIs
+- **Unit test coverage** for critical paths
 
 ## Future Enhancements
 
 ### Planned Features
-- TypeScript migration
-- Hot reloading for development
-- Build system for distribution
-- Performance profiling tools
-- Automated testing framework
+- **3D rendering** with JavaFX 3D
+- **Multiplayer support** with networking
+- **Plugin system** for extensibility
+- **Advanced AI** for NPCs and world events
+- **Modding support** with dynamic loading
 
-### Integration Possibilities
-- Native file system access
-- System tray integration
-- Auto-update system
-- Cross-platform packaging
-- Advanced debugging tools 
+### Performance Optimizations
+- **GPU acceleration** for rendering
+- **Memory pooling** for objects
+- **Background compilation** for JIT optimization
+- **Predictive loading** for world chunks
+- **Caching strategies** for assets and data 
