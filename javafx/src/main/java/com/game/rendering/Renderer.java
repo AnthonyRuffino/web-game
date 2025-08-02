@@ -313,7 +313,7 @@ public class Renderer {
         
         // Controls
         gc.fillText("WASD: Move, P: Toggle Camera, Mouse Wheel: Zoom", 10, 50);
-        gc.fillText("E: Interact, G: Toggle Grid", 10, 65);
+        gc.fillText("E: Interact, G: Toggle Grid, L: Toggle Logs", 10, 65);
         
         // Grid status
         gc.fillText(String.format("Grid: %s", gridVisible ? "ON" : "OFF"), 10, 80);

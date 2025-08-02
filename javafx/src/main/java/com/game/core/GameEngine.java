@@ -4,6 +4,7 @@ import com.game.persistence.DatabaseManager;
 import com.game.rendering.Renderer;
 import com.game.rendering.Camera;
 import com.game.utils.AssetManager;
+import com.game.logging.GameLogger;
 import javafx.scene.Scene;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
@@ -21,6 +22,7 @@ public class GameEngine {
     private final DatabaseManager databaseManager;
     private final AtomicBoolean running;
     private final AtomicBoolean debugMode;
+    private final GameLogger gameLogger;
     
     private GameLoop gameLoop;
     private InputManager inputManager;
@@ -39,22 +41,32 @@ public class GameEngine {
         this.databaseManager = databaseManager;
         this.running = new AtomicBoolean(false);
         this.debugMode = new AtomicBoolean(false);
+        this.gameLogger = new GameLogger(this::isDebugMode);
     }
     
     public void start() {
         if (running.compareAndSet(false, true)) {
-            logger.info("Starting game engine...");
+            gameLogger.info(() -> {
+                logger.info("Starting game engine...");
+                return "Starting game engine...";
+            });
             
             initializeSystems();
             gameLoop.start();
             
-            logger.info("Game engine started successfully");
+            gameLogger.info(() -> {
+                logger.info("Game engine started successfully");
+                return "Game engine started successfully";
+            });
         }
     }
     
     public void stop() {
         if (running.compareAndSet(true, false)) {
-            logger.info("Stopping game engine...");
+            gameLogger.info(() -> {
+                logger.info("Stopping game engine...");
+                return "Stopping game engine...";
+            });
             
             if (gameLoop != null) {
                 gameLoop.stop();
@@ -62,12 +74,18 @@ public class GameEngine {
             
             cleanupSystems();
             
-            logger.info("Game engine stopped successfully");
+            gameLogger.info(() -> {
+                logger.info("Game engine stopped successfully");
+                return "Game engine stopped successfully";
+            });
         }
     }
     
     private void initializeSystems() {
-        logger.debug("Initializing game systems...");
+        gameLogger.debug(() -> {
+            logger.debug("Initializing game systems...");
+            return "Initializing game systems...";
+        });
         
         // Initialize asset manager
         assetManager = new AssetManager();
@@ -90,29 +108,47 @@ public class GameEngine {
         // Initialize game loop
         gameLoop = new GameLoop(this);
         
-        logger.debug("Game systems initialized");
+        gameLogger.debug(() -> {
+            logger.debug("Game systems initialized");
+            return "Game systems initialized";
+        });
     }
     
     private void cleanupSystems() {
         // Cleanup core game systems
-        logger.debug("Cleaning up game systems...");
+        gameLogger.debug(() -> {
+            logger.debug("Cleaning up game systems...");
+            return "Cleaning up game systems...";
+        });
         
         // TODO: Cleanup input system
         // TODO: Cleanup rendering system
         // TODO: Cleanup world system
         // TODO: Cleanup entity system
         
-        logger.debug("Game systems cleaned up");
+        gameLogger.debug(() -> {
+            logger.debug("Game systems cleaned up");
+            return "Game systems cleaned up";
+        });
     }
     
     public void saveGame() {
         CompletableFuture.runAsync(() -> {
             try {
-                logger.info("Saving game...");
+                gameLogger.info(() -> {
+                    logger.info("Saving game...");
+                    return "Saving game...";
+                });
                 // TODO: Implement game saving
-                logger.info("Game saved successfully");
+                gameLogger.info(() -> {
+                    logger.info("Game saved successfully");
+                    return "Game saved successfully";
+                });
             } catch (Exception e) {
-                logger.error("Failed to save game", e);
+                gameLogger.error(() -> {
+                    logger.error("Failed to save game", e);
+                    return "Failed to save game: " + e.getMessage();
+                });
             }
         });
     }
@@ -120,22 +156,37 @@ public class GameEngine {
     public void loadGame() {
         CompletableFuture.runAsync(() -> {
             try {
-                logger.info("Loading game...");
+                gameLogger.info(() -> {
+                    logger.info("Loading game...");
+                    return "Loading game...";
+                });
                 // TODO: Implement game loading
-                logger.info("Game loaded successfully");
+                gameLogger.info(() -> {
+                    logger.info("Game loaded successfully");
+                    return "Game loaded successfully";
+                });
             } catch (Exception e) {
-                logger.error("Failed to load game", e);
+                gameLogger.error(() -> {
+                    logger.error("Failed to load game", e);
+                    return "Failed to load game: " + e.getMessage();
+                });
             }
         });
     }
     
     public void toggleDebugInfo() {
         boolean newDebugMode = debugMode.getAndSet(!debugMode.get());
-        logger.info("Debug mode toggled: {}", !newDebugMode);
+        gameLogger.info(() -> {
+            logger.info("Debug mode toggled: {}", !newDebugMode);
+            return "Debug mode toggled: " + !newDebugMode;
+        });
     }
     
     public void showPerformanceInfo() {
-        logger.info("Performance info requested");
+        gameLogger.info(() -> {
+            logger.info("Performance info requested");
+            return "Performance info requested";
+        });
         // TODO: Implement performance monitoring
     }
     
@@ -146,7 +197,10 @@ public class GameEngine {
     
     public void setGameStateFromJson(String stateJson) {
         // TODO: Implement game state deserialization
-        logger.info("Setting game state from JSON: {}", stateJson);
+        gameLogger.info(() -> {
+            logger.info("Setting game state from JSON: {}", stateJson);
+            return "Setting game state from JSON: " + stateJson;
+        });
     }
     
     public boolean isRunning() {
@@ -188,12 +242,26 @@ public class GameEngine {
                                        Camera.CameraMode.PLAYER_PERSPECTIVE : Camera.CameraMode.FIXED_ANGLE;
             camera.setMode(newMode);
             inputManager.setCameraMode(newMode);
-            logger.info("Camera mode toggled to: {}", newMode);
+            gameLogger.info(() -> {
+                logger.info("Camera mode toggled to: {}", newMode);
+                return "Camera mode toggled to: " + newMode;
+            });
         }
         if (inputManager.isKeyJustPressed(KeyCode.R)) {
             // Reset camera rotation
             camera.setRotation(0);
-            logger.info("Camera rotation reset");
+            gameLogger.info(() -> {
+                logger.info("Camera rotation reset");
+                return "Camera rotation reset";
+            });
+        }
+        if (inputManager.isKeyJustPressed(KeyCode.L)) {
+            // Toggle log window
+            gameLogger.toggleWindow();
+            gameLogger.info(() -> {
+                logger.info("Log window toggled: {}", gameLogger.isWindowVisible());
+                return "Log window toggled: " + (gameLogger.isWindowVisible() ? "ON" : "OFF");
+            });
         }
         if (inputManager.isKeyJustPressed(KeyCode.G)) {
             // Toggle grid visibility
@@ -259,16 +327,20 @@ public class GameEngine {
                int playerGridX = (int) (player.getX() / tileSize);
                int playerGridY = (int) (player.getY() / tileSize);
                
-               logger.info("=== CLICK COORDINATES ===");
-               logger.info("Screen: ({}, {})", x, y);
-               logger.info("World pixels: ({}, {})", worldPos.getX(), worldPos.getY());
-               logger.info("Grid cell: ({}, {})", gridX, gridY);
-               logger.info("Chunk: ({}, {})", chunkX, chunkY);
-               logger.info("Local tile in chunk: ({}, {})", localTileX, localTileY);
-               logger.info("Player position: ({}, {})", player.getX(), player.getY());
-               logger.info("Player cell: ({}, {})", playerGridX, playerGridY);
-               logger.info("Camera position: ({}, {})", camera.getX(), camera.getY());
-               logger.info("========================");
+               gameLogger.info(() -> {
+                   logger.info("=== CLICK COORDINATES ===");
+                   logger.info("Screen: ({}, {})", x, y);
+                   logger.info("World pixels: ({}, {})", worldPos.getX(), worldPos.getY());
+                   logger.info("Grid cell: ({}, {})", gridX, gridY);
+                   logger.info("Chunk: ({}, {})", chunkX, chunkY);
+                   logger.info("Local tile in chunk: ({}, {})", localTileX, localTileY);
+                   logger.info("Player position: ({}, {})", player.getX(), player.getY());
+                   logger.info("Player cell: ({}, {})", playerGridX, playerGridY);
+                   logger.info("Camera position: ({}, {})", camera.getX(), camera.getY());
+                   logger.info("========================");
+                   return String.format("Click: Screen(%d, %d) -> World(%.1f, %.1f) -> Grid(%d, %d) -> Chunk(%d, %d)", 
+                                      (int)x, (int)y, worldPos.getX(), worldPos.getY(), gridX, gridY, chunkX, chunkY);
+               });
         }
     }
     
@@ -289,12 +361,18 @@ public class GameEngine {
         if (camera != null) {
             camera.resize(width, height);
         }
-        logger.debug("Canvas resized to: {}x{}", width, height);
+        gameLogger.debug(() -> {
+            logger.debug("Canvas resized to: {}x{}", width, height);
+            return "Canvas resized to: " + (int)width + "x" + (int)height;
+        });
     }
     
     public void setGraphicsContext(GraphicsContext gc) {
         this.graphicsContext = gc;
-        logger.debug("Graphics context set");
+        gameLogger.debug(() -> {
+            logger.debug("Graphics context set");
+            return "Graphics context set";
+        });
     }
     
     public void setupInputHandling(Scene scene) {
@@ -309,5 +387,9 @@ public class GameEngine {
     
     public AssetManager getAssetManager() {
         return assetManager;
+    }
+    
+    public GameLogger getGameLogger() {
+        return gameLogger;
     }
 } 

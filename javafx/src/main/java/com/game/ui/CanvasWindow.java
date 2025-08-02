@@ -18,6 +18,7 @@ public class CanvasWindow {
     private final GraphicsContext gc;
     private final GameEngine gameEngine;
     private final MenuBar menuBar;
+    private final javafx.scene.layout.VBox logWindowContainer;
     
     public CanvasWindow(GameEngine gameEngine) {
         this.gameEngine = gameEngine;
@@ -33,6 +34,29 @@ public class CanvasWindow {
         gameCanvas = new Canvas(1200, 800);
         gc = gameCanvas.getGraphicsContext2D();
         root.setCenter(gameCanvas);
+        
+        // Create log window container as overlay
+        logWindowContainer = new javafx.scene.layout.VBox();
+        logWindowContainer.setAlignment(javafx.geometry.Pos.TOP_RIGHT);
+        logWindowContainer.setPadding(new javafx.geometry.Insets(10));
+        logWindowContainer.setMouseTransparent(true); // Let mouse events pass through to canvas by default
+        
+        // Add log window to container
+        if (gameEngine.getGameLogger() != null) {
+            logWindowContainer.getChildren().add(gameEngine.getGameLogger().getLogWindow());
+            
+            // Set up mouse transparency based on log window visibility
+            gameEngine.getGameLogger().getLogWindow().visibleProperty().addListener((obs, oldVal, newVal) -> {
+                logWindowContainer.setMouseTransparent(!newVal);
+            });
+        }
+        
+        // Create a StackPane to overlay the log window on top of the canvas
+        javafx.scene.layout.StackPane stackPane = new javafx.scene.layout.StackPane();
+        stackPane.getChildren().addAll(gameCanvas, logWindowContainer);
+        
+        // Set the stack pane as the center of the root
+        root.setCenter(stackPane);
         
         // Make canvas focusable and request focus
         gameCanvas.setFocusTraversable(true);
@@ -87,11 +111,30 @@ public class CanvasWindow {
     }
     
     private void setupCanvasEvents() {
-        // Mouse events
-        gameCanvas.setOnMouseMoved(e -> gameEngine.handleMouseMoved(e.getX(), e.getY()));
-        gameCanvas.setOnMousePressed(e -> gameEngine.handleMousePressed(e.getX(), e.getY()));
-        gameCanvas.setOnMouseReleased(e -> gameEngine.handleMouseReleased(e.getX(), e.getY()));
-        gameCanvas.setOnScroll(e -> gameEngine.handleMouseScroll(e.getDeltaY()));
+        // Mouse events with log window awareness
+        gameCanvas.setOnMouseMoved(e -> {
+            if (!isMouseOverLogWindow(e.getX(), e.getY())) {
+                gameEngine.handleMouseMoved(e.getX(), e.getY());
+            }
+        });
+        
+        gameCanvas.setOnMousePressed(e -> {
+            if (!isMouseOverLogWindow(e.getX(), e.getY())) {
+                gameEngine.handleMousePressed(e.getX(), e.getY());
+            }
+        });
+        
+        gameCanvas.setOnMouseReleased(e -> {
+            if (!isMouseOverLogWindow(e.getX(), e.getY())) {
+                gameEngine.handleMouseReleased(e.getX(), e.getY());
+            }
+        });
+        
+        gameCanvas.setOnScroll(e -> {
+            if (!isMouseOverLogWindow(e.getX(), e.getY())) {
+                gameEngine.handleMouseScroll(e.getDeltaY());
+            }
+        });
         
         // Keyboard events (backup to scene level)
         gameCanvas.setOnKeyPressed(e -> {
@@ -104,6 +147,27 @@ public class CanvasWindow {
                 gameEngine.getInputManager().handleKeyReleased(e);
             }
         });
+    }
+    
+    private boolean isMouseOverLogWindow(double mouseX, double mouseY) {
+        if (gameEngine.getGameLogger() == null || !gameEngine.getGameLogger().isWindowVisible()) {
+            return false;
+        }
+        
+        // Get the log window bounds relative to the canvas
+        javafx.scene.Node logWindow = gameEngine.getGameLogger().getLogWindow();
+        if (logWindow == null) {
+            return false;
+        }
+        
+        // Convert mouse coordinates to scene coordinates
+        javafx.geometry.Point2D scenePoint = gameCanvas.localToScene(mouseX, mouseY);
+        
+        // Convert scene coordinates to log window local coordinates
+        javafx.geometry.Point2D logWindowPoint = logWindow.sceneToLocal(scenePoint);
+        
+        // Check if the point is within the log window bounds
+        return logWindow.contains(logWindowPoint);
     }
     
     private void setupResizeHandling() {
