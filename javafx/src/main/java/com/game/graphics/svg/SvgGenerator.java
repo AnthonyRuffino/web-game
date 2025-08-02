@@ -467,6 +467,64 @@ public class SvgGenerator {
 
         return svg;
     }
+
+    /**
+     * Generate SVG for plains background (matches JavaScript implementation)
+     */
+    public static String generatePlainsBackgroundSVG(int size) {
+        // Use the exact entityRenderer plains configuration from the JavaScript
+        String baseColor = "#3cb043";
+        String[] rectColors = {"#4fdc5a", "#2e8b3d", "#4fdc5a", "#2e8b3d", "#4fdc5a", "#2e8b3d", "#4fdc5a", "#2e8b3d"};
+        int[] rectX = {40, 120, 320, 480, 600, 200, 560, 80};
+        int[] rectY = {80, 200, 320, 560, 40, 400, 320, 600};
+        
+        StringBuilder rects = new StringBuilder();
+        for (int i = 0; i < rectColors.length; i++) {
+            rects.append(String.format(
+                "<rect x=\"%d\" y=\"%d\" width=\"40\" height=\"40\" fill=\"%s\"/>",
+                rectX[i], rectY[i], rectColors[i]
+            ));
+        }
+        
+        return String.format(
+            "<svg width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\" xmlns=\"http://www.w3.org/2000/svg\">" +
+            "<rect width=\"%d\" height=\"%d\" fill=\"%s\"/>" +
+            "%s" +
+            "</svg>",
+            size, size, size, size,
+            size, size, baseColor,
+            rects.toString()
+        );
+    }
+    
+    /**
+     * Generate SVG for desert background (matches JavaScript implementation)
+     */
+    public static String generateDesertBackgroundSVG(int size) {
+        // Use the exact entityRenderer desert configuration from the JavaScript
+        String baseColor = "#f7e9a0";
+        String[] rectColors = {"#e6d17a", "#fff7c0", "#e6d17a", "#fff7c0", "#e6d17a", "#fff7c0", "#e6d17a", "#fff7c0"};
+        int[] rectX = {40, 120, 320, 480, 600, 200, 560, 80};
+        int[] rectY = {80, 200, 320, 560, 40, 400, 320, 600};
+        
+        StringBuilder rects = new StringBuilder();
+        for (int i = 0; i < rectColors.length; i++) {
+            rects.append(String.format(
+                "<rect x=\"%d\" y=\"%d\" width=\"40\" height=\"40\" fill=\"%s\"/>",
+                rectX[i], rectY[i], rectColors[i]
+            ));
+        }
+        
+        return String.format(
+            "<svg width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\" xmlns=\"http://www.w3.org/2000/svg\">" +
+            "<rect width=\"%d\" height=\"%d\" fill=\"%s\"/>" +
+            "%s" +
+            "</svg>",
+            size, size, size, size,
+            size, size, baseColor,
+            rects.toString()
+        );
+    }
     
     /**
      * Generate fallback image if SVG parsing fails

@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import com.game.graphics.svg.SvgGeneratorWebView;
+import com.game.graphics.svg.ImageGenerator;
 import com.game.graphics.svg.EntityConfig;
 
 public class AssetManager {
@@ -119,17 +119,17 @@ public class AssetManager {
                 case "tree" -> {
                     EntityConfig.TreeConfig config = new EntityConfig.TreeConfig();
                     config.size = 32;
-                    bufferedImage = SvgGeneratorWebView.generateTreeImage(config);
+                    bufferedImage = ImageGenerator.generateTreeImage(config);
                 }
                 case "rock" -> {
                     EntityConfig.RockConfig config = new EntityConfig.RockConfig();
                     config.size = 32;
-                    bufferedImage = SvgGeneratorWebView.generateRockImage(config);
+                    bufferedImage = ImageGenerator.generateRockImage(config);
                 }
                 case "grass" -> {
                     EntityConfig.GrassConfig config = new EntityConfig.GrassConfig();
                     config.size = 32;
-                    bufferedImage = SvgGeneratorWebView.generateGrassImage(config);
+                    bufferedImage = ImageGenerator.generateGrassImage(config);
                 }
                 default -> {
                     logger.warn("Unknown entity type for image generation: {}", entityType);
@@ -142,7 +142,7 @@ public class AssetManager {
                 Path imagePath = directoryManager.getEntityImagePath(entityType, imageName);
                 imagePath.getParent().toFile().mkdirs();
                 
-                byte[] imageData = SvgGeneratorWebView.imageToBytes(bufferedImage);
+                byte[] imageData = ImageGenerator.imageToBytes(bufferedImage);
                 try (FileOutputStream fos = new FileOutputStream(imagePath.toFile())) {
                     fos.write(imageData);
                 }
@@ -164,8 +164,8 @@ public class AssetManager {
             BufferedImage bufferedImage = null;
             
             switch (backgroundName) {
-                case "plains" -> bufferedImage = SvgGeneratorWebView.generatePlainsBackground(640);
-                case "desert" -> bufferedImage = SvgGeneratorWebView.generateDesertBackground(640);
+                case "plains" -> bufferedImage = ImageGenerator.generatePlainsBackground(640);
+                case "desert" -> bufferedImage = ImageGenerator.generateDesertBackground(640);
                 default -> {
                     logger.warn("Unknown background type for image generation: {}", backgroundName);
                     return null;
@@ -177,7 +177,7 @@ public class AssetManager {
                 Path imagePath = directoryManager.getBackgroundImagePath(backgroundName);
                 imagePath.getParent().toFile().mkdirs();
                 
-                byte[] imageData = SvgGeneratorWebView.imageToBytes(bufferedImage);
+                byte[] imageData = ImageGenerator.imageToBytes(bufferedImage);
                 try (FileOutputStream fos = new FileOutputStream(imagePath.toFile())) {
                     fos.write(imageData);
                 }

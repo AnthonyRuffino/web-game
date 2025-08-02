@@ -33,7 +33,7 @@ public class SimpleSvgTest {
         assertEquals(32, image1.getHeight());
         
         // Test SvgGeneratorWebView (delegates to SvgGenerator)
-        BufferedImage image2 = SvgGeneratorWebView.svgToImage(simpleSvg, 32, 32);
+        BufferedImage image2 = ImageGenerator.svgToImage(simpleSvg, 32, 32);
         assertNotNull(image2);
         assertEquals(32, image2.getWidth());
         assertEquals(32, image2.getHeight());
@@ -56,7 +56,7 @@ public class SimpleSvgTest {
             </svg>
             """;
         
-        String sanitized = SvgGeneratorWebView.sanitizeSvg(maliciousSvg);
+        String sanitized = ImageGenerator.sanitizeSvg(maliciousSvg);
         
         assertFalse(sanitized.contains("<script>"));
         assertFalse(sanitized.contains("onclick"));
