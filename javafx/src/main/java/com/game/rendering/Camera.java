@@ -32,10 +32,7 @@ public class Camera {
         // Smooth zoom interpolation
         double zoomDiff = targetZoom - zoom;
         if (Math.abs(zoomDiff) > 0.01) {
-            double oldZoom = zoom;
             zoom += zoomDiff * deltaTime * 5.0; // Smooth interpolation
-            logger.debug("Zoom interpolation: target={}, current={}, diff={}, deltaTime={}, newZoom={}", 
-                        targetZoom, oldZoom, zoomDiff, deltaTime, zoom);
         }
         
         // Clamp zoom
@@ -85,9 +82,7 @@ public class Camera {
     }
     
     public void setZoom(double zoom) {
-        double oldTargetZoom = this.targetZoom;
         this.targetZoom = Math.max(0.1, Math.min(5.0, zoom));
-        logger.info("Camera setZoom: requested={}, clamped={}, oldTarget={}", zoom, this.targetZoom, oldTargetZoom);
     }
     
     public void setRotation(double rotation) {

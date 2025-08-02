@@ -259,12 +259,12 @@ public class Renderer {
         double screenX = camera.getWidth() / 2;
         double screenY = camera.getHeight() / 2;
         
-        // Debug: Log player drawing coordinates
-        // Debug logging removed for performance
+        // Scale player size by camera zoom
+        double scaledSize = player.getSize() * camera.getZoom();
         
         gc.setFill(Color.BLUE);
-        gc.fillOval(screenX - player.getSize() / 2, screenY - player.getSize() / 2, 
-                   player.getSize(), player.getSize());
+        gc.fillOval(screenX - scaledSize / 2, screenY - scaledSize / 2, 
+                   scaledSize, scaledSize);
         
         // Draw player direction indicator
         gc.setStroke(Color.WHITE);
@@ -280,8 +280,8 @@ public class Renderer {
             angle = player.getAngle() - camera.getRotation();
         }
         
-        double endX = screenX + Math.sin(angle) * player.getSize();
-        double endY = screenY - Math.cos(angle) * player.getSize();
+        double endX = screenX + Math.sin(angle) * scaledSize;
+        double endY = screenY - Math.cos(angle) * scaledSize;
         gc.strokeLine(screenX, screenY, endX, endY);
     }
     

@@ -210,10 +210,7 @@ public class GameEngine {
         if (wheelDelta != 0) {
             // Adjust zoom sensitivity - JavaFX wheel delta is typically 40/-40
             double zoomChange = wheelDelta > 0 ? 0.2 : -0.2;
-            double oldZoom = camera.getZoom();
-            camera.setZoom(oldZoom + zoomChange);
-            logger.info("Zoom: wheelDelta={}, zoomChange={}, oldZoom={}, newZoom={}", 
-                       wheelDelta, zoomChange, oldZoom, camera.getZoom());
+            camera.setZoom(camera.getZoom() + zoomChange);
         }
     }
     
