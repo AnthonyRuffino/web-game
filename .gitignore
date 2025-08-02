@@ -266,3 +266,9 @@ release/
 # Temporary files
 tmp/
 temp/ 
+# Test assets directory
+javafx/src/test/resources/test-assets/
+
+# Test generated files
+*.png
+webview-test-rendered.png
