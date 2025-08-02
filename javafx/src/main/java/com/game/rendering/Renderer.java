@@ -199,12 +199,13 @@ public class Renderer {
         gc.setLineWidth(2);
         
         // In player perspective mode, player always faces upward (angle = 0)
-        // In fixed angle mode, player shows actual movement direction
+        // In fixed angle mode, player shows movement direction relative to camera rotation
         double angle;
         if (camera.getMode() == Camera.CameraMode.PLAYER_PERSPECTIVE) {
             angle = 0.0; // Always face upward in player perspective mode
         } else {
-            angle = player.getAngle(); // Show actual movement direction in fixed angle mode
+            // In fixed-angle mode, show direction relative to camera rotation
+            angle = player.getAngle() - camera.getRotation();
         }
         
         double endX = screenX + Math.sin(angle) * player.getSize();
