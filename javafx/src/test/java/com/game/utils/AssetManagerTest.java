@@ -3,13 +3,14 @@ package com.game.utils;
 import javafx.scene.image.Image;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,21 +18,40 @@ import static org.mockito.Mockito.*;
 
 class AssetManagerTest {
     
-    @Mock
-    private AssetDirectoryManager directoryManager;
-    
-    @Mock
-    private Path mockPath;
-    
-    @Mock
-    private File mockFile;
+    @TempDir
+    Path tempDir;
     
     private AssetManager assetManager;
+    private AssetDirectoryManager testDirectoryManager;
     
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        assetManager = new AssetManager();
+        // Create test-specific assets directory
+        Path testAssetsDir = tempDir.resolve("test-assets");
+        testDirectoryManager = new AssetDirectoryManager(testAssetsDir);
+        
+        // Create a custom AssetManager with test directory
+        assetManager = new AssetManager(testDirectoryManager);
+    }
+    
+    @AfterEach
+    void tearDown() {
+        // Clean up test assets directory
+        try {
+            if (tempDir != null && Files.exists(tempDir)) {
+                Files.walk(tempDir)
+                    .sorted((a, b) -> b.compareTo(a)) // Delete files before directories
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException e) {
+                            // Ignore cleanup errors
+                        }
+                    });
+            }
+        } catch (IOException e) {
+            // Ignore cleanup errors
+        }
     }
     
     @Test
@@ -43,31 +63,29 @@ class AssetManagerTest {
     
     @Test
     void testGetEntityImageCaching() {
-        // Act - Get image twice (in test environment, this might return null)
-        Image image1 = assetManager.getEntityImage("tree", "default.png");
-        Image image2 = assetManager.getEntityImage("tree", "default.png");
-        
-        // Assert - Method calls should not throw exceptions
-        // In test environment, images might be null due to file system limitations
-        // The important thing is that the caching logic doesn't crash
+        // Act - Get image twice (this will generate images on-demand)
         assertDoesNotThrow(() -> {
-            assetManager.getEntityImage("tree", "default.png");
-            assetManager.getEntityImage("tree", "default.png");
+            Image image1 = assetManager.getEntityImage("tree", "default");
+            Image image2 = assetManager.getEntityImage("tree", "default");
+            
+            // Assert - Both calls should return the same image (cached)
+            assertNotNull(image1);
+            assertNotNull(image2);
+            assertSame(image1, image2); // Should be the same cached instance
         });
     }
     
     @Test
     void testGetBackgroundImageCaching() {
-        // Act - Get background image twice (in test environment, this might return null)
-        Image image1 = assetManager.getBackgroundImage("plains.png");
-        Image image2 = assetManager.getBackgroundImage("plains.png");
-        
-        // Assert - Method calls should not throw exceptions
-        // In test environment, images might be null due to file system limitations
-        // The important thing is that the caching logic doesn't crash
+        // Act - Get background image twice (this will generate images on-demand)
         assertDoesNotThrow(() -> {
-            assetManager.getBackgroundImage("plains.png");
-            assetManager.getBackgroundImage("plains.png");
+            Image image1 = assetManager.getBackgroundImage("plains");
+            Image image2 = assetManager.getBackgroundImage("plains");
+            
+            // Assert - Both calls should return the same image (cached)
+            assertNotNull(image1);
+            assertNotNull(image2);
+            assertSame(image1, image2); // Should be the same cached instance
         });
     }
     
@@ -105,32 +123,28 @@ class AssetManagerTest {
     
     @Test
     void testImageGenerationFallback() {
-        // Arrange - Mock file system to return non-existent file
-        when(directoryManager.getEntityImagePath("tree", "default.png")).thenReturn(mockPath);
-        when(mockPath.toFile()).thenReturn(mockFile);
-        when(mockFile.exists()).thenReturn(false);
-        
-        // Act - Try to get image (should fall back to generation)
-        Image image = assetManager.getEntityImage("tree", "default.png");
-        
-        // Assert - Should attempt to generate image (might be null in test environment)
-        // The important thing is that no exceptions are thrown
-        assertDoesNotThrow(() -> assetManager.getEntityImage("tree", "default.png"));
+        // Act - Try to get image (should generate on-demand)
+        assertDoesNotThrow(() -> {
+            Image image = assetManager.getEntityImage("tree", "default");
+            
+            // Assert - Should generate image successfully
+            assertNotNull(image);
+            assertTrue(image.getWidth() > 0);
+            assertTrue(image.getHeight() > 0);
+        });
     }
     
     @Test
     void testBackgroundImageGenerationFallback() {
-        // Arrange - Mock file system to return non-existent file
-        when(directoryManager.getBackgroundImagePath("plains.png")).thenReturn(mockPath);
-        when(mockPath.toFile()).thenReturn(mockFile);
-        when(mockFile.exists()).thenReturn(false);
-        
-        // Act - Try to get background image (should fall back to generation)
-        Image image = assetManager.getBackgroundImage("plains.png");
-        
-        // Assert - Should attempt to generate image (might be null in test environment)
-        // The important thing is that no exceptions are thrown
-        assertDoesNotThrow(() -> assetManager.getBackgroundImage("plains.png"));
+        // Act - Try to get background image (should generate on-demand)
+        assertDoesNotThrow(() -> {
+            Image image = assetManager.getBackgroundImage("plains");
+            
+            // Assert - Should generate image successfully
+            assertNotNull(image);
+            assertTrue(image.getWidth() > 0);
+            assertTrue(image.getHeight() > 0);
+        });
     }
     
     private byte[] createTestImageData() {

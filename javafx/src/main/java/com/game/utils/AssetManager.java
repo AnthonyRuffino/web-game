@@ -24,7 +24,11 @@ public class AssetManager {
     private final Map<String, byte[]> imageDataCache;
     
     public AssetManager() {
-        this.directoryManager = new AssetDirectoryManager();
+        this(new AssetDirectoryManager());
+    }
+    
+    public AssetManager(AssetDirectoryManager directoryManager) {
+        this.directoryManager = directoryManager;
         this.imageCache = new ConcurrentHashMap<>();
         this.imageDataCache = new ConcurrentHashMap<>();
         
