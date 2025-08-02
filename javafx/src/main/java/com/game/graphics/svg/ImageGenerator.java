@@ -102,6 +102,31 @@ public class ImageGenerator {
     }
     
     /**
+     * Convert SVG string to BufferedImage
+     */
+    public static BufferedImage svgToImage(String svg, int width, int height) throws Exception {
+        return SvgGenerator.svgToImage(svg, width, height);
+    }
+    
+    /**
+     * Sanitize SVG string to prevent XSS attacks
+     */
+    public static String sanitizeSvg(String svg) {
+        if (svg == null) return "";
+        // Basic sanitization - remove script tags and dangerous attributes
+        return svg.replaceAll("<script[^>]*>.*?</script>", "")
+                  .replaceAll("on\\w+\\s*=", "")
+                  .replaceAll("javascript:", "");
+    }
+    
+    /**
+     * Generate plains background SVG
+     */
+    public static String generatePlainsBackgroundSVG(int size) {
+        return SvgGenerator.generatePlainsBackgroundSVG(size);
+    }
+    
+    /**
      * Generate plains background using SVG
      */
     public static BufferedImage generatePlainsBackground(int size) throws Exception {

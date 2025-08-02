@@ -45,6 +45,10 @@ public class GameEngine {
     }
     
     public void start() {
+        start(true);
+    }
+    
+    public void start(boolean startGameLoop) {
         if (running.compareAndSet(false, true)) {
             gameLogger.info(() -> {
                 logger.info("Starting game engine...");
@@ -52,7 +56,10 @@ public class GameEngine {
             });
             
             initializeSystems();
-            gameLoop.start();
+            
+            if (startGameLoop && gameLoop != null) {
+                gameLoop.start();
+            }
             
             gameLogger.info(() -> {
                 logger.info("Game engine started successfully");
