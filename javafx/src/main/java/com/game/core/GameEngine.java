@@ -195,6 +195,12 @@ public class GameEngine {
             camera.setRotation(0);
             logger.info("Camera rotation reset");
         }
+        if (inputManager.isKeyJustPressed(KeyCode.G)) {
+            // Toggle grid visibility
+            if (renderer != null) {
+                renderer.toggleGrid();
+            }
+        }
         
         // Camera rotation in fixed-angle mode
         MovementInput movementInput = inputManager.getMovementInput();

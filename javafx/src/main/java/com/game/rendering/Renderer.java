@@ -22,6 +22,7 @@ public class Renderer {
     private final double worldSize;
     private final int chunkSize;
     private final int tileSize;
+    private boolean gridVisible = true; // Grid visibility toggle
     
     public Renderer(AssetManager assetManager, WorldConfig worldConfig) {
         this.assetManager = assetManager;
@@ -44,8 +45,10 @@ public class Renderer {
         // Draw proper tiled background after rotation is applied
         drawTiledBackground(gc, camera, "plains");
         
-        // Draw world grid with proper coordinate calculations
-        drawGrid(gc, camera);
+        // Draw world grid with proper coordinate calculations (if visible)
+        if (gridVisible) {
+            drawGrid(gc, camera);
+        }
         
         // Draw world entities with proper positioning
         drawWorldEntities(gc, world, camera);
@@ -289,6 +292,15 @@ public class Renderer {
         gridHighlight.updateMousePosition(x, y);
     }
     
+    public void toggleGrid() {
+        gridVisible = !gridVisible;
+        logger.info("Grid visibility toggled: {}", gridVisible);
+    }
+    
+    public boolean isGridVisible() {
+        return gridVisible;
+    }
+    
     private void drawUI(GraphicsContext gc, double width, double height, Player player, Camera camera) {
         gc.setFill(Color.BLACK);
         gc.setFont(javafx.scene.text.Font.font("Arial", 12));
@@ -301,12 +313,15 @@ public class Renderer {
         
         // Controls
         gc.fillText("WASD: Move, P: Toggle Camera, Mouse Wheel: Zoom", 10, 50);
-        gc.fillText("E: Interact", 10, 65);
+        gc.fillText("E: Interact, G: Toggle Grid", 10, 65);
+        
+        // Grid status
+        gc.fillText(String.format("Grid: %s", gridVisible ? "ON" : "OFF"), 10, 80);
         
         // Debug info
         if (player.isInteracting()) {
             gc.setFill(Color.RED);
-            gc.fillText("INTERACTING", 10, 80);
+            gc.fillText("INTERACTING", 10, 95);
         }
     }
 } 
