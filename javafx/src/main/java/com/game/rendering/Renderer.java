@@ -18,6 +18,11 @@ public class Renderer {
     private final AssetManager assetManager;
     private final GridHighlightSystem gridHighlight;
     
+    // World boundary constants
+    private static final double WORLD_SIZE = 64 * 64 * 32; // chunkCount * chunkSize * tileSize
+    private static final double WORLD_START = 0;
+    private static final double WORLD_END = WORLD_SIZE;
+    
     public Renderer(AssetManager assetManager) {
         this.assetManager = assetManager;
         this.gridHighlight = new GridHighlightSystem();
@@ -58,33 +63,51 @@ public class Renderer {
         // Get background image from asset manager
         Image backgroundImage = assetManager.getBackgroundImage(biomeName);
         
-        if (backgroundImage != null) {
-            double imageWidth = backgroundImage.getWidth();
-            double imageHeight = backgroundImage.getHeight();
-            
-            // Calculate visible area in world coordinates
-            double viewWidth = camera.getWidth() / camera.getZoom();
-            double viewHeight = camera.getHeight() / camera.getZoom();
-            
-            // Calculate diagonal length to ensure background covers entire rotated viewport
-            double diagonalLength = Math.sqrt(viewWidth * viewWidth + viewHeight * viewHeight);
-            double extendedSize = diagonalLength / 2;
-            
-            double startX = camera.getX() - extendedSize;
-            double startY = camera.getY() - extendedSize;
-            double endX = camera.getX() + extendedSize;
-            double endY = camera.getY() + extendedSize;
-            
-            // Draw background tiles with proper positioning
-            for (double x = startX - (startX % imageWidth); x < endX; x += imageWidth) {
-                for (double y = startY - (startY % imageHeight); y < endY; y += imageHeight) {
-                    gc.drawImage(backgroundImage, x, y);
+        // Calculate world boundaries
+        double worldSize = 64 * 64 * 32; // chunkCount * chunkSize * tileSize
+        double worldStart = 0;
+        double worldEnd = worldSize;
+        
+        // Calculate visible area in world coordinates
+        double viewWidth = camera.getWidth() / camera.getZoom();
+        double viewHeight = camera.getHeight() / camera.getZoom();
+        
+        // Calculate diagonal length to ensure background covers entire rotated viewport
+        double diagonalLength = Math.sqrt(viewWidth * viewWidth + viewHeight * viewHeight);
+        double extendedSize = diagonalLength / 2;
+        
+        double startX = camera.getX() - extendedSize;
+        double startY = camera.getY() - extendedSize;
+        double endX = camera.getX() + extendedSize;
+        double endY = camera.getY() + extendedSize;
+        
+        // Fill entire visible area with black first (for world boundaries)
+        gc.setFill(Color.BLACK);
+        gc.fillRect(startX, startY, endX - startX, endY - startY);
+        
+        // Calculate the intersection of visible area with world bounds
+        double renderStartX = Math.max(startX, worldStart);
+        double renderStartY = Math.max(startY, worldStart);
+        double renderEndX = Math.min(endX, worldEnd);
+        double renderEndY = Math.min(endY, worldEnd);
+        
+        // Only draw background tiles if we're within world bounds
+        if (renderStartX < renderEndX && renderStartY < renderEndY) {
+            if (backgroundImage != null) {
+                double imageWidth = backgroundImage.getWidth();
+                double imageHeight = backgroundImage.getHeight();
+                
+                // Draw background tiles with proper positioning (only within world bounds)
+                for (double x = renderStartX - (renderStartX % imageWidth); x < renderEndX; x += imageWidth) {
+                    for (double y = renderStartY - (renderStartY % imageHeight); y < renderEndY; y += imageHeight) {
+                        gc.drawImage(backgroundImage, x, y);
+                    }
                 }
+            } else {
+                // Fallback to gradient background (only within world bounds)
+                gc.setFill(Color.SKYBLUE);
+                gc.fillRect(renderStartX, renderStartY, renderEndX - renderStartX, renderEndY - renderStartY);
             }
-        } else {
-            // Fallback to gradient background
-            gc.setFill(Color.SKYBLUE);
-            gc.fillRect(-1000, -1000, 2000, 2000);
         }
     }
     
@@ -93,6 +116,11 @@ public class Renderer {
         double gridSize = 32.0;
         double viewWidth = camera.getWidth() / camera.getZoom();
         double viewHeight = camera.getHeight() / camera.getZoom();
+        
+        // Calculate world boundaries
+        double worldSize = 64 * 64 * 32; // chunkCount * chunkSize * tileSize
+        double worldStart = 0;
+        double worldEnd = worldSize;
         
         // Calculate diagonal length to ensure grid covers entire rotated viewport
         double diagonalLength = Math.sqrt(viewWidth * viewWidth + viewHeight * viewHeight);
@@ -104,21 +132,30 @@ public class Renderer {
         double endX = camera.getX() + extendedSize;
         double endY = camera.getY() + extendedSize;
         
-        // Align to grid
-        double gridStartX = Math.floor(startX / gridSize) * gridSize;
-        double gridStartY = Math.floor(startY / gridSize) * gridSize;
+        // Calculate the intersection of visible area with world bounds
+        double renderStartX = Math.max(startX, worldStart);
+        double renderStartY = Math.max(startY, worldStart);
+        double renderEndX = Math.min(endX, worldEnd);
+        double renderEndY = Math.min(endY, worldEnd);
         
-        gc.setStroke(Color.LIGHTGRAY);
-        gc.setLineWidth(1);
-        
-        // Draw vertical lines
-        for (double x = gridStartX; x <= endX; x += gridSize) {
-            gc.strokeLine(x, startY, x, endY);
-        }
-        
-        // Draw horizontal lines
-        for (double y = gridStartY; y <= endY; y += gridSize) {
-            gc.strokeLine(startX, y, endX, y);
+        // Only draw grid if we're within world bounds
+        if (renderStartX < renderEndX && renderStartY < renderEndY) {
+            // Align to grid
+            double gridStartX = Math.floor(renderStartX / gridSize) * gridSize;
+            double gridStartY = Math.floor(renderStartY / gridSize) * gridSize;
+            
+            gc.setStroke(Color.LIGHTGRAY);
+            gc.setLineWidth(1);
+            
+            // Draw vertical lines (only within world bounds)
+            for (double x = gridStartX; x <= renderEndX; x += gridSize) {
+                gc.strokeLine(x, renderStartY, x, renderEndY);
+            }
+            
+            // Draw horizontal lines (only within world bounds)
+            for (double y = gridStartY; y <= renderEndY; y += gridSize) {
+                gc.strokeLine(renderStartX, y, renderEndX, y);
+            }
         }
     }
     
@@ -129,21 +166,38 @@ public class Renderer {
         double viewWidth = camera.getWidth() / camera.getZoom();
         double viewHeight = camera.getHeight() / camera.getZoom();
         
+        // Calculate world boundaries
+        double worldSize = 64 * 64 * 32; // chunkCount * chunkSize * tileSize
+        double worldStart = 0;
+        double worldEnd = worldSize;
+        
         // Calculate diagonal length to ensure entities cover entire rotated viewport
         double diagonalLength = Math.sqrt(viewWidth * viewWidth + viewHeight * viewHeight);
         double extendedSize = diagonalLength / 2;
         
-        int chunkSize = world.getConfig().chunkSize() * world.getConfig().tileSize();
-        int startChunkX = (int) ((cameraX - extendedSize) / chunkSize);
-        int endChunkX = (int) ((cameraX + extendedSize) / chunkSize);
-        int startChunkY = (int) ((cameraY - extendedSize) / chunkSize);
-        int endChunkY = (int) ((cameraY + extendedSize) / chunkSize);
+        // Calculate the intersection of visible area with world bounds
+        double renderStartX = Math.max(cameraX - extendedSize, worldStart);
+        double renderStartY = Math.max(cameraY - extendedSize, worldStart);
+        double renderEndX = Math.min(cameraX + extendedSize, worldEnd);
+        double renderEndY = Math.min(cameraY + extendedSize, worldEnd);
         
-        // Load and render visible chunks
-        for (int chunkX = startChunkX; chunkX <= endChunkX; chunkX++) {
-            for (int chunkY = startChunkY; chunkY <= endChunkY; chunkY++) {
-                var chunk = world.loadChunk(chunkX, chunkY);
-                drawChunkEntities(gc, chunk);
+        // Only load chunks if we're within world bounds
+        if (renderStartX < renderEndX && renderStartY < renderEndY) {
+            int chunkSize = world.getConfig().chunkSize() * world.getConfig().tileSize();
+            int startChunkX = (int) (renderStartX / chunkSize);
+            int endChunkX = (int) (renderEndX / chunkSize);
+            int startChunkY = (int) (renderStartY / chunkSize);
+            int endChunkY = (int) (renderEndY / chunkSize);
+            
+            // Load and render visible chunks (only within world bounds)
+            for (int chunkX = startChunkX; chunkX <= endChunkX; chunkX++) {
+                for (int chunkY = startChunkY; chunkY <= endChunkY; chunkY++) {
+                    // Ensure chunk coordinates are within world bounds
+                    if (chunkX >= 0 && chunkX < 64 && chunkY >= 0 && chunkY < 64) {
+                        var chunk = world.loadChunk(chunkX, chunkY);
+                        drawChunkEntities(gc, chunk);
+                    }
+                }
             }
         }
     }
