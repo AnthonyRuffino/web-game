@@ -16,11 +16,13 @@ public class Player {
     private double rotationSpeed = 360.0; // degrees per second (doubled for faster response)
     private double size = 20.0;
     private boolean interacting = false;
+    private final WorldConfig worldConfig;
     
-    public Player(double startX, double startY) {
+    public Player(double startX, double startY, WorldConfig worldConfig) {
         this.x = startX;
         this.y = startY;
         this.angle = 0.0;
+        this.worldConfig = worldConfig;
     }
     
     public void update(double deltaTime, InputManager inputManager, Camera camera) {
@@ -87,9 +89,10 @@ public class Player {
         double newX = x + moveX * speed * deltaTime;
         double newY = y + moveY * speed * deltaTime;
 
-        // Update position
-        x = newX;
-        y = newY;
+        // Apply world wrapping
+        WorldUtils.Point2D wrappedPos = WorldUtils.wrapWorldCoordinates(newX, newY, worldConfig);
+        x = wrappedPos.x;
+        y = wrappedPos.y;
 
         // Update player angle based on movement direction (player faces movement direction)
         if (magnitude > 0) {
@@ -134,9 +137,14 @@ public class Player {
             moveX /= magnitude;
             moveY /= magnitude;
             
-            // Apply movement
-            x += moveX * speed * deltaTime;
-            y += moveY * speed * deltaTime;
+            // Calculate new position
+            double newX = x + moveX * speed * deltaTime;
+            double newY = y + moveY * speed * deltaTime;
+            
+            // Apply world wrapping
+            WorldUtils.Point2D wrappedPos = WorldUtils.wrapWorldCoordinates(newX, newY, worldConfig);
+            x = wrappedPos.x;
+            y = wrappedPos.y;
         }
     }
     

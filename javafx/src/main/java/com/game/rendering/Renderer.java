@@ -18,10 +18,8 @@ public class Renderer {
     private final AssetManager assetManager;
     private final GridHighlightSystem gridHighlight;
     
-    // World boundary constants
-    private static final double WORLD_SIZE = 64 * 64 * 32; // chunkCount * chunkSize * tileSize
+    // World boundary constants (will be calculated dynamically)
     private static final double WORLD_START = 0;
-    private static final double WORLD_END = WORLD_SIZE;
     
     public Renderer(AssetManager assetManager) {
         this.assetManager = assetManager;

@@ -1,5 +1,6 @@
 package com.game.rendering;
 
+import com.game.core.WorldConfig;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 import org.slf4j.Logger;
@@ -15,15 +16,17 @@ public class Camera {
     private double rotation = 0.0;
     private double width, height;
     private CameraMode mode = CameraMode.FIXED_ANGLE;
+    private WorldConfig worldConfig;
     
     public enum CameraMode {
         FIXED_ANGLE,
         PLAYER_PERSPECTIVE
     }
     
-    public Camera(double width, double height) {
+    public Camera(double width, double height, WorldConfig worldConfig) {
         this.width = width;
         this.height = height;
+        this.worldConfig = worldConfig;
         logger.info("Camera initialized: {}x{}", width, height);
     }
     
@@ -73,8 +76,17 @@ public class Camera {
     public void follow(double targetX, double targetY) {
         // Smooth camera following (like JavaScript implementation)
         double followSpeed = 0.1; // Same as JavaScript
-        this.x += (targetX - this.x) * followSpeed;
-        this.y += (targetY - this.y) * followSpeed;
+        double newX = this.x + (targetX - this.x) * followSpeed;
+        double newY = this.y + (targetY - this.y) * followSpeed;
+        
+        // Apply world wrapping to camera position
+        if (worldConfig != null) {
+            newX = com.game.core.WorldUtils.wrapCoordinate(newX, worldConfig);
+            newY = com.game.core.WorldUtils.wrapCoordinate(newY, worldConfig);
+        }
+        
+        this.x = newX;
+        this.y = newY;
     }
     
     public void setZoom(double zoom) {

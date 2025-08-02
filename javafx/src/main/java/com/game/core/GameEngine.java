@@ -78,11 +78,11 @@ public class GameEngine {
         // Initialize world
         world = new World(databaseManager);
         
-        // Initialize player
-        player = new Player(0, 0);
+        // Initialize player with world config for wrapping
+        player = new Player(0, 0, world.getConfig());
         
-        // Initialize camera
-        camera = new Camera(canvasWidth, canvasHeight);
+        // Initialize camera with world config for wrapping
+        camera = new Camera(canvasWidth, canvasHeight, world.getConfig());
         
         // Initialize renderer with asset manager
         renderer = new Renderer(assetManager);
