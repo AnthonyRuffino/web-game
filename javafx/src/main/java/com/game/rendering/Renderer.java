@@ -66,10 +66,14 @@ public class Renderer {
             double viewWidth = camera.getWidth() / camera.getZoom();
             double viewHeight = camera.getHeight() / camera.getZoom();
             
-            double startX = camera.getX() - viewWidth / 2;
-            double startY = camera.getY() - viewHeight / 2;
-            double endX = camera.getX() + viewWidth / 2;
-            double endY = camera.getY() + viewHeight / 2;
+            // Calculate diagonal length to ensure background covers entire rotated viewport
+            double diagonalLength = Math.sqrt(viewWidth * viewWidth + viewHeight * viewHeight);
+            double extendedSize = diagonalLength / 2;
+            
+            double startX = camera.getX() - extendedSize;
+            double startY = camera.getY() - extendedSize;
+            double endX = camera.getX() + extendedSize;
+            double endY = camera.getY() + extendedSize;
             
             // Draw background tiles with proper positioning
             for (double x = startX - (startX % imageWidth); x < endX; x += imageWidth) {
@@ -90,11 +94,15 @@ public class Renderer {
         double viewWidth = camera.getWidth() / camera.getZoom();
         double viewHeight = camera.getHeight() / camera.getZoom();
         
-        // Calculate grid boundaries
-        double startX = camera.getX() - viewWidth / 2;
-        double startY = camera.getY() - viewHeight / 2;
-        double endX = camera.getX() + viewWidth / 2;
-        double endY = camera.getY() + viewHeight / 2;
+        // Calculate diagonal length to ensure grid covers entire rotated viewport
+        double diagonalLength = Math.sqrt(viewWidth * viewWidth + viewHeight * viewHeight);
+        double extendedSize = diagonalLength / 2;
+        
+        // Calculate extended grid boundaries
+        double startX = camera.getX() - extendedSize;
+        double startY = camera.getY() - extendedSize;
+        double endX = camera.getX() + extendedSize;
+        double endY = camera.getY() + extendedSize;
         
         // Align to grid
         double gridStartX = Math.floor(startX / gridSize) * gridSize;
@@ -121,11 +129,15 @@ public class Renderer {
         double viewWidth = camera.getWidth() / camera.getZoom();
         double viewHeight = camera.getHeight() / camera.getZoom();
         
+        // Calculate diagonal length to ensure entities cover entire rotated viewport
+        double diagonalLength = Math.sqrt(viewWidth * viewWidth + viewHeight * viewHeight);
+        double extendedSize = diagonalLength / 2;
+        
         int chunkSize = world.getConfig().chunkSize() * world.getConfig().tileSize();
-        int startChunkX = (int) ((cameraX - viewWidth / 2) / chunkSize);
-        int endChunkX = (int) ((cameraX + viewWidth / 2) / chunkSize);
-        int startChunkY = (int) ((cameraY - viewHeight / 2) / chunkSize);
-        int endChunkY = (int) ((cameraY + viewHeight / 2) / chunkSize);
+        int startChunkX = (int) ((cameraX - extendedSize) / chunkSize);
+        int endChunkX = (int) ((cameraX + extendedSize) / chunkSize);
+        int startChunkY = (int) ((cameraY - extendedSize) / chunkSize);
+        int endChunkY = (int) ((cameraY + extendedSize) / chunkSize);
         
         // Load and render visible chunks
         for (int chunkX = startChunkX; chunkX <= endChunkX; chunkX++) {
