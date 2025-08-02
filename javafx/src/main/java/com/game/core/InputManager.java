@@ -51,16 +51,16 @@ public class InputManager {
         pressedKeys.remove(keyCode);
     }
     
-    private void handleMouseMoved(MouseEvent event) {
+    public void handleMouseMoved(MouseEvent event) {
         mouseX = event.getX();
         mouseY = event.getY();
     }
     
-    private void handleMousePressed(MouseEvent event) {
+    public void handleMousePressed(MouseEvent event) {
         mousePressed = true;
     }
     
-    private void handleMouseReleased(MouseEvent event) {
+    public void handleMouseReleased(MouseEvent event) {
         mousePressed = false;
     }
     
