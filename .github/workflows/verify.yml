@@ -1,0 +1,54 @@
+name: Manual Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      verification_type:
+        description: 'Type of verification to run'
+        required: true
+        default: 'quality'
+        type: choice
+        options:
+        - quality
+        - full-build
+        - verify-and-run
+        - coverage-only
+        - style-only
+
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+          
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+        
+      - name: Run verification
+        run: make ${{ github.event.inputs.verification_type }}
+        
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: contains(github.event.inputs.verification_type, 'quality') || contains(github.event.inputs.verification_type, 'coverage')
+        with:
+          name: coverage-reports-${{ github.event.inputs.verification_type }}
+          path: |
+            build/reports/jacoco/test/html/
+            build/reports/checkstyle/
+          retention-days: 30
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ github.event.inputs.verification_type }}
+          path: build/test-results/
+          retention-days: 30 

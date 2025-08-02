@@ -18,6 +18,8 @@ help:
 	@echo "  dev-setup     - Setup development environment"
 	@echo "  quality       - Run all quality checks (tests, coverage, checkstyle)"
 	@echo "  full-build    - Complete build with all checks"
+	@echo "  coverage-only - Run only coverage checks"
+	@echo "  style-only    - Run only style checks"
 
 # Clean build artifacts
 clean:
@@ -99,4 +101,15 @@ test-reports:
 clean-test:
 	@echo "Cleaning assets and running tests..."
 	rm -rf ~/.web-game/assets/
-	./gradlew clean test --no-build-cache 
+	./gradlew clean test --no-build-cache
+
+# Run only coverage checks
+coverage-only:
+	@echo "Running coverage checks only..."
+	rm -rf ~/.web-game/assets/
+	./gradlew clean test jacocoTestReport jacocoTestCoverageVerification --no-build-cache
+
+# Run only style checks
+style-only:
+	@echo "Running style checks only..."
+	./gradlew checkstyleMain checkstyleTest 
