@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.game.utils.AssetManager;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class Renderer {
     private static final Logger logger = LoggerFactory.getLogger(Renderer.class);
@@ -200,25 +201,33 @@ public class Renderer {
             int startChunkY = (int) (renderStartY / chunkSize);
             int endChunkY = (int) (renderEndY / chunkSize);
             
-            // Load and render visible chunks (only within world bounds)
+            // Collect all entities from visible chunks
+            List<Entity> allEntities = new ArrayList<>();
             for (int chunkX = startChunkX; chunkX <= endChunkX; chunkX++) {
                 for (int chunkY = startChunkY; chunkY <= endChunkY; chunkY++) {
                     // Ensure chunk coordinates are within world bounds
                     if (chunkX >= 0 && chunkX < 64 && chunkY >= 0 && chunkY < 64) {
                         var chunk = world.loadChunk(chunkX, chunkY);
-                        drawChunkEntities(gc, chunk);
+                        allEntities.addAll(chunk.getEntities());
                     }
                 }
+            }
+            
+            // Sort entities by render order (renderLast=false first, then renderLast=true)
+            allEntities.sort((e1, e2) -> {
+                ImageConfiguration config1 = EntityConfigManager.getEffectiveImageConfig(e1);
+                ImageConfiguration config2 = EntityConfigManager.getEffectiveImageConfig(e2);
+                return Boolean.compare(config1.isRenderLast(), config2.isRenderLast());
+            });
+            
+            // Render entities in sorted order
+            for (Entity entity : allEntities) {
+                drawEntity(gc, entity);
             }
         }
     }
     
-    private void drawChunkEntities(GraphicsContext gc, com.game.core.Chunk chunk) {
-        List<Entity> entities = chunk.getEntities();
-        for (Entity entity : entities) {
-            drawEntity(gc, entity);
-        }
-    }
+
     
     private void drawEntity(GraphicsContext gc, Entity entity) {
         Image entityImage = assetManager.getEntityImage(entity.getType(), entity.getType());
