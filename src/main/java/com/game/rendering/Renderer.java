@@ -244,11 +244,29 @@ public class Renderer {
                 gc.setGlobalAlpha(config.getOpacity());
             }
             
-            // Draw image with calculated dimensions
-            gc.drawImage(entityImage, 
-                        entity.getX() - width / 2, 
-                        entity.getY() - height / 2, 
-                        width, height);
+            // Handle fixed screen angle for entities that should always appear upright
+            if (config.getFixedScreenAngle() != 0.0) {
+                // Save current transform
+                gc.save();
+                
+                // Reset rotation to fixed screen angle (usually 0.0 for upright)
+                gc.rotate(Math.toDegrees(config.getFixedScreenAngle()));
+                
+                // Draw image with calculated dimensions
+                gc.drawImage(entityImage, 
+                            entity.getX() - width / 2, 
+                            entity.getY() - height / 2, 
+                            width, height);
+                
+                // Restore transform
+                gc.restore();
+            } else {
+                // Draw image with calculated dimensions (uses current camera rotation)
+                gc.drawImage(entityImage, 
+                            entity.getX() - width / 2, 
+                            entity.getY() - height / 2, 
+                            width, height);
+            }
             
             // Reset opacity
             if (config.getOpacity() < 1.0) {
