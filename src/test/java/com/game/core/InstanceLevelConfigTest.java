@@ -17,7 +17,9 @@ class InstanceLevelConfigTest {
             3.0,  // 67% taller than type config (1.8)
             0.5,  // Custom angle (different from type config 0.0)
             RenderMode.CUSTOM_SIZE,  // Different render mode
-            0.7   // 30% transparent (different from type config 1.0)
+            0.7,  // 30% transparent (different from type config 1.0)
+            0.0,  // No X offset
+            0.0   // No Y offset
         );
         tree.setImageConfig(instanceConfig);
         
@@ -56,7 +58,9 @@ class InstanceLevelConfigTest {
             1.8,  // Keep type config height
             null,  // Keep type config angle
             RenderMode.CONFIGURED_SIZE,  // Keep type config render mode
-            0.8   // Only override opacity
+            0.8,  // Only override opacity
+            0.0,  // No X offset
+            0.0   // No Y offset
         );
         tree.setImageConfig(partialConfig);
         
@@ -79,7 +83,9 @@ class InstanceLevelConfigTest {
             2.5,  // 39% taller than normal (1.8)
             0.0,  // Upright
             RenderMode.CONFIGURED_SIZE,
-            1.0   // Full opacity
+            1.0,  // Full opacity
+            0.0,  // No X offset
+            0.0   // No Y offset
         );
         tallTree.setImageConfig(tallConfig);
         
@@ -90,7 +96,9 @@ class InstanceLevelConfigTest {
             1.8,  // Normal height
             0.0,  // Upright
             RenderMode.CONFIGURED_SIZE,
-            1.0   // Full opacity
+            1.0,  // Full opacity
+            0.0,  // No X offset
+            0.0   // No Y offset
         );
         wideTree.setImageConfig(wideConfig);
         
@@ -101,7 +109,9 @@ class InstanceLevelConfigTest {
             1.8,  // Normal height
             0.0,  // Upright
             RenderMode.CONFIGURED_SIZE,
-            0.5   // 50% transparent
+            0.5,  // 50% transparent
+            0.0,  // No X offset
+            0.0   // No Y offset
         );
         transparentTree.setImageConfig(transparentConfig);
         
@@ -123,7 +133,7 @@ class InstanceLevelConfigTest {
     void testInstanceConfigCopy() {
         // Test that instance config is properly copied
         Entity original = new Entity("tree", 10.0, 20.0);
-        ImageConfiguration config = new ImageConfiguration(1.5, 2.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8);
+        ImageConfiguration config = new ImageConfiguration(1.5, 2.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8, 0.0, 0.0);
         original.setImageConfig(config);
         
         Entity copy = original.copy();
@@ -155,7 +165,7 @@ class InstanceLevelConfigTest {
         Entity tree1 = new Entity("tree", 10.0, 20.0);
         Entity tree2 = new Entity("tree", 10.0, 20.0);
         
-        ImageConfiguration config = new ImageConfiguration(1.5, 2.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8);
+        ImageConfiguration config = new ImageConfiguration(1.5, 2.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8, 0.0, 0.0);
         tree1.setImageConfig(config);
         tree2.setImageConfig(config.copy());
         
@@ -168,8 +178,8 @@ class InstanceLevelConfigTest {
         Entity tree1 = new Entity("tree", 10.0, 20.0);
         Entity tree2 = new Entity("tree", 10.0, 20.0);
         
-        ImageConfiguration config1 = new ImageConfiguration(1.5, 2.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8);
-        ImageConfiguration config2 = new ImageConfiguration(1.6, 2.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8);
+        ImageConfiguration config1 = new ImageConfiguration(1.5, 2.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8, 0.0, 0.0);
+        ImageConfiguration config2 = new ImageConfiguration(1.6, 2.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8, 0.0, 0.0);
         
         tree1.setImageConfig(config1);
         tree2.setImageConfig(config2);

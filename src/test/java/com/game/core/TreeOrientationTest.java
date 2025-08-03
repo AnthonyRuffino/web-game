@@ -22,7 +22,7 @@ class TreeOrientationTest {
     void testTreeInstanceConfiguration() {
         // Test tree with instance-level configuration
         Entity tree = new Entity("tree", 10.0, 20.0);
-        ImageConfiguration customConfig = new ImageConfiguration(1.5, 2.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0);
+        ImageConfiguration customConfig = new ImageConfiguration(1.5, 2.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         tree.setImageConfig(customConfig);
         
         ImageConfiguration effective = EntityConfigManager.getEffectiveImageConfig(tree);
@@ -36,7 +36,7 @@ class TreeOrientationTest {
     void testTreeWithCustomFixedScreenAngle() {
         // Test tree with custom fixed screen angle
         Entity tree = new Entity("tree", 10.0, 20.0);
-        ImageConfiguration customConfig = new ImageConfiguration(1.2, 1.8, 0.5, RenderMode.CONFIGURED_SIZE, 1.0);
+        ImageConfiguration customConfig = new ImageConfiguration(1.2, 1.8, 0.5, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         tree.setImageConfig(customConfig);
         
         ImageConfiguration effective = EntityConfigManager.getEffectiveImageConfig(tree);
@@ -75,7 +75,7 @@ class TreeOrientationTest {
     void testTreeConfigurationOverride() {
         // Test that instance config overrides type config
         Entity tree = new Entity("tree", 10.0, 20.0);
-        ImageConfiguration instanceConfig = new ImageConfiguration(2.0, 3.0, 1.0, RenderMode.CUSTOM_SIZE, 0.8);
+        ImageConfiguration instanceConfig = new ImageConfiguration(2.0, 3.0, 1.0, RenderMode.CUSTOM_SIZE, 0.8, 0.0, 0.0);
         tree.setImageConfig(instanceConfig);
         
         ImageConfiguration effective = EntityConfigManager.getEffectiveImageConfig(tree);

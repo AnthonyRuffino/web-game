@@ -24,7 +24,7 @@ class EntityImageConfigTest {
 
     @Test
     void testEntityWithImageConfig() {
-        ImageConfiguration config = new ImageConfiguration(1.5, 2.0, 0.0, RenderMode.CONFIGURED_SIZE, 0.8);
+        ImageConfiguration config = new ImageConfiguration(1.5, 2.0, 0.0, RenderMode.CONFIGURED_SIZE, 0.8, 0.0, 0.0);
         Entity entity = new Entity("tree", 15.0, 25.0, 0.5, 48.0, true, config);
         
         assertEquals("tree", entity.getType());
@@ -40,7 +40,7 @@ class EntityImageConfigTest {
     @Test
     void testSetImageConfig() {
         Entity entity = new Entity("rock", 5.0, 10.0);
-        ImageConfiguration config = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.GRID_FIT, 1.0);
+        ImageConfiguration config = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.GRID_FIT, 1.0, 0.0, 0.0);
         
         entity.setImageConfig(config);
         assertEquals(config, entity.getImageConfig());
@@ -49,7 +49,7 @@ class EntityImageConfigTest {
 
     @Test
     void testSetImageConfigToNull() {
-        ImageConfiguration config = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0);
+        ImageConfiguration config = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         Entity entity = new Entity("grass", 1.0, 1.0, 0.0, 32.0, true, config);
         
         entity.setImageConfig(null);
@@ -59,7 +59,7 @@ class EntityImageConfigTest {
 
     @Test
     void testEntityCopy() {
-        ImageConfiguration config = new ImageConfiguration(1.2, 1.8, 0.0, RenderMode.CONFIGURED_SIZE, 0.9);
+        ImageConfiguration config = new ImageConfiguration(1.2, 1.8, 0.0, RenderMode.CONFIGURED_SIZE, 0.9, 0.0, 0.0);
         Entity original = new Entity("tree", 10.0, 20.0, 0.3, 48.0, true, config);
         
         Entity copy = original.copy();
@@ -90,8 +90,8 @@ class EntityImageConfigTest {
 
     @Test
     void testEntityEquals() {
-        ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0);
-        ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0);
+        ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
+        ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         
         Entity entity1 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, config1);
         Entity entity2 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, config2);
@@ -115,8 +115,8 @@ class EntityImageConfigTest {
 
     @Test
     void testEntityHashCode() {
-        ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0);
-        ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0);
+        ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
+        ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         
         Entity entity1 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, config1);
         Entity entity2 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, config2);
@@ -128,7 +128,7 @@ class EntityImageConfigTest {
 
     @Test
     void testEntityToString() {
-        ImageConfiguration config = new ImageConfiguration(1.2, 1.8, 0.0, RenderMode.CONFIGURED_SIZE, 0.8);
+        ImageConfiguration config = new ImageConfiguration(1.2, 1.8, 0.0, RenderMode.CONFIGURED_SIZE, 0.8, 0.0, 0.0);
         Entity entity = new Entity("tree", 10.0, 20.0, 0.5, 48.0, true, config);
         
         String result = entity.toString();

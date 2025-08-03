@@ -261,6 +261,10 @@ public class Renderer {
                 gc.setGlobalAlpha(config.getOpacity());
             }
             
+            // Apply draw offset if specified
+            double offsetX = config.getDrawOffsetX();
+            double offsetY = config.getDrawOffsetY();
+            
             // Handle fixed screen angle for entities that should always appear upright
             if (config.getFixedScreenAngle() != null) {
                 // Save current transform
@@ -284,8 +288,8 @@ public class Renderer {
                 gc.translate(entity.getX(), entity.getY());
                 gc.rotate(Math.toDegrees(angle));
                 gc.drawImage(entityImage, 
-                            -width / 2, 
-                            -height / 2, 
+                            -width / 2 + offsetX, 
+                            -height / 2 + offsetY, 
                             width, height);
                 
                 // Restore transform
@@ -293,8 +297,8 @@ public class Renderer {
             } else {
                 // Draw image with calculated dimensions (uses current camera rotation)
                 gc.drawImage(entityImage, 
-                            entity.getX() - width / 2, 
-                            entity.getY() - height / 2, 
+                            entity.getX() - width / 2 + offsetX, 
+                            entity.getY() - height / 2 + offsetY, 
                             width, height);
             }
             

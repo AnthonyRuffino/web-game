@@ -22,7 +22,7 @@ class ImageConfigurationTest {
     @Test
     void testFullConstructor() {
         ImageConfiguration config = new ImageConfiguration(
-            1.5, 2.0, 0.5, RenderMode.GRID_FIT, 0.8
+            1.5, 2.0, 0.5, RenderMode.GRID_FIT, 0.8, 0.0, 0.0
         );
         
         assertEquals(1.5, config.getWidth());
@@ -35,15 +35,15 @@ class ImageConfigurationTest {
     @Test
     void testOpacityClamping() {
         // Test opacity below 0.0
-        ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, -0.5);
+        ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, -0.5, 0.0, 0.0);
         assertEquals(0.0, config1.getOpacity());
         
         // Test opacity above 1.0
-        ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.5);
+        ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.5, 0.0, 0.0);
         assertEquals(1.0, config2.getOpacity());
         
         // Test valid opacity
-        ImageConfiguration config3 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 0.7);
+        ImageConfiguration config3 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 0.7, 0.0, 0.0);
         assertEquals(0.7, config3.getOpacity());
     }
 
@@ -85,7 +85,7 @@ class ImageConfigurationTest {
     @Test
     void testCopy() {
         ImageConfiguration original = new ImageConfiguration(
-            1.5, 2.0, 0.5, RenderMode.GRID_FIT, 0.8
+            1.5, 2.0, 0.5, RenderMode.GRID_FIT, 0.8, 0.0, 0.0
         );
         
         ImageConfiguration copy = original.copy();
@@ -100,9 +100,9 @@ class ImageConfigurationTest {
 
     @Test
     void testEquals() {
-        ImageConfiguration config1 = new ImageConfiguration(1.0, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0);
-        ImageConfiguration config2 = new ImageConfiguration(1.0, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0);
-        ImageConfiguration config3 = new ImageConfiguration(1.5, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0);
+        ImageConfiguration config1 = new ImageConfiguration(1.0, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
+        ImageConfiguration config2 = new ImageConfiguration(1.0, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
+        ImageConfiguration config3 = new ImageConfiguration(1.5, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         
         assertEquals(config1, config2);
         assertNotEquals(config1, config3);
@@ -112,9 +112,9 @@ class ImageConfigurationTest {
 
     @Test
     void testHashCode() {
-        ImageConfiguration config1 = new ImageConfiguration(1.0, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0);
-        ImageConfiguration config2 = new ImageConfiguration(1.0, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0);
-        ImageConfiguration config3 = new ImageConfiguration(1.5, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0);
+        ImageConfiguration config1 = new ImageConfiguration(1.0, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
+        ImageConfiguration config2 = new ImageConfiguration(1.0, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
+        ImageConfiguration config3 = new ImageConfiguration(1.5, 2.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         
         assertEquals(config1.hashCode(), config2.hashCode());
         assertNotEquals(config1.hashCode(), config3.hashCode());
@@ -122,7 +122,7 @@ class ImageConfigurationTest {
 
     @Test
     void testToString() {
-        ImageConfiguration config = new ImageConfiguration(1.5, 2.0, 0.5, RenderMode.GRID_FIT, 0.8);
+        ImageConfiguration config = new ImageConfiguration(1.5, 2.0, 0.5, RenderMode.GRID_FIT, 0.8, 0.0, 0.0);
         String result = config.toString();
         
         assertTrue(result.contains("width=1.50"));
@@ -135,15 +135,59 @@ class ImageConfigurationTest {
     @Test
     void testNullableFixedScreenAngle() {
         // Test with null fixedScreenAngle
-        ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0);
+        ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         assertNull(config1.getFixedScreenAngle());
         
         // Test with 0.0 fixedScreenAngle
-        ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0);
+        ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         assertEquals(0.0, config2.getFixedScreenAngle());
         
         // Test toString with null angle
         String result = config1.toString();
         assertTrue(result.contains("angle=null"));
+    }
+    
+    @Test
+    void testDrawOffsets() {
+        // Test draw offset getters and setters
+        ImageConfiguration config = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.5, -0.3);
+        assertEquals(0.5, config.getDrawOffsetX());
+        assertEquals(-0.3, config.getDrawOffsetY());
+        
+        // Test setting offsets
+        config.setDrawOffsetX(1.2);
+        config.setDrawOffsetY(-0.8);
+        assertEquals(1.2, config.getDrawOffsetX());
+        assertEquals(-0.8, config.getDrawOffsetY());
+    }
+    
+    @Test
+    void testDrawOffsetsInCopy() {
+        // Test that draw offsets are included in copy
+        ImageConfiguration original = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.5, -0.3);
+        ImageConfiguration copy = original.copy();
+        
+        assertEquals(original.getDrawOffsetX(), copy.getDrawOffsetX());
+        assertEquals(original.getDrawOffsetY(), copy.getDrawOffsetY());
+    }
+    
+    @Test
+    void testDrawOffsetsInEquals() {
+        // Test that draw offsets are included in equality comparison
+        ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.5, -0.3);
+        ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.5, -0.3);
+        ImageConfiguration config3 = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.6, -0.3);
+        
+        assertEquals(config1, config2);
+        assertNotEquals(config1, config3);
+    }
+    
+    @Test
+    void testDrawOffsetsInToString() {
+        // Test that draw offsets are included in toString
+        ImageConfiguration config = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.5, -0.3);
+        String str = config.toString();
+        assertTrue(str.contains("offsetX=0.50"));
+        assertTrue(str.contains("offsetY=-0.30"));
     }
 } 

@@ -11,7 +11,7 @@ class EntityConfigManagerTest {
     @Test
     void testGetEffectiveImageConfigWithInstanceConfig() {
         // Entity with instance-level configuration
-        ImageConfiguration instanceConfig = new ImageConfiguration(2.0, 3.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8);
+        ImageConfiguration instanceConfig = new ImageConfiguration(2.0, 3.0, 0.5, RenderMode.CUSTOM_SIZE, 0.8, 0.0, 0.0);
         Entity entity = new Entity("tree", 10.0, 20.0);
         entity.setImageConfig(instanceConfig);
         
@@ -63,7 +63,7 @@ class EntityConfigManagerTest {
     @Test
     void testCalculateEffectiveSizeGridFit() {
         Entity entity = new Entity("grass", 10.0, 20.0);
-        entity.setImageConfig(new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.GRID_FIT, 1.0));
+        entity.setImageConfig(new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.GRID_FIT, 1.0, 0.0, 0.0));
         
         double size = EntityConfigManager.calculateEffectiveSize(entity, 32);
         
@@ -73,7 +73,7 @@ class EntityConfigManagerTest {
     @Test
     void testCalculateEffectiveSizeConfiguredSize() {
         Entity entity = new Entity("tree", 10.0, 20.0);
-        entity.setImageConfig(new ImageConfiguration(1.5, 2.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0));
+        entity.setImageConfig(new ImageConfiguration(1.5, 2.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0));
         
         double size = EntityConfigManager.calculateEffectiveSize(entity, 32);
         
@@ -83,7 +83,7 @@ class EntityConfigManagerTest {
     @Test
     void testCalculateEffectiveSizeAspectRatioFit() {
         Entity entity = new Entity("rock", 10.0, 20.0);
-        entity.setImageConfig(new ImageConfiguration(2.0, 1.0, 0.0, RenderMode.ASPECT_RATIO_FIT, 1.0));
+        entity.setImageConfig(new ImageConfiguration(2.0, 1.0, 0.0, RenderMode.ASPECT_RATIO_FIT, 1.0, 0.0, 0.0));
         
         double size = EntityConfigManager.calculateEffectiveSize(entity, 32);
         
@@ -93,7 +93,7 @@ class EntityConfigManagerTest {
     @Test
     void testCalculateEffectiveDimensionsGridFit() {
         Entity entity = new Entity("grass", 10.0, 20.0);
-        entity.setImageConfig(new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.GRID_FIT, 1.0));
+        entity.setImageConfig(new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.GRID_FIT, 1.0, 0.0, 0.0));
         
         double[] dimensions = EntityConfigManager.calculateEffectiveDimensions(entity, 32);
         
@@ -104,7 +104,7 @@ class EntityConfigManagerTest {
     @Test
     void testCalculateEffectiveDimensionsConfiguredSize() {
         Entity entity = new Entity("tree", 10.0, 20.0);
-        entity.setImageConfig(new ImageConfiguration(1.5, 2.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0));
+        entity.setImageConfig(new ImageConfiguration(1.5, 2.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0));
         
         double[] dimensions = EntityConfigManager.calculateEffectiveDimensions(entity, 32);
         
@@ -115,7 +115,7 @@ class EntityConfigManagerTest {
     @Test
     void testCalculateEffectiveDimensionsAspectRatioFitWide() {
         Entity entity = new Entity("rock", 10.0, 20.0);
-        entity.setImageConfig(new ImageConfiguration(2.0, 1.0, 0.0, RenderMode.ASPECT_RATIO_FIT, 1.0));
+        entity.setImageConfig(new ImageConfiguration(2.0, 1.0, 0.0, RenderMode.ASPECT_RATIO_FIT, 1.0, 0.0, 0.0));
         
         double[] dimensions = EntityConfigManager.calculateEffectiveDimensions(entity, 32);
         
@@ -126,7 +126,7 @@ class EntityConfigManagerTest {
     @Test
     void testCalculateEffectiveDimensionsAspectRatioFitTall() {
         Entity entity = new Entity("tree", 10.0, 20.0);
-        entity.setImageConfig(new ImageConfiguration(1.0, 2.0, 0.0, RenderMode.ASPECT_RATIO_FIT, 1.0));
+        entity.setImageConfig(new ImageConfiguration(1.0, 2.0, 0.0, RenderMode.ASPECT_RATIO_FIT, 1.0, 0.0, 0.0));
         
         double[] dimensions = EntityConfigManager.calculateEffectiveDimensions(entity, 32);
         

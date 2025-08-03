@@ -21,7 +21,7 @@ public class EntityConfig {
         public int bladeLength = 10;
         public int bladeAngleVariation = 30;
         public double opacity = 1.0;
-        public ImageConfiguration imageConfig = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0);
+        public ImageConfiguration imageConfig = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         
         public GrassConfig() {}
         
@@ -69,7 +69,7 @@ public class EntityConfig {
         public Double fixedScreenAngle = null;
         public Integer drawOffsetX = null;
         public Integer drawOffsetY = -42;
-        public ImageConfiguration imageConfig = new ImageConfiguration(1.2, 1.8, 0.0, RenderMode.CONFIGURED_SIZE, 1.0);
+        public ImageConfiguration imageConfig = new ImageConfiguration(1.2, 1.8, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, -30);
         
         public TreeConfig() {}
         
@@ -125,7 +125,7 @@ public class EntityConfig {
         public double opacity = 1.0;
         public int textureSpots = 3;
         public int strokeWidth = 2;
-        public ImageConfiguration imageConfig = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0);
+        public ImageConfiguration imageConfig = new ImageConfiguration(1.0, 1.0, null, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         
         public RockConfig() {}
         
