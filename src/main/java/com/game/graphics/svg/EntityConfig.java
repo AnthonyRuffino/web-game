@@ -1,5 +1,8 @@
 package com.game.graphics.svg;
 
+import com.game.core.ImageConfiguration;
+import com.game.core.RenderMode;
+
 /**
  * Configuration classes for entity SVG generation.
  * These match the JavaScript configurations in grass.js, tree.js, and rock.js
@@ -18,6 +21,7 @@ public class EntityConfig {
         public int bladeLength = 10;
         public int bladeAngleVariation = 30;
         public double opacity = 1.0;
+        public ImageConfiguration imageConfig = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, false);
         
         public GrassConfig() {}
         
@@ -31,6 +35,20 @@ public class EntityConfig {
             this.bladeLength = bladeLength;
             this.bladeAngleVariation = bladeAngleVariation;
             this.opacity = opacity;
+        }
+        
+        public GrassConfig(int size, String bladeColor, double bladeWidth, int clusterCount, 
+                          int bladeCount, int bladeLength, int bladeAngleVariation, double opacity,
+                          ImageConfiguration imageConfig) {
+            this.size = size;
+            this.bladeColor = bladeColor;
+            this.bladeWidth = bladeWidth;
+            this.clusterCount = clusterCount;
+            this.bladeCount = bladeCount;
+            this.bladeLength = bladeLength;
+            this.bladeAngleVariation = bladeAngleVariation;
+            this.opacity = opacity;
+            this.imageConfig = imageConfig;
         }
     }
     
@@ -51,6 +69,7 @@ public class EntityConfig {
         public Double fixedScreenAngle = null;
         public Integer drawOffsetX = null;
         public Integer drawOffsetY = -42;
+        public ImageConfiguration imageConfig = new ImageConfiguration(1.2, 1.8, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, true);
         
         public TreeConfig() {}
         
@@ -72,6 +91,27 @@ public class EntityConfig {
             this.drawOffsetX = drawOffsetX;
             this.drawOffsetY = drawOffsetY;
         }
+        
+        public TreeConfig(int size, int imageHeight, int trunkWidth, int trunkHeight,
+                         String trunkColor, String foliageColor, String foliageBorderColor,
+                         int foliageBorderWidth, int foliageRadius, double opacity,
+                         Double fixedScreenAngle, Integer drawOffsetX, Integer drawOffsetY,
+                         ImageConfiguration imageConfig) {
+            this.size = size;
+            this.imageHeight = imageHeight;
+            this.trunkWidth = trunkWidth;
+            this.trunkHeight = trunkHeight;
+            this.trunkColor = trunkColor;
+            this.foliageColor = foliageColor;
+            this.foliageBorderColor = foliageBorderColor;
+            this.foliageBorderWidth = foliageBorderWidth;
+            this.foliageRadius = foliageRadius;
+            this.opacity = opacity;
+            this.fixedScreenAngle = fixedScreenAngle;
+            this.drawOffsetX = drawOffsetX;
+            this.drawOffsetY = drawOffsetY;
+            this.imageConfig = imageConfig;
+        }
     }
     
     /**
@@ -85,6 +125,7 @@ public class EntityConfig {
         public double opacity = 1.0;
         public int textureSpots = 3;
         public int strokeWidth = 2;
+        public ImageConfiguration imageConfig = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, false);
         
         public RockConfig() {}
         
@@ -97,6 +138,18 @@ public class EntityConfig {
             this.opacity = opacity;
             this.textureSpots = textureSpots;
             this.strokeWidth = strokeWidth;
+        }
+        
+        public RockConfig(int size, String baseColor, String strokeColor, String textureColor,
+                         double opacity, int textureSpots, int strokeWidth, ImageConfiguration imageConfig) {
+            this.size = size;
+            this.baseColor = baseColor;
+            this.strokeColor = strokeColor;
+            this.textureColor = textureColor;
+            this.opacity = opacity;
+            this.textureSpots = textureSpots;
+            this.strokeWidth = strokeWidth;
+            this.imageConfig = imageConfig;
         }
     }
 } 

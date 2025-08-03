@@ -219,19 +219,19 @@ public class Renderer {
     }
     
     private void drawEntity(GraphicsContext gc, Entity entity) {
-        Image entityImage = assetManager.getEntityImage(entity.type(), entity.type());
+        Image entityImage = assetManager.getEntityImage(entity.getType(), entity.getType());
         
         if (entityImage != null) {
             // Draw image instead of simple shapes
-            double size = entity.size();
-            gc.drawImage(entityImage, entity.x() - size / 2, entity.y() - size / 2, size, size);
+            double size = entity.getSize();
+            gc.drawImage(entityImage, entity.getX() - size / 2, entity.getY() - size / 2, size, size);
         } else {
             // Fallback to simple shapes
-            switch (entity.type()) {
-                case "tree" -> drawTree(gc, entity.x(), entity.y());
-                case "rock" -> drawRock(gc, entity.x(), entity.y());
-                case "grass" -> drawGrass(gc, entity.x(), entity.y());
-                default -> logger.debug("Unknown entity type: {}", entity.type());
+            switch (entity.getType()) {
+                case "tree" -> drawTree(gc, entity.getX(), entity.getY());
+                case "rock" -> drawRock(gc, entity.getX(), entity.getY());
+                case "grass" -> drawGrass(gc, entity.getX(), entity.getY());
+                default -> logger.debug("Unknown entity type: {}", entity.getType());
             }
         }
     }

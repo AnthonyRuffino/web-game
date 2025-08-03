@@ -11,12 +11,12 @@ class EntityTest {
         Entity entity = new Entity("tree", 100.0, 200.0);
         
         // Assert
-        assertEquals("tree", entity.type());
-        assertEquals(100.0, entity.x(), 0.001);
-        assertEquals(200.0, entity.y(), 0.001);
-        assertEquals(0.0, entity.angle(), 0.001);
-        assertEquals(32.0, entity.size(), 0.001);
-        assertTrue(entity.collision());
+        assertEquals("tree", entity.getType());
+        assertEquals(100.0, entity.getX(), 0.001);
+        assertEquals(200.0, entity.getY(), 0.001);
+        assertEquals(0.0, entity.getAngle(), 0.001);
+        assertEquals(32.0, entity.getSize(), 0.001);
+        assertTrue(entity.isCollision());
     }
     
     @Test
@@ -25,26 +25,26 @@ class EntityTest {
         Entity entity = new Entity("rock", 150.0, 250.0, 45.0);
         
         // Assert
-        assertEquals("rock", entity.type());
-        assertEquals(150.0, entity.x(), 0.001);
-        assertEquals(250.0, entity.y(), 0.001);
-        assertEquals(45.0, entity.angle(), 0.001);
-        assertEquals(32.0, entity.size(), 0.001);
-        assertTrue(entity.collision());
+        assertEquals("rock", entity.getType());
+        assertEquals(150.0, entity.getX(), 0.001);
+        assertEquals(250.0, entity.getY(), 0.001);
+        assertEquals(45.0, entity.getAngle(), 0.001);
+        assertEquals(32.0, entity.getSize(), 0.001);
+        assertTrue(entity.isCollision());
     }
     
     @Test
     void testEntityCreationWithAllParameters() {
         // Act
-        Entity entity = new Entity("grass", 300.0, 400.0, 90.0, 16.0, false);
+        Entity entity = new Entity("grass", 300.0, 400.0, 90.0, 16.0, false, null);
         
         // Assert
-        assertEquals("grass", entity.type());
-        assertEquals(300.0, entity.x(), 0.001);
-        assertEquals(400.0, entity.y(), 0.001);
-        assertEquals(90.0, entity.angle(), 0.001);
-        assertEquals(16.0, entity.size(), 0.001);
-        assertFalse(entity.collision());
+        assertEquals("grass", entity.getType());
+        assertEquals(300.0, entity.getX(), 0.001);
+        assertEquals(400.0, entity.getY(), 0.001);
+        assertEquals(90.0, entity.getAngle(), 0.001);
+        assertEquals(16.0, entity.getSize(), 0.001);
+        assertFalse(entity.isCollision());
     }
     
     @Test
@@ -62,7 +62,7 @@ class EntityTest {
     @Test
     void testEntityToString() {
         // Arrange
-        Entity entity = new Entity("tree", 100.0, 200.0, 45.0, 32.0, true);
+        Entity entity = new Entity("tree", 100.0, 200.0, 45.0, 32.0, true, null);
         
         // Act
         String toString = entity.toString();

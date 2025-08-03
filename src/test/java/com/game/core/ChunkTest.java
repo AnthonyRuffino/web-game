@@ -72,10 +72,10 @@ class ChunkTest {
         
         // Count entities by type
         long treeCount = chunk.getEntities().stream()
-            .filter(e -> "tree".equals(e.type()))
+            .filter(e -> "tree".equals(e.getType()))
             .count();
         long grassCount = chunk.getEntities().stream()
-            .filter(e -> "grass".equals(e.type()))
+            .filter(e -> "grass".equals(e.getType()))
             .count();
         
         assertEquals(2, treeCount);
