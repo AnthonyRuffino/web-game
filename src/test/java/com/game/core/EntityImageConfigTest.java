@@ -25,7 +25,7 @@ class EntityImageConfigTest {
     @Test
     void testEntityWithImageConfig() {
         ImageConfiguration config = new ImageConfiguration(1.5, 2.0, 0.0, RenderMode.CONFIGURED_SIZE, 0.8, 0.0, 0.0);
-        Entity entity = new Entity("tree", 15.0, 25.0, 0.5, 48.0, true, config);
+        Entity entity = new Entity("tree", 15.0, 25.0, 0.5, 48.0, true, 48.0, 48.0, config);
         
         assertEquals("tree", entity.getType());
         assertEquals(15.0, entity.getX());
@@ -50,7 +50,7 @@ class EntityImageConfigTest {
     @Test
     void testSetImageConfigToNull() {
         ImageConfiguration config = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
-        Entity entity = new Entity("grass", 1.0, 1.0, 0.0, 32.0, true, config);
+        Entity entity = new Entity("grass", 1.0, 1.0, 0.0, 32.0, true, 32.0, 32.0, config);
         
         entity.setImageConfig(null);
         assertNull(entity.getImageConfig());
@@ -60,7 +60,7 @@ class EntityImageConfigTest {
     @Test
     void testEntityCopy() {
         ImageConfiguration config = new ImageConfiguration(1.2, 1.8, 0.0, RenderMode.CONFIGURED_SIZE, 0.9, 0.0, 0.0);
-        Entity original = new Entity("tree", 10.0, 20.0, 0.3, 48.0, true, config);
+        Entity original = new Entity("tree", 10.0, 20.0, 0.3, 48.0, true, 48.0, 48.0, config);
         
         Entity copy = original.copy();
         
@@ -93,9 +93,9 @@ class EntityImageConfigTest {
         ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         
-        Entity entity1 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, config1);
-        Entity entity2 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, config2);
-        Entity entity3 = new Entity("tree", 10.0, 20.0, 0.0, 32.0, true, config1);
+        Entity entity1 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, 32.0, 32.0, config1);
+        Entity entity2 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, 32.0, 32.0, config2);
+        Entity entity3 = new Entity("tree", 10.0, 20.0, 0.0, 32.0, true, 32.0, 32.0, config1);
         
         assertEquals(entity1, entity2);
         assertNotEquals(entity1, entity3);
@@ -107,7 +107,7 @@ class EntityImageConfigTest {
     void testEntityEqualsWithNullImageConfig() {
         Entity entity1 = new Entity("grass", 10.0, 20.0);
         Entity entity2 = new Entity("grass", 10.0, 20.0);
-        Entity entity3 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, new ImageConfiguration());
+        Entity entity3 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, 32.0, 32.0, new ImageConfiguration());
         
         assertEquals(entity1, entity2);
         assertNotEquals(entity1, entity3);
@@ -118,9 +118,9 @@ class EntityImageConfigTest {
         ImageConfiguration config1 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         ImageConfiguration config2 = new ImageConfiguration(1.0, 1.0, 0.0, RenderMode.CONFIGURED_SIZE, 1.0, 0.0, 0.0);
         
-        Entity entity1 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, config1);
-        Entity entity2 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, config2);
-        Entity entity3 = new Entity("tree", 10.0, 20.0, 0.0, 32.0, true, config1);
+        Entity entity1 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, 32.0, 32.0, config1);
+        Entity entity2 = new Entity("grass", 10.0, 20.0, 0.0, 32.0, true, 32.0, 32.0, config2);
+        Entity entity3 = new Entity("tree", 10.0, 20.0, 0.0, 32.0, true, 32.0, 32.0, config1);
         
         assertEquals(entity1.hashCode(), entity2.hashCode());
         assertNotEquals(entity1.hashCode(), entity3.hashCode());
@@ -129,7 +129,7 @@ class EntityImageConfigTest {
     @Test
     void testEntityToString() {
         ImageConfiguration config = new ImageConfiguration(1.2, 1.8, 0.0, RenderMode.CONFIGURED_SIZE, 0.8, 0.0, 0.0);
-        Entity entity = new Entity("tree", 10.0, 20.0, 0.5, 48.0, true, config);
+        Entity entity = new Entity("tree", 10.0, 20.0, 0.5, 48.0, true, 48.0, 48.0, config);
         
         String result = entity.toString();
         

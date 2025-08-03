@@ -42,6 +42,30 @@ public class Player {
         interacting = inputManager.isKeyPressed(KeyCode.E);
     }
     
+    /**
+     * Updates player movement with collision detection.
+     * This method should be called by the collision system.
+     * 
+     * @param deltaTime Time since last update
+     * @param inputManager Input manager
+     * @param camera Camera for movement calculations
+     * @param collisionSystem Collision system for collision detection
+     */
+    public void updateWithCollision(double deltaTime, InputManager inputManager, Camera camera, CollisionSystem collisionSystem) {
+        MovementInput input = inputManager.getMovementInput();
+        
+        if (inputManager.getCameraMode() == Camera.CameraMode.FIXED_ANGLE) {
+            // Fixed-angle mode: movement is relative to camera rotation
+            updateFixedAngleMovementWithCollision(deltaTime, input, camera.getRotation(), collisionSystem);
+        } else {
+            // Player-perspective mode: A/D rotates player, W/S moves forward/backward
+            updatePlayerPerspectiveMovementWithCollision(deltaTime, input, collisionSystem);
+        }
+        
+        // Handle interaction input
+        interacting = inputManager.isKeyPressed(KeyCode.E);
+    }
+    
     private void updateFixedAngleMovement(double deltaTime, MovementInput input, double cameraRotation) {
         // Fixed-angle mode: WASD moves in fixed directions, arrow keys rotate camera
         double moveX = 0;
@@ -185,6 +209,118 @@ public class Player {
     private void rotateRight(double deltaTime) {
         double rotationAmount = Math.toRadians(rotationSpeed * deltaTime);
         angle += rotationAmount;
+    }
+    
+    private void updateFixedAngleMovementWithCollision(double deltaTime, MovementInput input, double cameraRotation, CollisionSystem collisionSystem) {
+        // Fixed-angle mode: movement is relative to camera rotation
+        double moveX = 0;
+        double moveY = 0;
+
+        // Movement relative to camera rotation (based on JavaScript implementation)
+        if (input.forward()) {
+            moveX += Math.sin(cameraRotation);
+            moveY -= Math.cos(cameraRotation);
+        }
+        if (input.backward()) {
+            moveX -= Math.sin(cameraRotation);
+            moveY += Math.cos(cameraRotation);
+        }
+        if (input.left()) {
+            moveX -= Math.cos(cameraRotation);
+            moveY -= Math.sin(cameraRotation);
+        }
+        if (input.right()) {
+            moveX += Math.cos(cameraRotation);
+            moveY += Math.sin(cameraRotation);
+        }
+        if (input.strafeLeft()) {
+            moveX -= Math.cos(cameraRotation);
+            moveY -= Math.sin(cameraRotation);
+        }
+        if (input.strafeRight()) {
+            moveX += Math.cos(cameraRotation);
+            moveY += Math.sin(cameraRotation);
+        }
+
+        // Normalize movement vector to ensure consistent speed
+        double magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+        if (magnitude > 0) {
+            moveX /= magnitude;
+            moveY /= magnitude;
+        }
+
+        // Calculate new position
+        double newX = x + moveX * speed * deltaTime;
+        double newY = y + moveY * speed * deltaTime;
+
+        // Check collision before applying movement
+        double playerRadius = size / 2.0;
+        CollisionSystem.CollisionResponse response = collisionSystem.getCollisionResponse(x, y, newX, newY, playerRadius);
+        
+        if (!response.blocked) {
+            // Apply world wrapping
+            WorldUtils.Point2D wrappedPos = WorldUtils.wrapWorldCoordinates(response.x, response.y, worldSize);
+            x = wrappedPos.x;
+            y = wrappedPos.y;
+        }
+
+        // Update player angle based on movement direction (player faces movement direction)
+        if (magnitude > 0) {
+            angle = Math.atan2(moveX, -moveY);
+        }
+    }
+    
+    private void updatePlayerPerspectiveMovementWithCollision(double deltaTime, MovementInput input, CollisionSystem collisionSystem) {
+        // Handle rotation
+        if (input.left()) {
+            rotateLeft(deltaTime);
+        }
+        if (input.right()) {
+            rotateRight(deltaTime);
+        }
+        
+        // Handle movement - combine all movement inputs for proper diagonal movement
+        double moveX = 0;
+        double moveY = 0;
+        
+        if (input.forward()) {
+            moveX += Math.sin(angle);
+            moveY -= Math.cos(angle);
+        }
+        if (input.backward()) {
+            moveX -= Math.sin(angle);
+            moveY += Math.cos(angle);
+        }
+        if (input.strafeLeft()) {
+            moveX += Math.sin(angle - Math.PI / 2); // 90 degrees to the right (Q key)
+            moveY -= Math.cos(angle - Math.PI / 2);
+        }
+        if (input.strafeRight()) {
+            moveX += Math.sin(angle + Math.PI / 2); // 90 degrees to the left (E key)
+            moveY -= Math.cos(angle + Math.PI / 2);
+        }
+        
+        // Normalize movement vector to ensure consistent speed
+        double magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+        if (magnitude > 0) {
+            moveX /= magnitude;
+            moveY /= magnitude;
+            
+            // Calculate new position
+            double newX = x + moveX * speed * deltaTime;
+            double newY = y + moveY * speed * deltaTime;
+            
+            // Check collision before applying movement
+            double playerRadius = size / 2.0;
+            CollisionSystem.CollisionResponse response = collisionSystem.getCollisionResponse(x, y, newX, newY, playerRadius);
+            
+            if (!response.blocked) {
+                // Apply world wrapping
+                WorldUtils.Point2D wrappedPos = WorldUtils.wrapWorldCoordinates(response.x, response.y, worldSize);
+                x = wrappedPos.x;
+                y = wrappedPos.y;
+            }
+        }
     }
     
     // Getters

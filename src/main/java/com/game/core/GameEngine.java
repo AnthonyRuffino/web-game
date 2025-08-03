@@ -39,6 +39,7 @@ public class GameEngine {
     private World world;
     private Player player;
     private Camera camera;
+    private CollisionSystem collisionSystem;
     
     public GameEngine(DatabaseManager databaseManager) {
         this(databaseManager, AssetDirectoryManager.getDefaultAssetsDirectory());
@@ -116,6 +117,9 @@ public class GameEngine {
         
         // Initialize camera with world config for wrapping
         camera = new Camera(canvasWidth, canvasHeight);
+        
+        // Initialize collision system
+        collisionSystem = new CollisionSystem();
         
         // Initialize renderer with asset manager
         renderer = new Renderer(assetManager, world.getConfig());
@@ -235,8 +239,11 @@ public class GameEngine {
         // Update input (this resets mouseWheelDelta)
         inputManager.update(deltaTime);
         
-        // Update player
-        player.update(deltaTime, inputManager, camera);
+        // Update collision system
+        collisionSystem.update(deltaTime, world, player);
+        
+        // Update player with collision detection
+        player.updateWithCollision(deltaTime, inputManager, camera, collisionSystem);
         
         // Update camera
         camera.update(deltaTime);

@@ -36,7 +36,7 @@ class EntityTest {
     @Test
     void testEntityCreationWithAllParameters() {
         // Act
-        Entity entity = new Entity("grass", 300.0, 400.0, 90.0, 16.0, false, null);
+        Entity entity = new Entity("grass", 300.0, 400.0, 90.0, 16.0, false, 0.0, 0.0, null);
         
         // Assert
         assertEquals("grass", entity.getType());
@@ -62,7 +62,7 @@ class EntityTest {
     @Test
     void testEntityToString() {
         // Arrange
-        Entity entity = new Entity("tree", 100.0, 200.0, 45.0, 32.0, true, null);
+        Entity entity = new Entity("tree", 100.0, 200.0, 45.0, 32.0, true, 32.0, 32.0, null);
         
         // Act
         String toString = entity.toString();
