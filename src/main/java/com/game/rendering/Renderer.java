@@ -15,6 +15,10 @@ import com.game.utils.AssetManager;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 
 public class Renderer {
     private static final Logger logger = LoggerFactory.getLogger(Renderer.class);
@@ -53,8 +57,14 @@ public class Renderer {
             drawGrid(gc, camera);
         }
         
-        // Draw world entities with proper positioning
-        drawWorldEntities(gc, world, camera);
+        // Get world entities grouped by fixed screen angle
+        Map<Boolean, List<Entity>> worldEntities = getWorldEntities(gc, world, camera);
+        
+        // Draw entities without fixed screen angle first
+        List<Entity> nonFixedAngleEntities = worldEntities.getOrDefault(false, new ArrayList<>());
+        for (Entity entity : nonFixedAngleEntities) {
+            drawEntity(gc, entity, player, camera);
+        }
         
         // Draw grid highlight in world coordinates (before camera transform is restored)
         gridHighlight.drawGridHighlight(gc, camera, player.getAngle());
@@ -64,6 +74,21 @@ public class Renderer {
         
         // Draw player in screen coordinates (after camera transform is restored)
         drawPlayer(gc, player, camera);
+        
+        // Temporarily restore world coordinates for fixed angle entities
+        camera.applyTransform(gc);
+        if (camera.getMode() == Camera.CameraMode.PLAYER_PERSPECTIVE) {
+            camera.applyPlayerPerspectiveTransform(gc, player.getAngle());
+        }
+        
+        // Draw entities with fixed screen angle (in world coordinates, after player)
+        List<Entity> fixedAngleEntities = worldEntities.getOrDefault(true, new ArrayList<>());
+        for (Entity entity : fixedAngleEntities) {
+            drawEntity(gc, entity, player, camera);
+        }
+        
+        // Restore back to screen coordinates for UI
+        camera.restoreTransform(gc);
         
         // Draw UI overlay
         drawUI(gc, width, height, player, camera);
@@ -172,7 +197,7 @@ public class Renderer {
         }
     }
     
-    private void drawWorldEntities(GraphicsContext gc, World world, Camera camera) {
+    private Map<Boolean, List<Entity>> getWorldEntities(GraphicsContext gc, World world, Camera camera) {
         // Get visible chunks based on camera position
         double cameraX = camera.getX();
         double cameraY = camera.getY();
@@ -200,36 +225,28 @@ public class Renderer {
             int endChunkX = (int) (renderEndX / chunkSize);
             int startChunkY = (int) (renderStartY / chunkSize);
             int endChunkY = (int) (renderEndY / chunkSize);
-            
-            // Collect all entities from visible chunks
-            List<Entity> allEntities = new ArrayList<>();
-            for (int chunkX = startChunkX; chunkX <= endChunkX; chunkX++) {
-                for (int chunkY = startChunkY; chunkY <= endChunkY; chunkY++) {
-                    // Ensure chunk coordinates are within world bounds
-                    if (chunkX >= 0 && chunkX < 64 && chunkY >= 0 && chunkY < 64) {
-                        var chunk = world.loadChunk(chunkX, chunkY);
-                        allEntities.addAll(chunk.getEntities());
-                    }
-                }
-            }
-            
-            // Sort entities by render order (renderLast=false first, then renderLast=true)
-            allEntities.sort((e1, e2) -> {
-                ImageConfiguration config1 = EntityConfigManager.getEffectiveImageConfig(e1);
-                ImageConfiguration config2 = EntityConfigManager.getEffectiveImageConfig(e2);
-                return Boolean.compare(config1.isRenderLast(), config2.isRenderLast());
-            });
-            
-            // Render entities in sorted order
-            for (Entity entity : allEntities) {
-                drawEntity(gc, entity);
-            }
+
+            var box = IntStream.rangeClosed(startChunkX, endChunkX)
+                .boxed()
+                .flatMap(chunkX ->
+                    IntStream.rangeClosed(startChunkY, endChunkY)
+                        .mapToObj(chunkY -> new int[] {chunkX, chunkY})
+                )
+                .filter(coords -> coords[0] >= 0 && coords[0] < 64 && coords[1] >= 0 && coords[1] < 64)
+                .map(coords -> world.loadChunk(coords[0], coords[1]))
+                .flatMap(chunk -> chunk.getEntities().stream())
+                .collect(Collectors.groupingBy(entity -> {
+                    ImageConfiguration config = EntityConfigManager.getEffectiveImageConfig(entity);
+                    return config.getFixedScreenAngle() != null;
+                }));
+                return box;
         }
+        return new HashMap<>();
     }
     
 
     
-    private void drawEntity(GraphicsContext gc, Entity entity) {
+    private void drawEntity(GraphicsContext gc, Entity entity, Player player, Camera camera) {
         Image entityImage = assetManager.getEntityImage(entity.getType(), entity.getType());
         
         if (entityImage != null) {
@@ -245,17 +262,30 @@ public class Renderer {
             }
             
             // Handle fixed screen angle for entities that should always appear upright
-            if (config.getFixedScreenAngle() != 0.0) {
+            if (config.getFixedScreenAngle() != null) {
                 // Save current transform
                 gc.save();
                 
-                // Reset rotation to fixed screen angle (usually 0.0 for upright)
-                gc.rotate(Math.toDegrees(config.getFixedScreenAngle()));
+                // Get current camera mode and rotation
+                double cameraRotation = camera.getRotation();
+                double playerAngle = player.getAngle();
                 
-                // Draw image with calculated dimensions
+                // Calculate angle based on camera mode (similar to JavaScript logic)
+                double angle;
+                if (camera.getMode() == Camera.CameraMode.PLAYER_PERSPECTIVE) {
+                    // In player-perspective mode, undo world rotation and apply fixed angle
+                    angle = playerAngle + config.getFixedScreenAngle();
+                } else {
+                    // In fixed-angle mode, apply camera rotation and fixed angle
+                    angle = cameraRotation + config.getFixedScreenAngle();
+                }
+                
+                // Apply rotation using translate and rotate (like JavaScript)
+                gc.translate(entity.getX(), entity.getY());
+                gc.rotate(Math.toDegrees(angle));
                 gc.drawImage(entityImage, 
-                            entity.getX() - width / 2, 
-                            entity.getY() - height / 2, 
+                            -width / 2, 
+                            -height / 2, 
                             width, height);
                 
                 // Restore transform
