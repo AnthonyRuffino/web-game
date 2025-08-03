@@ -4,6 +4,8 @@ import com.game.core.World;
 import com.game.core.Player;
 import com.game.core.Entity;
 import com.game.core.WorldConfig;
+import com.game.core.EntityConfigManager;
+import com.game.core.ImageConfiguration;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
@@ -222,9 +224,27 @@ public class Renderer {
         Image entityImage = assetManager.getEntityImage(entity.getType(), entity.getType());
         
         if (entityImage != null) {
-            // Draw image instead of simple shapes
-            double size = entity.getSize();
-            gc.drawImage(entityImage, entity.getX() - size / 2, entity.getY() - size / 2, size, size);
+            // Use configuration-driven sizing
+            double[] dimensions = EntityConfigManager.calculateEffectiveDimensions(entity, tileSize);
+            double width = dimensions[0];
+            double height = dimensions[1];
+            
+            // Apply opacity if configured
+            ImageConfiguration config = EntityConfigManager.getEffectiveImageConfig(entity);
+            if (config.getOpacity() < 1.0) {
+                gc.setGlobalAlpha(config.getOpacity());
+            }
+            
+            // Draw image with calculated dimensions
+            gc.drawImage(entityImage, 
+                        entity.getX() - width / 2, 
+                        entity.getY() - height / 2, 
+                        width, height);
+            
+            // Reset opacity
+            if (config.getOpacity() < 1.0) {
+                gc.setGlobalAlpha(1.0);
+            }
         } else {
             // Fallback to simple shapes
             switch (entity.getType()) {
